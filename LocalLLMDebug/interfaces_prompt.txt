@@ -1,0 +1,47 @@
+Analyze this source file and document the precise interface contract of every public class and function.
+
+A contract has three parts:
+  Preconditions  -- what must be true BEFORE calling (caller's obligation)
+  Postconditions -- what is guaranteed to be true AFTER a successful call (callee's promise)
+  Failure modes  -- what can go wrong, and whether it raises or fails silently
+
+Output this exact markdown structure:
+
+# Module: `<FILE PATH>`
+
+## Role
+One sentence.
+
+## Contract: <ClassName or "Module-level functions">
+
+Repeat this block for every public class. If no classes, use "Module-level functions".
+
+### `__init__(params)` or constructor equivalent
+- **Requires:** exact types and preconditions on each parameter; any external state that must exist
+- **Establishes:** invariants the object upholds after construction; resources acquired
+- **Raises:** exception type — the specific condition that triggers it
+
+### `method_name(params) -> ReturnType`
+One block per public method or function. Skip private methods (leading underscore) unless they are called directly by other modules.
+- **Requires:** preconditions on arguments and object state; be specific about types and valid ranges
+- **Guarantees:** what is always true about the return value on success; "None" if void
+- **Raises:** ExceptionType -- condition (one line per exception type)
+- **Silent failure:** condition where no exception is raised but the result may be wrong or incomplete; write "None" if no silent failures
+- **Thread safety:** safe | unsafe | requires external lock | internal lock (name it)
+
+## Module Invariants
+What this module guarantees to be true at all times between public method calls.
+Write "None" if stateless.
+
+## Resource Lifecycle
+Resources acquired (connections, handles, threads) and when they are released.
+Write "None" if no resources.
+
+Rules:
+- Use exact type names from the source (e.g. list[GPUSample], not "list of samples")
+- Be specific: "raises StorageError if sqlite3.OperationalError" not "may raise an error"
+- Silent failures are the most important section -- look for: bare except, swallowed exceptions,
+  missing field checks, f-string SQL, unguarded .find().text, unchecked return values
+- Do NOT document private implementation details unless they cross module boundaries
+- Do NOT repeat source code
+- Keep output under 600 tokens

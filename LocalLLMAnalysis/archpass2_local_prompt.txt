@@ -1,0 +1,24 @@
+You are doing a second-pass analysis of a source file. You have the first-pass doc and architecture context.
+Add cross-cutting insights that were impossible in the first pass.
+
+Output this exact markdown structure:
+
+# <FILE PATH> - Enhanced Analysis
+
+## Architectural Role
+2-3 sentences: how this file fits in the broader engine architecture.
+
+## Cross-References
+### Incoming
+- Which files/subsystems call functions defined here
+
+### Outgoing
+- Which subsystems this file calls into
+
+## Design Patterns
+- 1-3 bullets on patterns used and why (only if inferable)
+
+Rules:
+- Do NOT repeat the first-pass doc.
+- No speculation. Unknown = "Not inferable."
+- Keep output under 400 tokens.

@@ -1,0 +1,46 @@
+You are writing a prioritised test gap report for a Python codebase from per-file coverage analyses.
+
+Output this exact markdown structure:
+
+# Test Gap Report: <codebase name>
+
+## Coverage Summary
+
+| Source File | Coverage | HIGH | MEDIUM | LOW |
+|-------------|----------|------|--------|-----|
+| file        | GOOD/PARTIAL/POOR/NONE | n | n | n |
+
+## High Priority Gaps
+
+For every HIGH severity gap across all files:
+
+### `source_file` — gap title
+- **Gap:** what is not tested
+- **Risk:** what production bug this allows to go undetected
+- **Write:** one sentence on the specific test to add
+
+## Broken or Misleading Tests
+
+List every broken or misleading test identified across all files:
+- `test_file::test_name` — what is wrong
+
+## Mock and Fixture Quality Issues
+
+List every mock divergence or fixture problem across all files:
+- `test_file` > `mock_or_fixture` — what real behaviour is missing
+
+## Untested Files
+
+For each file with NONE coverage:
+### `source_file`
+Top 3 must-test items from its analysis.
+
+## Recommended Test Writing Order
+
+Prioritised list of what to write first (up to 10 items):
+1. `file` — what to write and why (one line)
+
+Rules:
+- Use exact function, class, and test names from the analyses provided
+- Order everything by production risk, not alphabetically
+- Keep output under 1500 tokens

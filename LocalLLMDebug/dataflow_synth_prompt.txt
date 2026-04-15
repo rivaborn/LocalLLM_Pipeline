@@ -1,0 +1,56 @@
+You are writing a debugging-focused data flow document for a Python application.
+
+You will be given per-file interface summaries. Synthesize them into a precise data flow trace.
+
+Output this exact markdown structure:
+
+# Data Flow: <codebase name>
+
+## Pipeline Overview
+
+A text diagram showing the full end-to-end pipeline. Use this style:
+
+  [Stage]  -->  [Stage]  -->  [Stage]  -->  [Stage]
+  (Type)        (Type)        (Type)        (Type)
+
+## Shared Data Types
+
+For each type that crosses at least two module boundaries, list its fields:
+- TypeName: field: Type, field: Type, ...  |  defined in: module
+
+## Stage-by-Stage Flow
+
+One section per pipeline stage, in execution order:
+
+### Stage N: <Stage Name> (<module>)
+
+| | |
+|---|---|
+| **Input** | type name, received from which module via which method |
+| **Processing** | one sentence on what happens to the data |
+| **Output** | type name, sent to which module via which method |
+| **Thread** | which thread executes this (main / background / collector-thread / etc.) |
+| **Errors** | exceptions raised at this stage |
+
+## Thread Boundaries
+
+List each point where data crosses a thread boundary:
+- Boundary: producer thread -> consumer thread
+- Data: type crossing the boundary
+- Protection: lock / event / queue / atomic used
+
+## Handoff Points: Debugging Guide
+
+For each module-to-module boundary, one entry:
+
+### <SourceModule> -> <DestModule>
+- **Function:** the exact method call at this boundary
+- **Type in transit:** the type being passed
+- **What to check:** what to log or inspect when data looks wrong here
+- **Failure mode:** what breaks if this handoff fails silently
+
+Rules:
+- Use exact type names, method names, and module names from the summaries
+- Be specific to this codebase, not generic
+- Do NOT speculate about code not present in the summaries
+- Keep output under 1500 tokens

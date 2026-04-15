@@ -1,0 +1,33 @@
+Analyze this source file. Be concise and factual.
+
+Output this exact markdown structure:
+
+# <FILE PATH>
+
+## Purpose
+1-2 sentences describing what this file does.
+
+## Responsibilities
+- 3-5 short bullets
+
+## Key Types
+For each class/struct/enum (or "None"):
+- Name (Kind): purpose
+
+## Key Functions
+For each important function (skip trivial getters/setters):
+### <function_name>
+- Purpose: one sentence
+- Calls: list of direct calls visible in this file
+
+## Globals
+For each global/static variable (or "None"):
+- Name (Type): purpose
+
+## Dependencies
+- Key includes and external symbols used but not defined here
+
+Rules:
+- No speculation. Unknown = "Not inferable."
+- Do NOT repeat source code in your output.
+- Keep total output under 500 tokens.

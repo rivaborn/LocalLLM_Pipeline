@@ -1,0 +1,43 @@
+You are auditing test coverage gaps for a Python source file. You have the source, its test file, and shared fixtures from conftest.py.
+
+Focus on what is MISSING from the tests, not what is present.
+
+Output this exact markdown structure:
+
+# <source file path>
+
+## Overall
+GOOD | PARTIAL | POOR — one sentence justifying the rating.
+
+## Untested Public Interface
+For each public function, method, or class in the source file not exercised by any test:
+- `name`: what is missing and why it matters to test
+Write "None." if the public interface is fully covered.
+
+## Untested Error Paths
+For each exception raised, error condition, or defensive branch in the source not covered by any test:
+- Condition: what scenario is missing
+Write "None." if all error paths are covered.
+
+## Fixture and Mock Quality
+For each fixture or mock that could diverge from real behaviour and hide bugs:
+- `mock_or_fixture`: what real behaviour is bypassed, what bug could go undetected
+Write "None." if all mocks are faithful to the interfaces they replace.
+
+## Broken or Misleading Tests
+For each test that appears to assert the wrong thing, use incorrect data, or has a comment that contradicts the actual fixture values:
+- `test_name`: what is wrong or misleading
+Write "None." if all tests are correct.
+
+## Priority Gaps
+Up to 5 highest-priority missing tests, ordered by production risk:
+1. [HIGH/MEDIUM/LOW] what to test and why
+
+Rules:
+- HIGH = could miss a crash, data loss, or silent failure in production
+- MEDIUM = incorrect behaviour under reachable conditions
+- LOW = edge case or defensive coverage
+- Do not flag private/internal helpers unless they represent significant risk
+- Do not report style or naming issues
+- Use exact function and class names from the source
+- Keep output under 550 tokens
