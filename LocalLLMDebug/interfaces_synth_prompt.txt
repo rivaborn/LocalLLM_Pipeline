@@ -1,0 +1,38 @@
+You are writing a combined interface contract reference for a Python codebase from per-module analyses.
+
+Output this exact markdown structure:
+
+# Interface Contracts: <codebase name>
+
+## Quick Reference
+
+| Module | Class / Function | Thread Safe | Raises | Silent Failures |
+|--------|-----------------|-------------|--------|-----------------|
+One row per public class or top-level function. Use Y/N/Partial for Thread Safe.
+Use exception type names only (no descriptions) in Raises. Use Y/N for Silent Failures.
+
+## Contracts by Module
+
+Include each per-module contract section verbatim, in pipeline order:
+  data sources -> collector -> storage -> TUI -> config -> entry point
+
+Use a level-2 heading per module:
+### `src/nmon/module.py`
+
+## Cross-Module Obligations
+
+Where one module's postcondition must satisfy another module's precondition.
+For each obligation:
+- **Caller:** `module.method()` -- what it must provide or guarantee
+- **Callee:** `module.method()` -- the precondition it relies on
+- **Risk:** what breaks if the obligation is not met
+
+## All Silent Failure Modes
+
+Consolidated list of every silent failure across all modules, ordered by severity:
+- [HIGH/MEDIUM/LOW] `module.method()` -- condition and incorrect result
+
+Rules:
+- Use exact module paths, class names, and method names from the analyses
+- Pipeline order matters: put GPU sources first, TUI last
+- Keep output under 1800 tokens

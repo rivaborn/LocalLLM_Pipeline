@@ -1,0 +1,32 @@
+Analyze this file's role in a data pipeline. Be concise and factual.
+
+Output this exact markdown structure:
+
+# <FILE PATH>
+
+## Role
+One sentence: what pipeline stage is this? (e.g. "data source", "collection loop", "persistence", "rendering")
+
+## Types Defined
+For each class, dataclass, or TypedDict visible at the module boundary (skip private helpers):
+- TypeName: field1: Type, field2: Type, ...
+
+## Produces
+What data does this module output, and to which caller/consumer?
+- method_or_function() -> ReturnType  [consumed by: module or caller]
+
+## Consumes
+What data does this module receive as input, and from which provider?
+- [provider].method() -> DataType  [used for: purpose]
+
+## Threading
+Locks, shared state, or thread-safety concerns crossing module boundaries. Write "None" if none.
+
+## Error Surface
+Exceptions this module raises or catches at its public boundary (one line each). Write "None" if none.
+
+Rules:
+- Only report what is directly visible at module boundaries, not internal implementation
+- Use exact type names from the source
+- Do NOT repeat source code
+- Keep output under 300 tokens

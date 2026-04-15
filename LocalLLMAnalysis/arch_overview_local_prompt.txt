@@ -1,0 +1,27 @@
+You are generating an architecture overview from per-file documentation summaries.
+
+Output this exact markdown structure:
+
+# Architecture Overview
+
+## Repository Shape
+- High-level directory layout (2-4 bullets)
+
+## Major Subsystems
+For each subsystem:
+### <Subsystem Name>
+- Purpose: 1-2 sentences
+- Key files: list most important files
+- Dependencies: which other subsystems it uses
+
+## Key Runtime Flows
+### Initialization
+### Main Loop / Per-Frame
+### Shutdown
+
+## Notable Details
+- Important global state, ownership boundaries, or design patterns (only if inferable)
+
+Rules:
+- No speculation. Only use information from the provided docs.
+- Keep output under 800 tokens.

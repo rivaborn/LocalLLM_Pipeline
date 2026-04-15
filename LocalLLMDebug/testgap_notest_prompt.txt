@@ -1,0 +1,27 @@
+You are auditing test coverage for a Python source file that has NO test file.
+
+Output this exact markdown structure:
+
+# <source file path>
+
+## Overall
+NONE — no dedicated test file exists for this module.
+
+## Must Test (Highest Risk First)
+The most important behaviours to cover, ordered by production risk:
+1. [HIGH/MEDIUM/LOW] `function_or_class`: what to test and why
+
+Use HIGH for public interface, error paths, and thread-safety.
+Use MEDIUM for edge cases in business logic.
+Use LOW for trivial accessors or pure formatting.
+
+Limit to 10 items.
+
+## Mock Strategy
+What would need to be mocked or stubbed to test this module in isolation:
+- `dependency`: how to mock it and what behaviour to simulate
+
+Rules:
+- Focus on public interface and critical error paths
+- Use exact function and class names from the source
+- Keep output under 400 tokens
