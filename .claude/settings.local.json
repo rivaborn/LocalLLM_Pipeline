@@ -9,7 +9,16 @@
       "Bash(ls /c/Coding/WorkFolder/nmon/.aider*)",
       "Bash(.venv/Scripts/python -c \"import nmon.ui.main_window\")",
       "Bash(pip uninstall *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(git mv *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(wc *)",
+      "Bash(git reset *)",
+      "Bash(git rm *)",
+      "Bash(git revert *)",
+      "Bash(ls -d /c/Coding/LocalLLM_Pipeline/*/Documentation)",
+      "Bash(find /c/Coding/LocalLLM_Pipeline/*/Documentation -name \"*.md\")"
     ]
   }
 }
