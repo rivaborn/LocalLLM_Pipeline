@@ -22,42 +22,21 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-COMMON_ENV = SCRIPT_DIR.parent / "Common" / ".env"
+# Make Common/_pipeline importable so we can reuse env helpers.
+sys.path.insert(0, str(SCRIPT_DIR.parent / "Common"))
+from _pipeline import config as cfg  # noqa: E402
 
 DEFAULT_FIX_MODEL = "qwen3-coder:30b"
-DEFAULT_ENDPOINT = "http://192.168.1.126:11434"
-
-
-def read_env_file(path: Path) -> dict[str, str]:
-    out: dict[str, str] = {}
-    if not path.exists():
-        return out
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, val = line.partition("=")
-        out[key.strip()] = val.strip().strip('"').strip("'")
-    return out
 
 
 def resolve_fix_config() -> tuple[str, str]:
-    """Return (model_string_for_aider, ollama_endpoint)."""
-    env = read_env_file(COMMON_ENV)
+    """Return (aider_model_string, ollama_endpoint) using the shared
+    endpoint-resolution precedence from _pipeline.config."""
+    env = cfg.load_env()
     model = env.get("LLM_FIX_IMPORTS_MODEL", DEFAULT_FIX_MODEL)
     aider_model = f"ollama_chat/{model}"
-
-    if os.environ.get("OLLAMA_API_BASE"):
-        endpoint = os.environ["OLLAMA_API_BASE"]
-    elif os.environ.get("LLM_ENDPOINT"):
-        endpoint = os.environ["LLM_ENDPOINT"]
-    elif env.get("LLM_ENDPOINT"):
-        endpoint = env["LLM_ENDPOINT"]
-    elif env.get("LLM_HOST"):
-        endpoint = f"http://{env['LLM_HOST']}:{env.get('LLM_PORT', '11434')}"
-    else:
-        endpoint = DEFAULT_ENDPOINT
-    return aider_model, endpoint.rstrip("/")
+    endpoint = cfg.resolve_ollama_endpoint(env)
+    return aider_model, endpoint
 
 
 def find_modules(package_dir: Path) -> list[tuple[str, Path]]:
