@@ -24,6 +24,22 @@ from .fileops import (
 from .router import invoke_stage
 
 
+def _pkg_constraint(args: argparse.Namespace) -> str:
+    """Return a constraint block naming the package if --package-name was
+    passed, otherwise empty. Prepended to every LLM stage prompt so the
+    model uses a fixed name instead of inventing one."""
+    name = getattr(args, "package_name", None)
+    if not name:
+        return ""
+    return (
+        "## PACKAGE NAME CONSTRAINT\n\n"
+        f"The Python package name is `{name}`. All source files MUST live\n"
+        f"under `src/{name}/...`. Imports MUST use `from {name}.<module>` "
+        "or `import {name}.<module>` style. Do not invent a different name.\n\n"
+        "---\n\n"
+    )
+
+
 def stage0(repo_root: Path, codebase_summary: Path, args: argparse.Namespace,
            env: dict, planning_cfg: dict, progress: ProgressFile, mode: str) -> None:
     plans = get_implemented_plans(repo_root)
@@ -44,7 +60,7 @@ def stage0(repo_root: Path, codebase_summary: Path, args: argparse.Namespace,
     concatenated = "\n\n---\n\n".join(
         f"### {p.name}\n\n{p.read_text(encoding='utf-8')}" for p in plans
     )
-    prompt = load_prompt("stage0_summarize.md") + "\n\n" + concatenated
+    prompt = _pkg_constraint(args) + load_prompt("stage0_summarize.md") + "\n\n" + concatenated
 
     result = invoke_stage(prompt, "0", args=args, env=env, planning_cfg=planning_cfg,
                           thinking_file=codebase_summary.with_suffix(".md.thinking.md"))
@@ -67,7 +83,11 @@ def stage1(repo_root: Path, target_dir: Path, initial: Path, args: argparse.Name
         cprint("  Skipping Stage 1 (user declined overwrite)", Color.YELLOW)
         return
 
-    prompt = load_prompt("stage1_improve_prompt.md") + "\n\n" + initial.read_text(encoding="utf-8")
+    prompt = (
+        _pkg_constraint(args)
+        + load_prompt("stage1_improve_prompt.md") + "\n\n"
+        + initial.read_text(encoding="utf-8")
+    )
     cprint("  Processing InitialPrompt.md...", Color.CYAN)
 
     result = invoke_stage(prompt, "1", args=args, env=env, planning_cfg=planning_cfg,
@@ -123,7 +143,11 @@ def stage2(repo_root: Path, target_dir: Path, arch_plan: Path,
             cprint("  Skipping Stage 2 (user declined overwrite)", Color.YELLOW)
             return
         cprint("  Stage 2a: Generating section plan...", Color.CYAN)
-        prompt_2a = load_prompt("stage2a_section_plan.md") + "\n\n" + planning_content + "\n" + existing_ctx
+        prompt_2a = (
+            _pkg_constraint(args)
+            + load_prompt("stage2a_section_plan.md") + "\n\n"
+            + planning_content + "\n" + existing_ctx
+        )
         if args.dry_run:
             cprint("  [DRY RUN] Would generate section plan", Color.BLUE)
             return
@@ -169,7 +193,8 @@ def stage2(repo_root: Path, target_dir: Path, arch_plan: Path,
 
         tmpl = load_prompt("stage2b_section.md")
         prompt_2b = (
-            tmpl.replace("SECTITLE", sec_title).replace("SECDESC", sec_desc)
+            _pkg_constraint(args)
+            + tmpl.replace("SECTITLE", sec_title).replace("SECDESC", sec_desc)
             + "\n\n" + planning_content
             + (("\n" + existing_ctx) if existing_ctx else "")
         )
@@ -224,7 +249,7 @@ def stage3(repo_root: Path, target_dir: Path, arch_plan: Path, aider_commands: P
         cprint("  Stage 3a: Generating step plan...", Color.CYAN)
         head = load_prompt("stage3a_step_plan_head.md")
         tail = load_prompt("stage3a_step_plan_tail.md")
-        prompt_3a = head + arch_content + "\n" + existing_ctx + tail
+        prompt_3a = _pkg_constraint(args) + head + arch_content + "\n" + existing_ctx + tail
         if args.dry_run:
             cprint("  [DRY RUN] Would generate step plan", Color.BLUE)
             return
@@ -286,7 +311,8 @@ def stage3(repo_root: Path, target_dir: Path, arch_plan: Path, aider_commands: P
         body_ctx = architecture_slice(arch_content, file_list) if use_slice else arch_content
 
         prompt_3b = (
-            head
+            _pkg_constraint(args)
+            + head
             .replace("STEPNUM", str(step_num))
             .replace("STEPTITLE", step_title)
             .replace("AIDERFILES", aider_files)

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -22,8 +24,49 @@ class Color:
     RESET   = "\033[0m"
 
 
+# Active stage log: when set, cprint / banner tee their output here in
+# addition to the console. Managed by the stage_log() context manager.
+_current_stage_log: Path | None = None
+
+# Strip ANSI escapes for the log file (colors only make sense on a TTY).
+_ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+
+
+def set_stage_log(path: Path | None) -> None:
+    """Direct subsequent cprint/banner output to also append to *path*.
+    Pass None to stop teeing."""
+    global _current_stage_log
+    _current_stage_log = path
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+
+@contextmanager
+def stage_log(repo_root: Path, name: str):
+    """Activate teed logging to <repo_root>/logs/<name>.log for the
+    duration of the block. Restores the previous target on exit."""
+    prev = _current_stage_log
+    path = repo_root / "logs" / f"{name}.log"
+    set_stage_log(path)
+    try:
+        yield path
+    finally:
+        set_stage_log(prev)
+
+
+def _tee_to_stage_log(msg: str) -> None:
+    if _current_stage_log is None:
+        return
+    try:
+        with _current_stage_log.open("a", encoding="utf-8") as fh:
+            fh.write(_ANSI_RE.sub("", msg) + "\n")
+    except OSError:
+        pass
+
+
 def cprint(msg: str, color: str = Color.RESET) -> None:
     print(f"{color}{msg}{Color.RESET}", file=sys.stderr)
+    _tee_to_stage_log(msg)
 
 
 # Windows Ctrl+Q handling -- mirrors the behaviour of the PowerShell

@@ -13,7 +13,7 @@ from ...claude import ClaudeError
 from ...ollama import LLMError
 from ...progress import ProgressFile
 from ...subprocess_runner import UserCancelled
-from ...ui import Color, banner, cprint, setup_logging
+from ...ui import Color, banner, cprint, setup_logging, stage_log
 from .router import get_mode
 from .stages_exec import stage4_run_aider, stage5_fix_imports
 from .stages_llm import stage0, stage1, stage2, stage3
@@ -60,7 +60,13 @@ def register(subparsers: argparse._SubParsersAction) -> None:
                         help="Skip overwrite confirmation prompts.")
     parser.add_argument("--package-dir", default=None, metavar="DIR",
                         help="[Stage 5] Package directory for fix_imports.py "
-                             "(default: fix_imports.py's own default, src/nmon).")
+                             "(default: src/<--package-name> if given, else autodetect).")
+    parser.add_argument("--package-name", default=None, metavar="NAME",
+                        help="Python package name (e.g. 'nmon2'). When set, "
+                             "every LLM stage is told to place source files under "
+                             "src/<NAME>/ and Stage 5 defaults --package-dir to "
+                             "src/<NAME>. Without this flag the LLM picks a name "
+                             "from context, which can drift across runs.")
     parser.set_defaults(func=run)
 
 
@@ -180,31 +186,37 @@ def run(args: argparse.Namespace) -> int:
         # Stage 0 runs whenever Implemented Plans/ has content, independent
         # of --from-stage (context-gathering prerequisite, not a numbered stage).
         if 0 not in skip:
-            stage0(repo_root, codebase_summary, args, env, planning_cfg, progress, mode)
+            with stage_log(repo_root, "Stage 0"):
+                stage0(repo_root, codebase_summary, args, env, planning_cfg, progress, mode)
 
         if from_stage <= 1 and 1 not in skip:
-            stage1(repo_root, target_dir, initial_prompt, args, env, planning_cfg, progress, mode)
+            with stage_log(repo_root, "Stage 1"):
+                stage1(repo_root, target_dir, initial_prompt, args, env, planning_cfg, progress, mode)
         else:
             cprint("\n  Skipping Stage 1 (Improve Initial Prompt)", Color.BLUE)
 
         if from_stage <= 2 and 2 not in skip:
-            stage2(repo_root, target_dir, arch_plan, args, env, planning_cfg, progress, mode)
+            with stage_log(repo_root, "Stage 2"):
+                stage2(repo_root, target_dir, arch_plan, args, env, planning_cfg, progress, mode)
         else:
             cprint("\n  Skipping Stage 2 (Generate Architecture Plan)", Color.BLUE)
 
         if from_stage <= 3 and 3 not in skip:
-            stage3(repo_root, target_dir, arch_plan, aider_commands,
-                   args, env, planning_cfg, progress, mode)
+            with stage_log(repo_root, "Stage 3"):
+                stage3(repo_root, target_dir, arch_plan, aider_commands,
+                       args, env, planning_cfg, progress, mode)
         else:
             cprint("\n  Skipping Stage 3 (Generate Aider Commands)", Color.BLUE)
 
         if from_stage <= 4 and 4 not in skip:
-            stage4_run_aider(repo_root, aider_commands, args, progress, mode)
+            with stage_log(repo_root, "Stage 4"):
+                stage4_run_aider(repo_root, aider_commands, args, progress, mode)
         else:
             cprint("\n  Skipping Stage 4 (Run Aider)", Color.BLUE)
 
         if from_stage <= 5 and 5 not in skip:
-            stage5_fix_imports(repo_root, args, progress, mode)
+            with stage_log(repo_root, "Stage 5"):
+                stage5_fix_imports(repo_root, args, progress, mode)
         else:
             cprint("\n  Skipping Stage 5 (Fix Imports)", Color.BLUE)
 
