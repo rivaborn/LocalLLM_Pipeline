@@ -14,6 +14,7 @@ On each iteration it collects every failing module, asks aider to fix each
 re-checks. Stops when all imports succeed or --max-iters is exhausted.
 """
 import argparse
+import datetime
 import os
 import re
 import subprocess
@@ -130,8 +131,8 @@ def invoke_aider(target: Path, related: Path | None, err: str, model: str) -> in
         "symbols. Keep any symbol that is already used by other callers.\n\n"
         f"Error output:\n{err}"
     )
-    cmd = ["aider", "--yes", "--model", model, "--message", message, *files]
-    print(f"    aider --yes --model {model} <message> {' '.join(files)}")
+    cmd = ["aider", "--no-git", "--yes", "--model", model, "--message", message, *files]
+    print(f"    aider --no-git --yes --model {model} <message> {' '.join(files)}")
     return subprocess.run(cmd).returncode
 
 
@@ -166,6 +167,12 @@ def main() -> None:
         default=3,
         help="Maximum fix iterations before giving up (default: 3)",
     )
+    parser.add_argument(
+        "--log",
+        default="fix_imports.log",
+        help="Path to log file recording each iteration's failures "
+             "(default: ./fix_imports.log, relative to cwd)",
+    )
     args = parser.parse_args()
 
     pkg_dir = Path(args.package).resolve()
@@ -178,26 +185,91 @@ def main() -> None:
     print(f"[fix_imports] OLLAMA_API_BASE={endpoint}")
     print(f"[fix_imports] model={fix_model}")
 
-    for iteration in range(1, args.max_iters + 1):
-        print(f"\n=== Import check iteration {iteration}/{args.max_iters} ===")
-        failures = run_iteration(pkg_dir, args.python)
+    log_path = Path(args.log).resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as log:
+        log.write(f"# fix_imports.py log\n")
+        log.write(f"Started: {datetime.datetime.now():%Y-%m-%d %H:%M:%S}\n")
+        log.write(f"Package: {pkg_dir}\n")
+        log.write(f"Model:   {fix_model}\n\n")
+        print(f"[fix_imports] logging to {log_path}")
 
-        if not failures:
-            print("\nAll modules import cleanly.")
-            return
+        for iteration in range(1, args.max_iters + 1):
+            print(f"\n=== Import check iteration {iteration}/{args.max_iters} ===")
+            log.write(f"\n## Iteration {iteration}/{args.max_iters}\n")
+            log.write(f"Time: {datetime.datetime.now():%Y-%m-%d %H:%M:%S}\n\n")
+            failures = run_iteration(pkg_dir, args.python)
 
-        print(f"\n{len(failures)} module(s) failed. Invoking aider to fix...")
-        for mod_name, path, err in failures:
-            last_line = err.splitlines()[-1] if err else "<no stderr>"
-            print(f"\n--- {mod_name} ({path.relative_to(src_root.parent)}) ---")
-            print(f"    {last_line}")
-            related = locate_related_file(err, src_root)
-            invoke_aider(path, related, err, fix_model)
+            if not failures:
+                msg = "All modules import cleanly."
+                print(f"\n{msg}")
+                log.write(f"{msg}\n")
+                log.flush()
+                return
 
-    print(
-        f"\nStill failing after {args.max_iters} iterations. "
-        "Manual intervention needed."
-    )
+            header = f"{len(failures)} module(s) failed."
+            print(f"\n{header}")
+            log.write(f"{header}\n\n")
+
+            # Log ALL failures up front so the full picture is on disk
+            # before we burn time invoking aider (which may hang, time out,
+            # or be interrupted).
+            log.write("### Summary\n")
+            for mod_name, path, err in failures:
+                rel_path = path.relative_to(src_root.parent)
+                last_line = err.splitlines()[-1] if err else "<no stderr>"
+                log.write(f"- {mod_name} ({rel_path}): {last_line}\n")
+            log.write("\n### Full errors\n\n")
+            related_for: dict[str, Path | None] = {}
+            for mod_name, path, err in failures:
+                rel_path = path.relative_to(src_root.parent)
+                related = locate_related_file(err, src_root)
+                related_for[mod_name] = related
+                log.write(f"#### {mod_name}  ({rel_path})\n")
+                if related:
+                    log.write(f"Related file: {related.relative_to(src_root.parent)}\n")
+                log.write("```\n")
+                log.write(err if err else "<no stderr>")
+                log.write("\n```\n\n")
+            log.flush()
+
+            # Dedupe by edit scope: when multiple failing modules trace back
+            # to the same source file (e.g. __main__ fails because main_window
+            # has a bad import), calling aider once per failure makes later
+            # calls overwrite the earlier fix. Group failures whose aider
+            # scope (target + related) is identical, and make one call per
+            # unique scope combining their errors.
+            groups: dict[tuple, dict] = {}
+            for mod_name, path, err in failures:
+                related = related_for[mod_name]
+                scope_paths = sorted({str(path), str(related)} if related else {str(path)})
+                key = tuple(scope_paths)
+                if key not in groups:
+                    groups[key] = {
+                        "target": path, "related": related,
+                        "modules": [], "errors": [],
+                    }
+                groups[key]["modules"].append(mod_name)
+                groups[key]["errors"].append(err)
+
+            print(f"\nInvoking aider to fix... ({len(groups)} unique edit scope(s) "
+                  f"for {len(failures)} failure(s))")
+            for key, g in groups.items():
+                mods = ", ".join(g["modules"])
+                rel_target = g["target"].relative_to(src_root.parent)
+                print(f"\n--- {rel_target}  (modules: {mods}) ---")
+                for mod_name, err in zip(g["modules"], g["errors"]):
+                    last_line = err.splitlines()[-1] if err else "<no stderr>"
+                    print(f"    [{mod_name}] {last_line}")
+                combined_err = "\n\n---\n\n".join(
+                    f"# Module {m}\n{e}" for m, e in zip(g["modules"], g["errors"])
+                )
+                invoke_aider(g["target"], g["related"], combined_err, fix_model)
+
+    msg = f"Still failing after {args.max_iters} iterations. Manual intervention needed."
+    print(f"\n{msg}")
+    with log_path.open("a", encoding="utf-8") as log:
+        log.write(f"\n## Result\n{msg}\n")
     sys.exit(1)
 
 
