@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(python ArchPipeline.py --help)",
+      "Bash(python ArchPipeline.py all --help)",
+      "Bash(pyright-langserver --version)",
+      "Bash(python /c/Coding/LocalLLM_Pipeline/LocalLLMCoding/run_aider.py --help)",
+      "Bash(ls /c/Coding/WorkFolder/nmon/.aider*)",
+      "Bash(.venv/Scripts/python -c \"import nmon.ui.main_window\")",
+      "Bash(pip uninstall *)",
+      "Bash(python *)"
     ]
   }
 }

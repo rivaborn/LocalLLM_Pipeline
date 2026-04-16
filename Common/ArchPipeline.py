@@ -25,7 +25,7 @@ from pathlib import Path
 # invoked (from repo root, from Common/, or via an absolute path).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _pipeline.modes import analysis
+from _pipeline.modes import all_modes, analysis, coding, debug
 from _pipeline.ui import enable_windows_ansi
 
 
@@ -33,19 +33,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ArchPipeline",
         description="Unified orchestrator for the LocalLLM_Pipeline toolkit "
-                    "(analysis, debug, coding modes).",
+                    "(all, coding, analysis, debug).",
     )
-    subparsers = parser.add_subparsers(dest="mode", required=True)
+    subparsers = parser.add_subparsers(dest="mode")
+    all_modes.register(subparsers)
     analysis.register(subparsers)
-    # debug.register(subparsers)  # phase 2
-    # coding.register(subparsers) # phase 3
+    debug.register(subparsers)
+    coding.register(subparsers)
     return parser
 
 
 def main() -> int:
     enable_windows_ansi()
     parser = build_parser()
-    args = parser.parse_args()
+    argv = sys.argv[1:]
+    # Default to 'all' when no subcommand is given.
+    if not argv or argv[0] not in ("all", "analysis", "debug", "coding", "-h", "--help"):
+        argv = ["all"] + argv
+    args = parser.parse_args(argv)
+    if args.mode is None:
+        parser.print_help()
+        return 1
     return args.func(args)
 
 

@@ -53,6 +53,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "analysis",
         help="Run the architecture analysis pipeline for every subsection in Common/.env.",
     )
+    parser.add_argument("--repo-root", default=None, metavar="DIR",
+                        help="Codebase repo root (default: current directory).")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be run without invoking workers.")
     parser.add_argument("--start-from", type=int, default=1, metavar="N",
@@ -139,7 +141,10 @@ def _run_subsections(
 
 
 def run(args: argparse.Namespace) -> int:
-    repo_root = Path.cwd()
+    repo_root = Path(args.repo_root).resolve() if args.repo_root else Path.cwd()
+    if not repo_root.is_dir():
+        cprint(f"ERROR: repo root not found: {repo_root}", Color.RED)
+        return 1
     log_path = _WORKER_DIR / "pipeline.log"
     logger = setup_logging(log_path)
 
