@@ -187,81 +187,8 @@ if (-not $Force) {
     }
 }
 
-# ── Helpers ──────────────────────────────────────────────────
-
-function Count-Severity($text, $tag) {
-    return ([regex]::Matches($text, [regex]::Escape($tag))).Count
-}
-
-function Needs-Fix($report) {
-    return (Count-Severity $report '[HIGH]') -gt 0 -or (Count-Severity $report '[MEDIUM]') -gt 0
-}
-
-function Extract-CodeBlock($response, $fence) {
-    $attempts = @($fence, 'python', '')
-    foreach ($lang in $attempts) {
-        $openFence = if ($lang -ne '') { "${tb}${lang}" } else { $tb }
-        $startIdx  = $response.IndexOf($openFence)
-        if ($startIdx -lt 0) { continue }
-        $lineEnd = $response.IndexOf("`n", $startIdx)
-        if ($lineEnd -lt 0) { continue }
-        $contentStart = $lineEnd + 1
-        $endIdx = $response.IndexOf($tb, $contentStart)
-        if ($endIdx -le $contentStart) { continue }
-        $code = $response.Substring($contentStart, $endIdx - $contentStart).TrimEnd("`n", "`r", " ")
-        if ($code.Trim() -ne '') { return $code }
-    }
-    return ''
-}
-
-function Test-PythonSyntax($code) {
-    # Under $ErrorActionPreference='Stop', any stderr from a native command
-    # is escalated to a terminating error before we can check $LASTEXITCODE.
-    # py_compile writes diagnostics to stderr on syntax failure, which is
-    # exactly the path we need to survive — so we (a) suppress stderr with
-    # 2>$null, (b) locally drop EAP to Continue, and (c) catch anything that
-    # still slips through and treat it as "syntax invalid".
-    $tmpFile = [System.IO.Path]::GetTempFileName() + '.py'
-    $prevEAP = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try {
-        [System.IO.File]::WriteAllText($tmpFile, $code, [System.Text.Encoding]::UTF8)
-        try {
-            & python -m py_compile $tmpFile 2>$null | Out-Null
-        } catch {
-            return $false
-        }
-        return ($LASTEXITCODE -eq 0)
-    } finally {
-        $ErrorActionPreference = $prevEAP
-        Remove-Item $tmpFile -ErrorAction SilentlyContinue
-    }
-}
-
-function Should-SyntaxCheck($rel) {
-    return $rel -match '\.py$'
-}
-
-# Find a test file matching a source file. Returns full path or empty string.
-function Find-TestFile($srcRel) {
-    $stem  = [System.IO.Path]::GetFileNameWithoutExtension($srcRel)
-    $dir   = ([System.IO.Path]::GetDirectoryName($srcRel) -replace '\\', '/').Trim('/')
-    # Strip leading src/<package> path segments to get meaningful name parts
-    $parts = @($dir -split '/' | Where-Object { $_ -ne '' -and $_ -ne 'src' })
-
-    # Candidate 1: test_ + all remaining path parts + stem
-    $c1 = Join-Path $testRoot ('test_' + (($parts + @($stem)) -join '_') + '.py')
-    # Candidate 2: test_ + stem only
-    $c2 = Join-Path $testRoot ('test_' + $stem + '.py')
-    # Candidate 3: strip common suffix words, rejoin
-    $stem3 = $stem -replace '_(source|base|impl|provider|backend)$', ''
-    $c3 = Join-Path $testRoot ('test_' + (($parts + @($stem3)) -join '_') + '.py')
-
-    foreach ($c in @($c1, $c2, $c3)) {
-        if (Test-Path $c) { return $c }
-    }
-    return ''
-}
+# ── Helpers (extracted to bughunt_iter_helpers.ps1) ──────────
+. (Join-Path $PSScriptRoot 'bughunt_iter_helpers.ps1')
 
 # ── Collect source files (exclude test directory) ────────────
 
@@ -1110,11 +1037,7 @@ if (Test-Path $hashDbPath) {
 # Local helper: sum a property across a result list, safe on empty input.
 # Avoids the PS 5.x Measure-Object pitfalls (errors on missing properties,
 # warnings escalated by $ErrorActionPreference='Stop').
-function Sum-Field($collection, $field) {
-    $total = 0
-    foreach ($item in $collection) { $total += [int]$item.$field }
-    return $total
-}
+# Sum-Field is in bughunt_iter_helpers.ps1
 
 $srcClean   = @($fileResults | Where-Object { $_.Status -eq 'CLEAN' }).Count
 $srcMaxIter = @($fileResults | Where-Object { $_.Status -eq 'MAX_ITER' }).Count
