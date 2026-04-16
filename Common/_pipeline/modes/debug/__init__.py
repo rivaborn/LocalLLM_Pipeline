@@ -6,15 +6,10 @@ Six-step pipeline:
     6    Archive .debug_changes.md to Implemented Plans/
 
 Submodules:
-    cli        -- argparse register() + top-level run()
-    workers    -- PowerShell worker dispatcher for steps 1-4
-    fix_bugs   -- step 5 per-file LLM fix loop + helpers
-    archive    -- step 6 archive of .debug_changes.md
+    cli        -- argparse register() + run() + worker/archive helpers
+    fix_bugs   -- step 5 per-file LLM fix loop
 
-Callers (ArchPipeline.py, all_modes.py) do
-    from _pipeline.modes import debug
-    debug.register(subparsers); debug.run(args)
-so this __init__ re-exports both.
+Callers do `from _pipeline.modes import debug; debug.register(); debug.run()`.
 """
 from .cli import register, run
 

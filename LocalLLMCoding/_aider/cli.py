@@ -6,7 +6,8 @@ import os
 import sys
 from pathlib import Path
 
-from .env_config import TOOLKIT_ROOT, resolve_local_config
+from _pipeline import config as cfg
+
 from .parser import parse_steps
 from .runner import run_step
 
@@ -18,7 +19,17 @@ except Exception:  # noqa: BLE001
     pyright_available = lambda: False    # type: ignore
 
 
+TOOLKIT_ROOT: Path = cfg.toolkit_root()
 _SCRIPT_DIR = TOOLKIT_ROOT / "LocalLLMCoding"
+_DEFAULT_LOCAL_MODEL = "qwen3.5:27b"
+
+
+def resolve_local_config() -> tuple[str, str]:
+    """Return (endpoint, model) from Common/.env via shared config."""
+    env = cfg.load_env()
+    endpoint = cfg.resolve_ollama_endpoint(env)
+    model = env.get("LLM_AIDER_MODEL", _DEFAULT_LOCAL_MODEL)
+    return endpoint, model
 
 
 def _build_parser() -> argparse.ArgumentParser:
