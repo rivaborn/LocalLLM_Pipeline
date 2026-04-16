@@ -17,5 +17,18 @@ Rules:
 - Do NOT output anything else. No headers, no explanations, no markdown formatting.
   Just the section list.
 
+SECTION SCOPE RULES (these flow to Stage 2b so be precise in the descriptions):
+- **Project Structure** — file paths + one-line purpose only. NO signatures,
+  NO pseudocode, NO class/function declarations.
+- **Data Model** — owns ALL dataclass / TypedDict / SQLite schema definitions.
+- **Module sections** — own their class/function signatures and pseudocode;
+  each symbol is defined in exactly one section.
+- Descriptions should explicitly say "list file paths only" for Project Structure,
+  "define all dataclasses" for Data Model, etc., so Stage 2b knows the scope.
+
+LAYOUT: The Project Structure section must use the Python src-layout:
+package source lives under `src/<package>/`, tests under `tests/`, config
+files (pyproject.toml, .env.example) at the repo root.
+
 Here is the planning prompt:
 

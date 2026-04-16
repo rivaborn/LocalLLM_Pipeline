@@ -14,7 +14,7 @@ from pathlib import Path
 from ... import config as cfg
 from ...progress import ProgressFile
 from ...subprocess_runner import StepFailed, UserCancelled, powershell_cmd, run_command
-from ...ui import Color, banner, check_cancel, cprint, setup_logging
+from ...ui import Color, banner, check_cancel, cprint, setup_logging, stage_log
 from .fix_bugs import step5_fix_bugs
 
 
@@ -69,12 +69,12 @@ def _run_worker_step(
     )
 
 
-def _next_bugfix_number(impl_dir: Path) -> int:
+def _next_proposal_number(impl_dir: Path) -> int:
     if not impl_dir.is_dir():
         return 1
     highest = 0
-    for p in impl_dir.glob("Bug Fix Changes *.md"):
-        m = re.match(r"Bug Fix Changes (\d+)\.md$", p.name)
+    for p in impl_dir.glob("Bug Fix Proposals *.md"):
+        m = re.match(r"Bug Fix Proposals (\d+)\.md$", p.name)
         if m:
             highest = max(highest, int(m.group(1)))
     return highest + 1
@@ -87,28 +87,28 @@ def _step6_archive(
     logger: logging.Logger,
     dry_run: bool,
 ) -> None:
-    cprint("\n  Step 6/6 - Archive Bug Fix Changes", Color.CYAN + Color.BOLD)
-    logger.info("Step 6/6: Archive Bug Fix Changes")
+    cprint("\n  Step 6/6 - Archive Bug Fix Proposals", Color.CYAN + Color.BOLD)
+    logger.info("Step 6/6: Archive Bug Fix Proposals")
     impl_dir = repo_root / "Implemented Plans"
-    change_log = repo_root / ".debug_changes.md"
+    proposals_log = repo_root / "debug_proposals.md"
 
     if dry_run:
-        num = _next_bugfix_number(impl_dir)
-        cprint(f"  [DRY RUN] Would write: Implemented Plans/Bug Fix Changes {num}.md",
+        num = _next_proposal_number(impl_dir)
+        cprint(f"  [DRY RUN] Would write: Implemented Plans/Bug Fix Proposals {num}.md",
                Color.BLUE)
         return
 
-    if not change_log.exists():
-        cprint("  No .debug_changes.md to archive - nothing to do", Color.YELLOW)
+    if not proposals_log.exists():
+        cprint("  No debug_proposals.md to archive - nothing to do", Color.YELLOW)
         progress.save(6, mode="debug", target_dir=target_dir)
         return
 
     impl_dir.mkdir(parents=True, exist_ok=True)
-    num = _next_bugfix_number(impl_dir)
-    dst = impl_dir / f"Bug Fix Changes {num}.md"
-    dst.write_text(change_log.read_text(encoding="utf-8"), encoding="utf-8")
+    num = _next_proposal_number(impl_dir)
+    dst = impl_dir / f"Bug Fix Proposals {num}.md"
+    dst.write_text(proposals_log.read_text(encoding="utf-8"), encoding="utf-8")
     cprint(f"  Archived -> {dst.relative_to(repo_root)}", Color.GREEN)
-    change_log.unlink()
+    proposals_log.unlink()
     progress.save(6, mode="debug", target_dir=target_dir)
 
 
@@ -140,18 +140,21 @@ def run(args: argparse.Namespace) -> int:
             if last >= step_num:
                 cprint(f"\n  Step {step_num}/6 - {label} [already done]", Color.BLUE)
                 continue
-            _run_worker_step(step_num, label, script, repo_root,
-                             args.target_dir, args.test_dir, logger, args.dry_run)
+            with stage_log(repo_root, f"Step {step_num}"):
+                _run_worker_step(step_num, label, script, repo_root,
+                                 args.target_dir, args.test_dir, logger, args.dry_run)
             if not args.dry_run:
                 progress.save(step_num, mode="debug", target_dir=args.target_dir)
 
         if last < 5:
-            step5_fix_bugs(repo_root, args.target_dir, progress, env, logger, args.dry_run)
+            with stage_log(repo_root, "Step 5"):
+                step5_fix_bugs(repo_root, args.target_dir, progress, env, logger, args.dry_run)
         else:
             cprint("\n  Step 5/6 - Fix Bugs [already done]", Color.BLUE)
 
         if last < 6:
-            _step6_archive(repo_root, progress, args.target_dir, logger, args.dry_run)
+            with stage_log(repo_root, "Step 6"):
+                _step6_archive(repo_root, progress, args.target_dir, logger, args.dry_run)
         else:
             cprint("\n  Step 6/6 - Archive [already done]", Color.BLUE)
 

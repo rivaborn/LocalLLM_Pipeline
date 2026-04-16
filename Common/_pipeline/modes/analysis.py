@@ -36,7 +36,9 @@ class PipelineStep:
 
 
 PIPELINE_STEPS: list[PipelineStep] = [
-    PipelineStep("Per-file docs",         "archgen_local.ps1",       ["-Preset", "generals"], True),
+    # archgen_local.ps1 defaults -Preset to the .env PRESET value; no CLI
+    # override here so the preset follows the target project's language.
+    PipelineStep("Per-file docs",         "archgen_local.ps1",       [],                      True),
     PipelineStep("Cross-reference index", "archxref.ps1",            [],                      False),
     PipelineStep("Mermaid diagrams",      "archgraph.ps1",           [],                      False),
     PipelineStep("Architecture overview", "arch_overview_local.ps1", [],                      False),

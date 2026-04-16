@@ -12,6 +12,7 @@ Stage defaults (per sub-stage, not per top-level stage number):
 from __future__ import annotations
 
 import argparse
+import datetime
 from pathlib import Path
 
 from ...claude import invoke_claude
@@ -22,8 +23,8 @@ from ...ui import Color, cprint
 STAGE_DEFAULTS: dict[str, dict] = {
     "0":  {"model": "sonnet", "think": False, "local_model": ""},
     "1":  {"model": "sonnet", "think": False, "local_model": ""},
-    "2a": {"model": "opus",   "think": True,  "local_model": ""},
-    "2b": {"model": "opus",   "think": True,  "local_model": ""},
+    "2a": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
+    "2b": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
     "3a": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
     "3b": {"model": "sonnet", "think": False, "local_model": "qwen3-coder:30b"},
 }
@@ -84,9 +85,11 @@ def invoke_stage(
     think_pfx = _think_prefix(sub_stage, args, engine)
     full_prompt = think_pfx + prompt
 
+    ts = datetime.datetime.now().strftime("%H:%M:%S")
+
     if engine == "claude":
         model = _resolve_claude_model(sub_stage, args.model)
-        cprint(f"    [claude model={model}]", Color.BLUE)
+        cprint(f"    [claude model={model}] - ({ts})", Color.BLUE)
         if args.dry_run:
             return f"[DRY RUN Claude output for stage {sub_stage}]"
         return invoke_claude(full_prompt, model=model, account=args.claude)
@@ -98,7 +101,7 @@ def invoke_stage(
     stage_think = planning_cfg["think"] and local_model == planning_cfg["model"]
     cprint(
         f"    [local: {local_model} @ {planning_cfg['endpoint']} "
-        f"ctx={planning_cfg['num_ctx']} think={stage_think}]",
+        f"ctx={planning_cfg['num_ctx']} think={stage_think}] - ({ts})",
         Color.BLUE,
     )
     if args.dry_run:

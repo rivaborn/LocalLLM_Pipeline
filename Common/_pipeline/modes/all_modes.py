@@ -63,7 +63,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
                         help="[coding] Skip overwrite confirmation prompts.")
     parser.add_argument("--package-dir", default=None, metavar="DIR",
                         help="[coding Stage 5] Package directory for fix_imports.py "
-                             "(default: src/nmon).")
+                             "(default: src/<--package-name> if given, else autodetect).")
+    parser.add_argument("--package-name", default=None, metavar="NAME",
+                        help="[coding] Python package name (threaded into every "
+                             "LLM stage prompt so src/<NAME>/ is used consistently).")
     # Analysis section.
     parser.add_argument("--start-from", type=int, default=1, metavar="N",
                         help="[analysis] Skip subsections 1..N-1.")
@@ -102,10 +105,19 @@ def _debug_args(args: argparse.Namespace) -> argparse.Namespace:
 
 def run(args: argparse.Namespace) -> int:
     ordered = SECTIONS[SECTIONS.index(args.from_section):]
+
+    # Default --debug-target-dir from --package-name when both are left
+    # ambiguous; most projects want debug to analyse the same tree the
+    # coding section just generated.
     if "debug" in ordered and not args.debug_target_dir:
-        cprint("ERROR: --debug-target-dir is required when debug section is included.",
-               Color.RED)
-        return 1
+        if args.package_name:
+            args.debug_target_dir = f"src/{args.package_name}"
+            cprint(f"[debug-target-dir] defaulted to {args.debug_target_dir} "
+                   f"(from --package-name)", Color.BLUE)
+        else:
+            cprint("ERROR: --debug-target-dir is required when debug section "
+                   "is included (or pass --package-name for a default).", Color.RED)
+            return 1
 
     banner(f"FULL PIPELINE - running: {' -> '.join(ordered)}", Color.GREEN)
 

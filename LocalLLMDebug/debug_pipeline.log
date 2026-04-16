@@ -423,3 +423,177 @@ C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\testgap_local.ps1 : A parameter cannot
 2026-04-15 20:33:13,179 [DEBUG] Nothing to do. All reports are up to date.
 2026-04-15 20:33:13,208 [INFO] Step 5/6: Fix Bugs (per file, local LLM)
 2026-04-15 20:36:01,691 [INFO] Step 6/6: Archive Bug Fix Changes
+2026-04-16 14:25:11,520 [INFO] Debug pipeline started; target=src\nmon2
+2026-04-16 14:25:11,526 [INFO] Step 1/6: Data flow analysis
+2026-04-16 14:25:11,526 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\dataflow_local.ps1 -TargetDir src\nmon2
+2026-04-16 14:25:13,394 [DEBUG] ============================================
+2026-04-16 14:25:13,396 [DEBUG]   dataflow_local.ps1 -- Data Flow Trace
+2026-04-16 14:25:13,397 [DEBUG] ============================================
+2026-04-16 14:25:13,408 [DEBUG] Repo root:        C:/Coding/WorkFolder/nmon
+2026-04-16 14:25:13,409 [DEBUG] Codebase:         nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-16 14:25:13,410 [DEBUG] Target:           src\nmon2
+2026-04-16 14:25:13,411 [DEBUG] LLM:              qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-16 14:25:13,421 [DEBUG] Files to extract: 10
+2026-04-16 14:25:13,423 [DEBUG] Extract tokens:   400  |  Synth tokens: 1800
+2026-04-16 14:25:13,427 [DEBUG] Output:           C:\Coding\WorkFolder\nmon\architecture\DATA_FLOW.md
+2026-04-16 14:25:13,428 [DEBUG] 
+2026-04-16 14:25:13,428 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-16 14:25:13,429 [DEBUG] 
+2026-04-16 14:25:13,429 [DEBUG] Pass 1: extracting file interfaces...
+2026-04-16 14:25:13,430 [DEBUG] 
+2026-04-16 14:25:32,864 [DEBUG]   [1/10] src/nmon2/__init__.py done
+2026-04-16 14:25:34,213 [DEBUG]   [2/10] src/nmon2/__main__.py done
+2026-04-16 14:25:38,017 [DEBUG]   [3/10] src/nmon2/collector.py done
+2026-04-16 14:25:39,970 [DEBUG]   [4/10] src/nmon2/store.py done
+2026-04-16 14:25:41,059 [DEBUG]   [5/10] src/nmon2/ui/__init__.py done
+2026-04-16 14:25:43,335 [DEBUG]   [6/10] src/nmon2/ui/dashboard_tab.py done
+2026-04-16 14:25:45,244 [DEBUG]   [7/10] src/nmon2/ui/main_window.py done
+2026-04-16 14:25:46,922 [DEBUG]   [8/10] src/nmon2/ui/power_tab.py done
+2026-04-16 14:25:49,099 [DEBUG]   [9/10] src/nmon2/ui/temperature_tab.py done
+2026-04-16 14:25:50,530 [DEBUG]   [10/10] src/nmon2/utils.py done
+2026-04-16 14:25:50,530 [DEBUG] 
+2026-04-16 14:25:50,540 [DEBUG] Pass 1 complete: 10/10 files extracted  (37s)
+2026-04-16 14:25:50,541 [DEBUG] 
+2026-04-16 14:25:50,542 [DEBUG] Pass 2: synthesising data flow document...
+2026-04-16 14:25:50,555 [DEBUG]   [integration] architecture.md loaded: 2.0 KB (C:\Coding\WorkFolder\nmon\architecture\architecture.md)
+2026-04-16 14:25:59,468 [DEBUG] Synthesis complete (9s)
+2026-04-16 14:25:59,469 [DEBUG] 
+2026-04-16 14:25:59,474 [DEBUG] ============================================
+2026-04-16 14:25:59,481 [DEBUG]   Data flow trace written
+2026-04-16 14:25:59,483 [DEBUG] ============================================
+2026-04-16 14:25:59,487 [DEBUG] Output: C:\Coding\WorkFolder\nmon\architecture\DATA_FLOW.md
+2026-04-16 14:25:59,487 [DEBUG] 
+2026-04-16 14:25:59,488 [DEBUG] Load in Claude Code:
+2026-04-16 14:25:59,488 [DEBUG]   Read architecture/DATA_FLOW.md
+2026-04-16 14:25:59,928 [INFO] Step 2/6: Interfaces extraction
+2026-04-16 14:25:59,928 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\interfaces_local.ps1 -TargetDir src\nmon2
+2026-04-16 14:26:01,648 [DEBUG] ============================================
+2026-04-16 14:26:01,649 [DEBUG]   interfaces_local.ps1 -- Contract Summary
+2026-04-16 14:26:01,650 [DEBUG] ============================================
+2026-04-16 14:26:01,650 [DEBUG] Repo root:       C:/Coding/WorkFolder/nmon
+2026-04-16 14:26:01,651 [DEBUG] Codebase:        nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-16 14:26:01,651 [DEBUG] Target:          src\nmon2
+2026-04-16 14:26:01,652 [DEBUG] LLM:             qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-16 14:26:01,653 [DEBUG] Files:           10
+2026-04-16 14:26:01,654 [DEBUG] Extract tokens:  700  |  Synth tokens: 2000
+2026-04-16 14:26:01,655 [DEBUG] Output:          C:\Coding\WorkFolder\nmon\architecture\INTERFACES.md
+2026-04-16 14:26:01,655 [DEBUG] 
+2026-04-16 14:26:01,656 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-16 14:26:01,656 [DEBUG] 
+2026-04-16 14:26:01,661 [DEBUG] Pass 1: extracting contracts...
+2026-04-16 14:26:01,662 [DEBUG] 
+2026-04-16 14:26:03,951 [DEBUG]   [1/10] src/nmon2/__init__.py done
+2026-04-16 14:26:06,315 [DEBUG]   [2/10] src/nmon2/__main__.py done
+2026-04-16 14:26:12,850 [DEBUG]   [3/10] src/nmon2/collector.py done
+2026-04-16 14:26:19,294 [DEBUG]   [4/10] src/nmon2/store.py done
+2026-04-16 14:26:21,317 [DEBUG]   [5/10] src/nmon2/ui/__init__.py done
+2026-04-16 14:26:27,053 [DEBUG]   [6/10] src/nmon2/ui/dashboard_tab.py done
+2026-04-16 14:26:32,769 [DEBUG]   [7/10] src/nmon2/ui/main_window.py done
+2026-04-16 14:26:36,977 [DEBUG]   [8/10] src/nmon2/ui/power_tab.py done
+2026-04-16 14:26:43,707 [DEBUG]   [9/10] src/nmon2/ui/temperature_tab.py done
+2026-04-16 14:26:45,728 [DEBUG]   [10/10] src/nmon2/utils.py done
+2026-04-16 14:26:45,728 [DEBUG] 
+2026-04-16 14:26:45,737 [DEBUG] Pass 1 complete: 10/10 contracts extracted  (44s)
+2026-04-16 14:26:45,738 [DEBUG] 
+2026-04-16 14:26:45,739 [DEBUG] Pass 2: synthesising combined contract reference...
+2026-04-16 14:27:05,674 [DEBUG] Synthesis complete (20s)
+2026-04-16 14:27:05,674 [DEBUG] 
+2026-04-16 14:27:05,676 [DEBUG] ============================================
+2026-04-16 14:27:05,677 [DEBUG]   Interface contracts written
+2026-04-16 14:27:05,678 [DEBUG] ============================================
+2026-04-16 14:27:05,679 [DEBUG] Combined:  C:\Coding\WorkFolder\nmon\architecture\INTERFACES.md
+2026-04-16 14:27:05,680 [DEBUG] Per-file:  C:\Coding\WorkFolder\nmon\architecture\interfaces
+2026-04-16 14:27:05,680 [DEBUG] 
+2026-04-16 14:27:05,681 [DEBUG] Load in Claude Code:
+2026-04-16 14:27:05,682 [DEBUG]   Read architecture/INTERFACES.md
+2026-04-16 14:27:06,131 [INFO] Step 3/6: Test gap analysis
+2026-04-16 14:27:06,131 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\testgap_local.ps1 -SrcDir src\nmon2 -TestDir tests
+2026-04-16 14:27:07,768 [DEBUG] 
+2026-04-16 14:27:07,770 [DEBUG] ============================================
+2026-04-16 14:27:07,771 [DEBUG]   testgap_local.ps1 -- Test Gap Analysis
+2026-04-16 14:27:07,772 [DEBUG] ============================================
+2026-04-16 14:27:07,773 [DEBUG] Repo root:   C:/Coding/WorkFolder/nmon
+2026-04-16 14:27:07,775 [DEBUG] Source dir:  src\nmon2
+2026-04-16 14:27:07,775 [DEBUG] Test dir:    tests
+2026-04-16 14:27:07,776 [DEBUG] LLM:         qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-16 14:27:07,778 [DEBUG] File tokens: 700  |  Synth tokens: 1800
+2026-04-16 14:27:07,779 [DEBUG] Output:      C:\Coding\WorkFolder\nmon\test_gaps\GAP_REPORT.md
+2026-04-16 14:27:07,780 [DEBUG] 
+2026-04-16 14:27:07,781 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-16 14:27:07,781 [DEBUG] 
+2026-04-16 14:27:07,814 [DEBUG] Pass 0: mapping source files to test files...
+2026-04-16 14:27:07,814 [DEBUG] 
+2026-04-16 14:27:07,836 [DEBUG]   src/nmon2/__init__.py                                   -> [NO TEST FILE]
+2026-04-16 14:27:07,837 [DEBUG]   src/nmon2/__main__.py                                   -> [NO TEST FILE]
+2026-04-16 14:27:07,841 [DEBUG]   src/nmon2/collector.py                                  -> test_collector.py
+2026-04-16 14:27:07,842 [DEBUG]   src/nmon2/store.py                                      -> test_store.py
+2026-04-16 14:27:07,843 [DEBUG]   src/nmon2/ui/__init__.py                                -> [NO TEST FILE]
+2026-04-16 14:27:07,844 [DEBUG]   src/nmon2/ui/dashboard_tab.py                           -> [NO TEST FILE]
+2026-04-16 14:27:07,845 [DEBUG]   src/nmon2/ui/main_window.py                             -> [NO TEST FILE]
+2026-04-16 14:27:07,847 [DEBUG]   src/nmon2/ui/power_tab.py                               -> [NO TEST FILE]
+2026-04-16 14:27:07,851 [DEBUG]   src/nmon2/ui/temperature_tab.py                         -> [NO TEST FILE]
+2026-04-16 14:27:07,852 [DEBUG]   src/nmon2/utils.py                                      -> test_utils.py
+2026-04-16 14:27:07,852 [DEBUG] 
+2026-04-16 14:27:07,854 [DEBUG]   10 source files  |  3 have tests  |  7 have no test file
+2026-04-16 14:27:07,854 [DEBUG] 
+2026-04-16 14:27:07,855 [DEBUG] Pass 1: per-file gap analysis...
+2026-04-16 14:27:07,855 [DEBUG] 
+2026-04-16 14:27:11,331 [DEBUG]   [1/10] src/nmon2/__init__.py done
+2026-04-16 14:27:14,199 [DEBUG]   [2/10] src/nmon2/__main__.py done
+2026-04-16 14:27:19,410 [DEBUG]   [3/10] src/nmon2/collector.py done
+2026-04-16 14:27:24,461 [DEBUG]   [4/10] src/nmon2/store.py done
+2026-04-16 14:27:27,507 [DEBUG]   [5/10] src/nmon2/ui/__init__.py done
+2026-04-16 14:27:31,655 [DEBUG]   [6/10] src/nmon2/ui/dashboard_tab.py done
+2026-04-16 14:27:35,249 [DEBUG]   [7/10] src/nmon2/ui/main_window.py done
+2026-04-16 14:27:39,133 [DEBUG]   [8/10] src/nmon2/ui/power_tab.py done
+2026-04-16 14:27:43,136 [DEBUG]   [9/10] src/nmon2/ui/temperature_tab.py done
+2026-04-16 14:27:47,121 [DEBUG]   [10/10] src/nmon2/utils.py done
+2026-04-16 14:27:47,122 [DEBUG] 
+2026-04-16 14:27:47,128 [DEBUG] Pass 1 complete: 10/10 analyses  (39s)
+2026-04-16 14:27:47,129 [DEBUG] 
+2026-04-16 14:27:47,131 [DEBUG] Pass 2: synthesising gap report...
+2026-04-16 14:28:04,159 [DEBUG] Synthesis complete (17s)
+2026-04-16 14:28:04,160 [DEBUG] 
+2026-04-16 14:28:04,161 [DEBUG] ============================================
+2026-04-16 14:28:04,162 [DEBUG]   Test gap report written
+2026-04-16 14:28:04,163 [DEBUG] ============================================
+2026-04-16 14:28:04,165 [DEBUG] Report:       C:\Coding\WorkFolder\nmon\test_gaps\GAP_REPORT.md
+2026-04-16 14:28:04,166 [DEBUG] Per-file:     C:\Coding\WorkFolder\nmon\test_gaps
+2026-04-16 14:28:04,166 [DEBUG] 
+2026-04-16 14:28:04,167 [DEBUG] Load in Claude Code:
+2026-04-16 14:28:04,169 [DEBUG]   Read test_gaps/GAP_REPORT.md
+2026-04-16 14:28:04,579 [INFO] Step 4/6: Bug hunt
+2026-04-16 14:28:04,580 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\bughunt_local.ps1 -TargetDir src\nmon2
+2026-04-16 14:28:06,450 [DEBUG]   [integration] xref_index.md loaded: 2.0 KB (C:\Coding\WorkFolder\nmon\architecture\xref_index.md)
+2026-04-16 14:28:06,451 [DEBUG] ============================================
+2026-04-16 14:28:06,452 [DEBUG]   bughunt_local.ps1 -- LLM Bug Hunt
+2026-04-16 14:28:06,453 [DEBUG] ============================================
+2026-04-16 14:28:06,454 [DEBUG] Repo root:      C:/Coding/WorkFolder/nmon
+2026-04-16 14:28:06,455 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-16 14:28:06,456 [DEBUG] Target:         src\nmon2
+2026-04-16 14:28:06,458 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-16 14:28:06,459 [DEBUG] Max file lines: 800
+2026-04-16 14:28:06,460 [DEBUG] Max output tok: 900
+2026-04-16 14:28:06,461 [DEBUG] Files:          10 total  |  unchanged=0  |  process: 10
+2026-04-16 14:28:06,463 [DEBUG] Output dir:     C:\Coding\WorkFolder\nmon\bug_reports
+2026-04-16 14:28:06,464 [DEBUG] 
+2026-04-16 14:28:06,465 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-16 14:28:06,465 [DEBUG] 
+2026-04-16 14:28:07,814 [DEBUG] 
+2026-04-16 14:28:10,013 [DEBUG] PROGRESS: 1/10  rate=0.75/s  eta=0h00m12s                                       
+2026-04-16 14:28:15,192 [DEBUG] PROGRESS: 2/10  rate=0.56/s  eta=0h00m14s                                       
+2026-04-16 14:28:19,187 [DEBUG] PROGRESS: 3/10  rate=0.34/s  eta=0h00m21s                                       
+2026-04-16 14:28:19,730 [DEBUG] PROGRESS: 4/10  rate=0.31/s  eta=0h00m19s                                       
+2026-04-16 14:28:24,352 [DEBUG] PROGRESS: 5/10  rate=0.38/s  eta=0h00m13s                                       
+2026-04-16 14:28:28,291 [DEBUG] PROGRESS: 6/10  rate=0.34/s  eta=0h00m12s                                       
+2026-04-16 14:28:32,168 [DEBUG] PROGRESS: 7/10  rate=0.32/s  eta=0h00m09s                                       
+2026-04-16 14:28:37,455 [DEBUG] PROGRESS: 8/10  rate=0.31/s  eta=0h00m06s                                       
+2026-04-16 14:28:40,338 [DEBUG] PROGRESS: 9/10  rate=0.29/s  eta=0h00m03s                                       
+2026-04-16 14:28:40,338 [DEBUG] PROGRESS: 10/10  rate=0.3/s  eta=?                                              
+2026-04-16 14:28:40,339 [DEBUG] 
+2026-04-16 14:28:40,450 [DEBUG] 
+2026-04-16 14:28:40,451 [DEBUG] Done. 10 files analysed.
+2026-04-16 14:28:40,451 [DEBUG] HIGH: 8  MEDIUM: 13  LOW: 6
+2026-04-16 14:28:40,452 [DEBUG] Summary: C:\Coding\WorkFolder\nmon\bug_reports\SUMMARY.md
+2026-04-16 14:28:40,908 [INFO] Step 5/6: Propose Bug Fixes (advisory)
+2026-04-16 14:30:00,859 [INFO] Step 6/6: Archive Bug Fix Proposals

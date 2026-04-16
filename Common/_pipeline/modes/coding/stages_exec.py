@@ -48,7 +48,11 @@ def stage5_fix_imports(repo_root: Path, args: argparse.Namespace,
                        progress: ProgressFile, mode: str) -> None:
     banner("Stage 5 - Fix Imports (post-gen repair)", Color.CYAN)
     script = cfg.toolkit_root() / "LocalLLMCoding" / "fix_imports.py"
-    pkg = args.package_dir or detect_package_dir(repo_root)
+    pkg = args.package_dir
+    if not pkg and getattr(args, "package_name", None):
+        pkg = f"src/{args.package_name}"
+    if not pkg:
+        pkg = detect_package_dir(repo_root)
     if pkg:
         cprint(f"  Package directory: {pkg}", Color.CYAN)
     cmd = [sys.executable, str(script)]
