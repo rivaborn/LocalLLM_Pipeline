@@ -83,8 +83,6 @@ def _resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path]:
 
 
 def _build_planning_cfg(env: dict[str, str], args: argparse.Namespace) -> dict:
-    endpoint = (args.local_endpoint or env.get("LLM_ENDPOINT")
-                or f"http://{env.get('LLM_HOST', '192.168.1.126')}:{env.get('LLM_PORT', '11434')}")
     return {
         "model":         env.get("LLM_PLANNING_MODEL", "gemma4:26b"),
         "num_ctx":       int(env.get("LLM_PLANNING_NUM_CTX", "65536")),
@@ -93,7 +91,7 @@ def _build_planning_cfg(env: dict[str, str], args: argparse.Namespace) -> dict:
         "temperature":   float(env.get("LLM_TEMPERATURE", "0.1")),
         "think":         env.get("LLM_THINK", "false").lower() in ("1", "true", "yes", "on"),
         "save_thinking": env.get("LLM_SAVE_THINKING", "false").lower() in ("1", "true", "yes", "on"),
-        "endpoint":      endpoint,
+        "endpoint":      cfg.resolve_ollama_endpoint(env, explicit=args.local_endpoint),
     }
 
 

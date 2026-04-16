@@ -1,4 +1,5 @@
-"""Shared configuration: .env loading and subsection parsing.
+"""Shared configuration: .env loading, subsection parsing, endpoint
+resolution.
 
 The .env format mirrors LocalLLM_Pipeline/Common/.env. Subsections live
 between '#Subsections begin' / '#Subsections end' markers; non-comment
@@ -6,6 +7,7 @@ non-blank lines inside the block are treated as subsection paths.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 BEGIN_MARKER = "#Subsections begin"
@@ -59,3 +61,36 @@ def toolkit_root() -> Path:
     """Return the root of the LocalLLM_Pipeline toolkit (the directory
     that contains Common/, LocalLLMAnalysis/, LocalLLMDebug/, LocalLLMCoding/)."""
     return TOOLKIT_COMMON.parent
+
+
+DEFAULT_OLLAMA_ENDPOINT = "http://192.168.1.126:11434"
+
+
+def resolve_ollama_endpoint(
+    env: dict[str, str] | None = None,
+    explicit: str | None = None,
+    read_env_vars: bool = True,
+) -> str:
+    """Return the Ollama API base URL. Precedence:
+        1. *explicit* arg (CLI --local-endpoint or similar)
+        2. os.environ OLLAMA_API_BASE
+        3. os.environ LLM_ENDPOINT
+        4. .env LLM_ENDPOINT
+        5. .env LLM_HOST + LLM_PORT
+        6. DEFAULT_OLLAMA_ENDPOINT
+    """
+    if explicit:
+        return explicit.rstrip("/")
+    if env is None:
+        env = load_env()
+    if read_env_vars:
+        if os.environ.get("OLLAMA_API_BASE"):
+            return os.environ["OLLAMA_API_BASE"].rstrip("/")
+        if os.environ.get("LLM_ENDPOINT"):
+            return os.environ["LLM_ENDPOINT"].rstrip("/")
+    if env.get("LLM_ENDPOINT"):
+        return env["LLM_ENDPOINT"].rstrip("/")
+    if env.get("LLM_HOST"):
+        port = env.get("LLM_PORT", "11434")
+        return f"http://{env['LLM_HOST']}:{port}"
+    return DEFAULT_OLLAMA_ENDPOINT
