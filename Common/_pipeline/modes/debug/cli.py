@@ -1,17 +1,24 @@
-"""argparse register + run() entry point for the debug pipeline."""
+"""argparse register + run() entry point for the debug pipeline.
+
+Also contains the step 1-4 worker dispatcher and step 6 archiver
+(too small for their own files).
+"""
 from __future__ import annotations
 
 import argparse
 import datetime
+import logging
+import re
 from pathlib import Path
 
 from ... import config as cfg
 from ...progress import ProgressFile
-from ...subprocess_runner import StepFailed, UserCancelled
+from ...subprocess_runner import StepFailed, UserCancelled, powershell_cmd, run_command
 from ...ui import Color, banner, check_cancel, cprint, setup_logging
-from .archive import step6_archive
 from .fix_bugs import step5_fix_bugs
-from .workers import WORKER_DIR, run_worker_step
+
+
+WORKER_DIR = cfg.toolkit_root() / "LocalLLMDebug"
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -38,6 +45,71 @@ _ANALYSIS_STEPS = [
     (3, "Test gap analysis",      "testgap_local.ps1"),
     (4, "Bug hunt",               "bughunt_local.ps1"),
 ]
+
+
+def _run_worker_step(
+    step_num: int,
+    label: str,
+    script: str,
+    repo_root: Path,
+    target_dir: str,
+    test_dir: str,
+    logger: logging.Logger,
+    dry_run: bool,
+) -> None:
+    cprint(f"\n  Step {step_num}/6 - {label}", Color.CYAN + Color.BOLD)
+    logger.info("Step %d/6: %s", step_num, label)
+    if script == "testgap_local.ps1":
+        args = ["-SrcDir", target_dir, "-TestDir", test_dir]
+    else:
+        args = ["-TargetDir", target_dir]
+    run_command(
+        powershell_cmd(WORKER_DIR / script, *args),
+        repo_root, logger, dry_run,
+    )
+
+
+def _next_bugfix_number(impl_dir: Path) -> int:
+    if not impl_dir.is_dir():
+        return 1
+    highest = 0
+    for p in impl_dir.glob("Bug Fix Changes *.md"):
+        m = re.match(r"Bug Fix Changes (\d+)\.md$", p.name)
+        if m:
+            highest = max(highest, int(m.group(1)))
+    return highest + 1
+
+
+def _step6_archive(
+    repo_root: Path,
+    progress: ProgressFile,
+    target_dir: str,
+    logger: logging.Logger,
+    dry_run: bool,
+) -> None:
+    cprint("\n  Step 6/6 - Archive Bug Fix Changes", Color.CYAN + Color.BOLD)
+    logger.info("Step 6/6: Archive Bug Fix Changes")
+    impl_dir = repo_root / "Implemented Plans"
+    change_log = repo_root / ".debug_changes.md"
+
+    if dry_run:
+        num = _next_bugfix_number(impl_dir)
+        cprint(f"  [DRY RUN] Would write: Implemented Plans/Bug Fix Changes {num}.md",
+               Color.BLUE)
+        return
+
+    if not change_log.exists():
+        cprint("  No .debug_changes.md to archive - nothing to do", Color.YELLOW)
+        progress.save(6, mode="debug", target_dir=target_dir)
+        return
+
+    impl_dir.mkdir(parents=True, exist_ok=True)
+    num = _next_bugfix_number(impl_dir)
+    dst = impl_dir / f"Bug Fix Changes {num}.md"
+    dst.write_text(change_log.read_text(encoding="utf-8"), encoding="utf-8")
+    cprint(f"  Archived -> {dst.relative_to(repo_root)}", Color.GREEN)
+    change_log.unlink()
+    progress.save(6, mode="debug", target_dir=target_dir)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -68,8 +140,8 @@ def run(args: argparse.Namespace) -> int:
             if last >= step_num:
                 cprint(f"\n  Step {step_num}/6 - {label} [already done]", Color.BLUE)
                 continue
-            run_worker_step(step_num, label, script, repo_root,
-                            args.target_dir, args.test_dir, logger, args.dry_run)
+            _run_worker_step(step_num, label, script, repo_root,
+                             args.target_dir, args.test_dir, logger, args.dry_run)
             if not args.dry_run:
                 progress.save(step_num, mode="debug", target_dir=args.target_dir)
 
@@ -79,7 +151,7 @@ def run(args: argparse.Namespace) -> int:
             cprint("\n  Step 5/6 - Fix Bugs [already done]", Color.BLUE)
 
         if last < 6:
-            step6_archive(repo_root, progress, args.target_dir, logger, args.dry_run)
+            _step6_archive(repo_root, progress, args.target_dir, logger, args.dry_run)
         else:
             cprint("\n  Step 6/6 - Archive [already done]", Color.BLUE)
 
