@@ -210,11 +210,11 @@ Approximate tokens per call for an 800-line source file (`MAX_FILE_LINES=800`):
 | `testgap_local.ps1` (per-file)               | ~7500     | 700        | ~8200        |
 | `testgap_local.ps1` (synthesis)              | ~10500    | 1800       | ~12300       |
 
-All comfortably under `num_ctx=32768`. The `LLM_MODEL_HIGH_CTX` key is still
-read by `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and
-`testgap_local.ps1` for backward compatibility, but with per-request
-`num_ctx` there is no reason to point it at a different model -- the default
-`Common/.env` sets both `LLM_MODEL` and `LLM_MODEL_HIGH_CTX` to the same tag.
+All comfortably under `num_ctx=32768`. `bughunt_iterative_local.ps1`,
+`interfaces_local.ps1`, and `testgap_local.ps1` resolve their model
+through `Get-LLMModel -RoleKey 'LLM_MODEL'` (chains `LLM_MODEL` →
+`LLM_DEFAULT_MODEL` → fallback); per-request `num_ctx` covers the
+high-context synth passes so no separate `LLM_MODEL_HIGH_CTX` is needed.
 
 ---
 
@@ -1246,9 +1246,9 @@ All keys are in `LocalLLM_Pipeline/Common/.env`. Keys not present fall back to t
 | `LLM_ENDPOINT`        | (unset)             | All scripts. When set, wins over `LLM_HOST` + `LLM_PORT`.                                                                                                 |
 | `LLM_HOST`            | `192.168.1.126`     | All scripts (fallback when `LLM_ENDPOINT` unset)                                                                                                          |
 | `LLM_PORT`            | `11434`             | All scripts                                                                                                                                               |
-| `LLM_MODEL`           | `qwen3-coder:30b`   | All analysis scripts                                                                                                                                      |
+| `LLM_DEFAULT_MODEL`   | `qwen3-coder:30b`   | Universal fallback. Every role-specific key below chains to this when blank/unset (via `cfg.resolve_model` / `Get-LLMModel`).                             |
+| `LLM_MODEL`           | blank (→ DEFAULT)   | All debug + analysis scripts                                                                                                                              |
 | `LLM_NUM_CTX`         | `32768`             | All scripts via `Invoke-LocalLLM`. When > 0, routes requests through native `/api/chat` with `options.num_ctx`. When 0 or unset, uses legacy OpenAI-compat path. |
-| `LLM_MODEL_HIGH_CTX`  | `qwen3-coder:30b`   | Preferred over `LLM_MODEL` by `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, `testgap_local.ps1`. With per-request `num_ctx` the separate model is no longer needed; this key remains for backward compatibility and now typically points at the same tag as `LLM_MODEL`. |
 | `LLM_TEMPERATURE`     | `0.1`               | All scripts                                                                                                                                               |
 | `LLM_TIMEOUT`         | `120` / `300`       | All scripts (`bughunt_iterative_local.ps1` defaults to 300 for long fix calls)                                                                            |
 | `PRESET`              | `''`                | All scripts (selects file patterns)                                                                                                                       |

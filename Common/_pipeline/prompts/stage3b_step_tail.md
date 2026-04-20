@@ -1,6 +1,16 @@
 
 ===ARCHITECTURE_CONTEXT_END===
 
+PRECONDITION CHECK (before producing any output, verify the context is
+usable):
+- If the architecture context above does NOT mention the target file path
+  (neither as a heading nor inline in another section's text), respond with
+  a SINGLE line reading exactly:
+      ERROR: target file absent from architecture context
+  and NOTHING else. Do not fabricate a prompt body from unrelated sections.
+  The pipeline detects this sentinel and fails the step cleanly, signalling
+  a Stage 3a / Stage 2b inconsistency to the user.
+
 Now produce the step output. It MUST consist of exactly these four blocks in
 order, and nothing else (no preamble, no trailing commentary):
 
@@ -14,6 +24,25 @@ order, and nothing else (no preamble, no trailing commentary):
    architecture context above, sized so a single local LLM call can implement
    the listed files end-to-end. Placeholder strings or angle-bracket stubs are
    NOT acceptable; only real generated prose and code.
+
+   TARGET-FILE CONSISTENCY (mandatory): the file path(s) you emit in
+   `aider --yes AIDERFILES` MUST be mentioned by their full path at least
+   once in the implementation prompt body. If the target is
+   `tests/test_x.py`, open the body with something like
+   `Write tests for <module> into tests/test_x.py`. If the target is
+   `src/<pkg>/<name>.py`, open the body with
+   `Implement <Class> in src/<pkg>/<name>.py`. A prompt body that
+   describes files other than `AIDERFILES` is a fatal error — runtime drift
+   detection will halt Stage 4 on the mismatch.
+
+   NO STUB METHOD BODIES. Describe method behavior in prose comments or
+   pseudocode the downstream LLM must expand into real code. NEVER emit method
+   bodies whose content is only `pass`, `...`, `# Placeholder implementation`,
+   or `# TODO`. Local models (qwen3-coder, deepseek-coder) read those as
+   "already done" and respond with an empty file. If you show a class
+   skeleton, every method body must be either (a) a real implementation or
+   (b) a multi-line comment describing what the LLM must implement — never
+   the `pass` / `...` one-liner.
 
 CROSS-FILE CONSISTENCY (critical -- the aider steps are generated
 independently and one step cannot see what another produced, so symbol names

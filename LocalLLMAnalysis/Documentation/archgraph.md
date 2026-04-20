@@ -15,11 +15,11 @@ count) and a maximum edge cap to keep diagrams readable.
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| PowerShell 5.1+ or pwsh 7+ | Uses `Set-StrictMode -Version Latest` |
-| `../Common/.env` | Configuration file (read for environment, but no LLM keys needed) |
-| Per-file docs | Output of `archgen_local.ps1` in `<repo>/architecture/` |
+| Requirement                | Details                                                           |
+| -------------------------- | ----------------------------------------------------------------- |
+| PowerShell 5.1+ or pwsh 7+ | Uses `Set-StrictMode -Version Latest`                             |
+| `../Common/.env`           | Configuration file (read for environment, but no LLM keys needed) |
+| Per-file docs              | Output of `archgen_local.ps1` in `<repo>/architecture/`           |
 
 **Note:** This script does NOT require `llm_common.ps1` or Ollama. It has its own `Read-EnvFile`
 implementation.
@@ -32,13 +32,13 @@ implementation.
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `-TargetDir` | string | `"."` | Subdirectory within `architecture/` to scan. `"."` scans the entire tree. |
-| `-MaxCallEdges` | int | `150` | Maximum number of call edges to render in the function call graph. |
-| `-MinCallSignificance` | int | `2` | Minimum number of incoming calls for a callee to be considered "significant" and included in the graph. All callers are always included. |
-| `-EnvFile` | string | `../Common/.env` | Path to `.env` configuration file. |
-| `-Test` | switch | off | Run the built-in unit test suite (no external dependencies needed). |
+| Parameter              | Type   | Default          | Description                                                                                                                              |
+| ---------------------- | ------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `-TargetDir`           | string | `"."`            | Subdirectory within `architecture/` to scan. `"."` scans the entire tree.                                                                |
+| `-MaxCallEdges`        | int    | `150`            | Maximum number of call edges to render in the function call graph.                                                                       |
+| `-MinCallSignificance` | int    | `2`              | Minimum number of incoming calls for a callee to be considered "significant" and included in the graph. All callers are always included. |
+| `-EnvFile`             | string | `../Common/.env` | Path to `.env` configuration file.                                                                                                       |
+| `-Test`                | switch | off              | Run the built-in unit test suite (no external dependencies needed).                                                                      |
 
 ## How It Is Invoked
 
@@ -56,10 +56,10 @@ python Common/ArchPipeline.py analysis
 
 ## Input Files
 
-| Input | Location | Description |
-|---|---|---|
+| Input         | Location                      | Description                                                    |
+| ------------- | ----------------------------- | -------------------------------------------------------------- |
 | Per-file docs | `<repo>/architecture/**/*.md` | Architecture docs with `## Key Functions` and call annotations |
-| `.env` | `../Common/.env` | Read for configuration (only basic env parsing needed) |
+| `.env`        | `../Common/.env`              | Read for configuration (only basic env parsing needed)         |
 
 The parser extracts:
 - `# <filepath>` heading to determine file path and subsystem (first path component)
@@ -68,11 +68,11 @@ The parser extracts:
 
 ## Output Files
 
-| Output | Location | Description |
-|---|---|---|
-| Call graph (Mermaid) | `<repo>/architecture/callgraph.mermaid` | Raw Mermaid `graph LR` diagram with subsystem subgraphs |
+| Output                      | Location                                 | Description                                                           |
+| --------------------------- | ---------------------------------------- | --------------------------------------------------------------------- |
+| Call graph (Mermaid)        | `<repo>/architecture/callgraph.mermaid`  | Raw Mermaid `graph LR` diagram with subsystem subgraphs               |
 | Subsystem diagram (Mermaid) | `<repo>/architecture/subsystems.mermaid` | Raw Mermaid `graph TD` showing cross-subsystem edges with call counts |
-| Combined Markdown | `<repo>/architecture/callgraph.md` | Both diagrams embedded in Markdown fenced blocks, plus statistics |
+| Combined Markdown           | `<repo>/architecture/callgraph.md`       | Both diagrams embedded in Markdown fenced blocks, plus statistics     |
 
 When `-TargetDir` is set, output filenames are prefixed with the target leaf name.
 
@@ -82,10 +82,10 @@ This script only reads `.env` for basic configuration. It does not use any LLM-s
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success |
-| `1` | No per-file docs found (run `archgen_local.ps1` first) |
+| Code | Meaning                                                |
+| ---- | ------------------------------------------------------ |
+| `0`  | Success                                                |
+| `1`  | No per-file docs found (run `archgen_local.ps1` first) |
 
 ## Examples
 

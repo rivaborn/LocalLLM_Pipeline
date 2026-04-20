@@ -74,10 +74,10 @@ relative file paths to lists of formatted symbol strings.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `repo_root` | `Path` | (required) | Root directory to scan |
-| `max_per_file` | `int` | `40` | Maximum symbols to include per file |
+| Name           | Type   | Default    | Description                         |
+| -------------- | ------ | ---------- | ----------------------------------- |
+| `repo_root`    | `Path` | (required) | Root directory to scan              |
+| `max_per_file` | `int`  | `40`       | Maximum symbols to include per file |
 
 **Returns:** `dict[str, list[str]]` -- keys are relative paths, values are
 lists like `["class MyWidget", "function main(argc, argv)", ...]`.
@@ -126,10 +126,10 @@ invent new names for symbols that already exist here.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `repo_root` | `Path` | (required) | Root directory to scan |
-| `max_per_file` | `int` | `40` | Maximum symbols per file |
+| Name           | Type   | Default    | Description              |
+| -------------- | ------ | ---------- | ------------------------ |
+| `repo_root`    | `Path` | (required) | Root directory to scan   |
+| `max_per_file` | `int`  | `40`       | Maximum symbols per file |
 
 **Returns:** `str` -- markdown block, or `""` if empty.
 

@@ -1,0 +1,24 @@
+> I am editing the code in C:\Coding\WorkFolder\nmon\src\nmon2, how do I use the .venv with my development?
+
+● Since you're on Windows, activate the root .venv in your terminal before working:
+
+  In PowerShell:
+  C:\Coding\WorkFolder\nmon\.venv\Scripts\Activate.ps1
+
+  In bash/Git Bash:
+  source C:/Coding/WorkFolder/nmon/.venv/Scripts/activate
+
+  Once activated, your prompt will show (.venv) and you can run:
+  python -m nmon2        # run the app
+  pytest                 # run tests
+  pip install <pkg>      # install into the project venv
+
+  For VS Code — press Ctrl+Shift+P → "Python: Select Interpreter" → pick the one at:
+  C:\Coding\WorkFolder\nmon\.venv\Scripts\python.exe
+  VS Code will then auto-activate it in its integrated terminal.
+
+  One-time setup tip — if you haven't installed the project in editable mode yet, do this once after activating:
+  cd C:/Coding/WorkFolder/nmon
+  pip install -e .
+  This lets Python find the nmon2 package from src/ without any path hacks, so import nmon2 works from anywhere while  the venv is active.
+  

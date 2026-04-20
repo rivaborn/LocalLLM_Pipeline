@@ -245,10 +245,10 @@ The `.env` file lives in `LocalLLMAnalysis/` alongside the scripts (not at the r
 | `LLM_ENDPOINT`          | (derived from HOST+PORT)        | Full Ollama URL. When set, wins over `LLM_HOST`+`LLM_PORT`.                                   |
 | `LLM_HOST`              | `192.168.1.126`                 | Ollama server IP/hostname (fallback)                                                          |
 | `LLM_PORT`              | `11434`                         | Ollama server port                                                                            |
-| `LLM_MODEL`             | `qwen3-coder:30b`               | Model name used by all Analysis/Debug scripts                                                 |
+| `LLM_DEFAULT_MODEL`     | `qwen3-coder:30b`               | Universal fallback. Every role-specific key (`LLM_MODEL`, `LLM_AIDER_MODEL`, `LLM_PLANNING_MODEL`) chains to this when blank/unset. |
+| `LLM_MODEL`             | blank (→ `LLM_DEFAULT_MODEL`)   | Analysis + Debug scripts. Resolved via `cfg.resolve_model` / `Get-LLMModel`.                  |
 | `LLM_NUM_CTX`           | `32768`                         | Per-request context window. When > 0, routes via native `/api/chat` with `options.num_ctx`.   |
 | `LLM_ANALYSIS_NUM_CTX`  | `49152`                         | Analysis-specific window. Promoted into `LLM_NUM_CTX` by Analysis scripts on startup.         |
-| `LLM_MODEL_HIGH_CTX`    | `qwen3-coder:30b`               | Backward-compat override for `bughunt_iterative`/`interfaces`/`testgap`. Typically same as `LLM_MODEL`. |
 | `LLM_TEMPERATURE`       | `0.1`                           | Sampling temperature                                                                          |
 | `LLM_MAX_TOKENS`        | `800`                           | Max output tokens                                                                             |
 | `LLM_TIMEOUT`           | `300`                           | Request timeout (seconds)                                                                     |

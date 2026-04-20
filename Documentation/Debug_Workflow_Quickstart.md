@@ -16,9 +16,8 @@ custom `Modelfile` variants needed.
 
 ```ini
 # LocalLLM_Pipeline/Common/.env (snippet)
-LLM_MODEL=qwen3-coder:30b
+LLM_DEFAULT_MODEL=qwen3-coder:30b   # universal fallback; LLM_MODEL etc. chain to this
 LLM_NUM_CTX=32768
-LLM_MODEL_HIGH_CTX=qwen3-coder:30b   # kept for backward compat; same tag now
 LLM_TIMEOUT=300
 ```
 
@@ -46,7 +45,7 @@ smaller model:
 
 ```ini
 # Smaller-GPU config (12 GB card)
-LLM_MODEL=qwen2.5-coder:14b
+LLM_DEFAULT_MODEL=qwen2.5-coder:14b
 LLM_NUM_CTX=32768
 LLM_TIMEOUT=180
 ```
@@ -72,10 +71,11 @@ call `Invoke-LocalLLM` and the helper picks the right endpoint.
 ..\LocalLLM_Pipeline\LocalLLMDebug\testgap_local.ps1
 ```
 
-All five pick up `LLM_MODEL` + `LLM_NUM_CTX` from `Common/.env` automatically.
-The three "heavy" scripts (`bughunt_iterative`, `interfaces`, `testgap`) still
-read `LLM_MODEL_HIGH_CTX` first for backward compatibility, but with
-per-request num_ctx there's no reason to point it at a different tag.
+All five pick up their model via `Get-LLMModel -RoleKey 'LLM_MODEL'` (chains
+`LLM_MODEL` → `LLM_DEFAULT_MODEL` → fallback) and `LLM_NUM_CTX` from
+`Common/.env`. Per-request `num_ctx` covers the high-context synth passes
+in the three "heavy" scripts (`bughunt_iterative`, `interfaces`, `testgap`)
+— no separate high-ctx model variant is needed.
 
 **Don't use `devstral-small-2`**: agentic model, not a reviewer. It
 over-rewrites, hallucinates findings, and triggers the `BLOAT` / `DIVERGING`

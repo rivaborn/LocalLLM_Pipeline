@@ -10,19 +10,19 @@ Before dispatching each step to aider, the tool optionally enriches the prompt w
 
 The `run_aider.py` file at the top level is a thin shim (34 lines). It adjusts `sys.path` so that `Common/_pipeline/` modules are importable, then delegates to `_aider.cli.main()`. The real implementation is split across four submodules in the `_aider/` package:
 
-| Module | Responsibility |
-|---|---|
-| `_aider/cli.py` | Argument parsing, config resolution, pyright lifecycle, main loop |
-| `_aider/parser.py` | Markdown step extraction from `aidercommands.md` |
+| Module              | Responsibility                                                           |
+| ------------------- | ------------------------------------------------------------------------ |
+| `_aider/cli.py`     | Argument parsing, config resolution, pyright lifecycle, main loop        |
+| `_aider/parser.py`  | Markdown step extraction from `aidercommands.md`                         |
 | `_aider/prompts.py` | Building the planned-files block, extracting CamelCase candidate symbols |
-| `_aider/runner.py` | Assembling the aider subprocess command, running it, verifying outputs |
+| `_aider/runner.py`  | Assembling the aider subprocess command, running it, verifying outputs   |
 
 ## Prerequisites
 
 ### Tools
 
 - **Python 3.10+** with the project's virtual environment activated.
-- **aider** CLI installed and on PATH (`pip install aider-chat`).
+- **aider** installed via `pip install aider-chat`. The runner prefers the `aider` executable when on PATH (faster startup) but falls back to `python -m aider` when it isn't, so a bare `pip install aider-chat` works even if the Scripts directory isn't on PATH. See `_aider/runner.py::_aider_invocation`.
 - **Ollama** server running and accessible at the configured endpoint.
 - **universal-ctags** (optional but recommended) -- enables symbol-inventory injection. Install via `choco install universal-ctags` (Windows) or `apt install universal-ctags` (Linux).
 - **pyright** (optional) -- enables LSP-based symbol resolution for installed packages. Install via `pip install pyright`.
@@ -45,17 +45,18 @@ Run from the **target project's root directory** (the repo you want aider to edi
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `file` | positional, str | `None` | Path to the Markdown step file. When omitted, searches `LocalLLMCodePrompts/aidercommands.md`, then `./aidercommands.md`, then the script's own directory. |
-| `--from-step N` | int | `1` | Start execution from step N. Steps before N are skipped. Useful for resuming after a failure. |
-| `--only-step N` | int | `None` | Run only the single step numbered N. All other steps are skipped. |
-| `--model MODEL` | str | `ollama_chat/<LLM_AIDER_MODEL>` | Aider model string, passed verbatim to `aider --model`. Overrides the `.env`-configured model entirely. |
-| `--dry-run` | flag | `False` | Parse and preview all steps (titles, commands, first 100 chars of prompts) without invoking aider. |
-| `--no-symbols` | flag | `False` | Disable ctags symbol-inventory injection into prompts. |
-| `--no-planned` | flag | `False` | Disable forward-looking step-plan injection into prompts. |
-| `--no-strict-outputs` | flag | `False` | Do not fail a step when its declared output files are missing or empty after aider exits with code 0. |
-| `--pyright` | flag | `False` | Start a pyright-langserver process and resolve CamelCase symbol names in each step prompt against installed packages and the workspace. Helps with PyQt6, pynvml, and other packages whose symbols ctags cannot index. |
+| Parameter             | Type            | Default                         | Description                                                                                                                                                                                                            |
+| --------------------- | --------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file`                | positional, str | `None`                          | Path to the Markdown step file. When omitted, searches `LocalLLMCodePrompts/aidercommands.md`, then `./aidercommands.md`, then the script's own directory.                                                             |
+| `--from-step N`       | int             | `1`                             | Start execution from step N. Steps before N are skipped. Useful for resuming after a failure.                                                                                                                          |
+| `--only-step N`       | int             | `None`                          | Run only the single step numbered N. All other steps are skipped.                                                                                                                                                      |
+| `--model MODEL`       | str             | `ollama_chat/<LLM_AIDER_MODEL>` | Aider model string, passed verbatim to `aider --model`. Overrides the `.env`-configured model entirely.                                                                                                                |
+| `--dry-run`           | flag            | `False`                         | Parse and preview all steps (titles, commands, first 100 chars of prompts) without invoking aider.                                                                                                                     |
+| `--no-symbols`        | flag            | `False`                         | Disable ctags symbol-inventory injection into prompts.                                                                                                                                                                 |
+| `--no-planned`        | flag            | `False`                         | Disable forward-looking step-plan injection into prompts.                                                                                                                                                              |
+| `--no-strict-outputs` | flag            | `False`                         | Do not fail a step when its declared output files are missing or empty after aider exits with code 0.                                                                                                                  |
+| `--empty-retries N`   | int             | `2`                             | Retry up to N times if aider exits 0 but the declared output files are empty (default 2, i.e. 3 total attempts). Set to 0 to disable. Each retry deletes empty outputs and appends an explicit "previous output was empty" warning to the prompt. See Empty-File Guard section below. |
+| `--pyright`           | flag            | `False`                         | Start a pyright-langserver process and resolve CamelCase symbol names in each step prompt against installed packages and the workspace. Helps with PyQt6, pynvml, and other packages whose symbols ctags cannot index. |
 
 ## How It Is Invoked
 
@@ -68,15 +69,15 @@ python C:\Coding\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py
 
 ### Called by ArchPipeline.py (Coding Mode)
 
-The coding mode of `ArchPipeline.py` is registered but not yet fully wired. When complete, it will invoke `run_aider.py` as Stage 4 (code generation) after the planning stages produce `aidercommands.md`. Stage 5 (import fixing) calls `fix_imports.py`.
+`ArchPipeline.py coding` invokes `run_aider.py` as **Stage 4** after the planning stages (0–3) produce `aidercommands.md` and the optional review stages (2c, 3c) clear their gates. Dispatch happens in `Common/_pipeline/modes/coding/stages_exec.py::stage4_run_aider`, which runs the script as a subprocess with `cwd` set to the target project's repo root. Stage 5 (import fixing) calls `fix_imports.py` afterwards.
 
 ## Input Files
 
-| File | Description |
-|---|---|
-| `aidercommands.md` | Step plan generated by the planning pipeline. Contains `## Step N` sections, each with a bash fence holding the aider command and a code fence holding the prompt body. |
-| `Common/.env` | Shared configuration: Ollama endpoint, model names, context window sizes. |
-| Source files in the target repo | Each step's aider command lists specific files to edit/create; aider reads and writes those files. |
+| File                            | Description                                                                                                                                                             |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aidercommands.md`              | Step plan generated by the planning pipeline. Contains `## Step N` sections, each with a bash fence holding the aider command and a code fence holding the prompt body. |
+| `Common/.env`                   | Shared configuration: Ollama endpoint, model names, context window sizes.                                                                                               |
+| Source files in the target repo | Each step's aider command lists specific files to edit/create; aider reads and writes those files.                                                                      |
 
 ### aidercommands.md Format
 
@@ -99,21 +100,21 @@ Each `## Step N` heading starts a section. The parser extracts the first `bash` 
 
 ## Output Files / Directories
 
-| Output | Description |
-|---|---|
-| Source files listed in each step | Created or modified by aider in the target project directory. |
-| `.aider.*` files | Aider's own working files (chat history, etc.) created in the working directory. |
+| Output                           | Description                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| Source files listed in each step | Created or modified by aider in the target project directory.                    |
+| `.aider.*` files                 | Aider's own working files (chat history, etc.) created in the working directory. |
 
 The tool itself does not produce any log files. All status output goes to stdout/stderr.
 
 ## Environment Variables / .env Keys
 
-| Key | Source | Description |
-|---|---|---|
-| `LLM_AIDER_MODEL` | `Common/.env` | Ollama model tag for aider (e.g. `qwen3-coder:30b`). Default if missing: `qwen3.5:27b`. |
-| `LLM_HOST` | `Common/.env` | Ollama server hostname. Combined with `LLM_PORT` to form the endpoint. |
-| `LLM_PORT` | `Common/.env` | Ollama server port (default `11434`). |
-| `LLM_ENDPOINT` | `Common/.env` | Full Ollama endpoint URL override. Takes precedence over `LLM_HOST`+`LLM_PORT`. |
+| Key               | Source               | Description                                                                                       |
+| ----------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| `LLM_AIDER_MODEL` | `Common/.env`        | Ollama model tag for aider (e.g. `qwen3-coder:30b`). Default if missing: `qwen3.5:27b`.           |
+| `LLM_HOST`        | `Common/.env`        | Ollama server hostname. Combined with `LLM_PORT` to form the endpoint.                            |
+| `LLM_PORT`        | `Common/.env`        | Ollama server port (default `11434`).                                                             |
+| `LLM_ENDPOINT`    | `Common/.env`        | Full Ollama endpoint URL override. Takes precedence over `LLM_HOST`+`LLM_PORT`.                   |
 | `OLLAMA_API_BASE` | env / set at runtime | The resolved endpoint is written to this env var before launching aider, which reads it natively. |
 
 ### Endpoint Resolution Precedence
@@ -141,9 +142,31 @@ When `--no-planned` is not set, future steps (those with a higher step number th
 
 When `--pyright` is set, the tool starts a persistent `pyright-langserver` process at the beginning of the run. For each step, it scans the prompt for CamelCase identifiers (using a regex that matches `[A-Z][A-Za-z0-9_]{2,}`), filters out common stopwords (None, True, JSON, API, etc.), and asks pyright to resolve each candidate to its defining module. Resolved symbols are formatted into a block showing `SymbolName -> from module.path import SymbolName`. This is critical for packages like PyQt6 where ctags cannot index `.pyi` stubs or compiled extensions.
 
-### Empty-File Guard (Strict Outputs)
+### Empty-File Guard (Strict Outputs) with Auto-Retry
 
-After aider exits with code 0, the tool checks that every file listed in the step's aider command exists and is non-empty. The exception is `__init__.py`, which is conventionally allowed to be empty. If any file is missing or zero-length, the step is marked as failed. This catches cases where aider "succeeds" but produces no output. Disable with `--no-strict-outputs`.
+After aider exits with code 0, `verify_outputs` checks that every file listed in the step's aider command exists and is non-empty. The exception is `__init__.py`, which is conventionally allowed to be empty.
+
+When `strict_outputs` is enabled (default), missing or zero-length outputs trigger an **automatic retry loop**:
+
+1. Problems are classified by prefix: `empty:` (zero-length file) vs `missing:` / `stat-error:` (genuine absence or I/O error). Only `empty:`-class problems retry; missing/stat-error failures are terminal.
+2. `_cleanup_empty_outputs` deletes every empty non-`__init__.py` file from the step's declared list. Local models sometimes treat an existing empty file as "already done" and stay silent on retry; deleting forces a fresh creation.
+3. The prompt is re-invoked with `_EMPTY_RETRY_SUFFIX` appended — an explicit "RETRY — PREVIOUS OUTPUT WAS EMPTY. You MUST output the COMPLETE file contents in the expected code block. Do not stop after writing a filename header or a preamble."
+4. The loop repeats up to `max_empty_retries` times (default 2, i.e. 3 total attempts). Disable by passing `--empty-retries 0`.
+
+If every attempt fails with `empty:` problems, the step is marked failed and the pipeline stops with a resume hint. If the loop succeeds, the step is marked `[DONE]`.
+
+Disable the entire guard with `--no-strict-outputs` (then missing/empty outputs are ignored and the step is treated as succeeded on aider's exit code alone).
+
+### Runtime Drift Detection
+
+Before each step, `_snapshot_py_mtimes` records the mtime of every `.py` file under `src/`, `tests/`, and `app/` in the repo (excluding `.git`, `__pycache__`, venvs, build caches). After aider exits, `_detect_aider_drift` enumerates any `.py` files whose mtime advanced but are NOT in the step's declared `aider --yes ...` file list.
+
+Two outcomes:
+
+- **Hard fail (test-step touching `src/`):** If the step's declared files are all under `tests/` (or named `test_*.py`) and any `src/**/*.py` file was modified, the step is marked failed with a drift diagnostic. This catches the specific pattern where a test-step's prompt was actually describing production code (a known Stage 3b drift class), so aider silently edits the wrong file. Detected at runtime before the generated output can silently diverge from the step plan.
+- **Warning (any other unexpected change):** For non-test-step drifts (e.g. aider creating an `__init__.py` sibling, touching a shared helper) the runner logs a `[drift warning]` listing each unexpected path and continues. aider occasionally writes legitimate sibling files as part of completing a step; the warning surfaces them without halting.
+
+The `--add` list from the step's aider command is the ground truth for "what this step is allowed to touch". Drift detection never requires prompt parsing — it's mtime-snapshot-based, so it's robust to arbitrary aider tool use.
 
 ### Prompt Structure
 
@@ -172,11 +195,11 @@ When a relative path is given that does not exist at the literal location, the s
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | All steps completed successfully (or `--dry-run` finished). |
-| `1` | A step failed (aider returned non-zero, or strict output check failed). The tool prints a resume command with the failing step number. |
-| `1` (via `sys.exit`) | No steps found in the markdown file. |
+| Code                 | Meaning                                                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`                  | All steps completed successfully (or `--dry-run` finished).                                                                            |
+| `1`                  | A step failed (aider returned non-zero, or strict output check failed). The tool prints a resume command with the failing step number. |
+| `1` (via `sys.exit`) | No steps found in the markdown file.                                                                                                   |
 
 ## Examples
 
@@ -238,10 +261,10 @@ Reads steps from `custom_plan.md` (resolved relative to cwd or `LocalLLMCodeProm
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| "No steps found in ..." | Markdown file missing or uses wrong heading format | Ensure headings are `## Step N` (with capital S). |
-| "[symbols] ctags not installed" | `universal-ctags` not on PATH | Install ctags or use `--no-symbols`. |
-| "[pyright] pyright-langserver not found" | pyright not installed | `pip install pyright` or omit `--pyright`. |
-| Step fails with "empty: src/foo.py" | Aider exited 0 but produced a zero-byte file | Re-run the step or use `--no-strict-outputs`. |
-| Model outputs only a filename header | Prompt too large with prepended context | This was fixed by moving context to a suffix; if it recurs, use `--no-symbols --no-planned`. |
+| Symptom                                  | Cause                                              | Fix                                                                                          |
+| ---------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| "No steps found in ..."                  | Markdown file missing or uses wrong heading format | Ensure headings are `## Step N` (with capital S).                                            |
+| "[symbols] ctags not installed"          | `universal-ctags` not on PATH                      | Install ctags or use `--no-symbols`.                                                         |
+| "[pyright] pyright-langserver not found" | pyright not installed                              | `pip install pyright` or omit `--pyright`.                                                   |
+| Step fails with "empty: src/foo.py"      | Aider exited 0 but produced a zero-byte file       | Re-run the step or use `--no-strict-outputs`.                                                |
+| Model outputs only a filename header     | Prompt too large with prepended context            | This was fixed by moving context to a suffix; if it recurs, use `--no-symbols --no-planned`. |

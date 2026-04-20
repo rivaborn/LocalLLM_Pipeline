@@ -592,3 +592,358 @@ Target directory not found: C:\Coding\WorkFolder\nmon\nmon2
 2026-04-16 14:24:53,090 [DEBUG] 
 2026-04-16 14:24:53,107 [DEBUG] Done. 10 files processed. Pass 2 docs in: C:\Coding\WorkFolder\nmon\architecture
 2026-04-16 14:24:53,507 [INFO] Pipeline complete.
+2026-04-18 20:36:25,406 [INFO] Pipeline started at 2026-04-18 20:36:25.406314
+2026-04-18 20:36:25,408 [INFO] === One-time setup steps ===
+2026-04-18 20:36:25,408 [INFO] Running: C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-18 20:36:25,767 [DEBUG] Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+2026-04-18 20:36:25,769 [DEBUG]   Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 20:36:25,773 [ERROR] Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 20:36:25,775 [ERROR] PIPELINE FAILED: Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 21:14:37,166 [INFO] Pipeline started at 2026-04-18 21:14:37.165988
+2026-04-18 21:14:37,166 [INFO] === One-time setup steps ===
+2026-04-18 21:14:37,166 [INFO] Running: C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-18 21:14:37,414 [DEBUG] Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+2026-04-18 21:14:37,414 [DEBUG]   Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 21:14:37,421 [ERROR] Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 21:14:37,428 [ERROR] PIPELINE FAILED: Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-18 21:15:06,807 [INFO] Pipeline started at 2026-04-18 21:15:06.807098
+2026-04-18 21:15:06,810 [INFO] Skipping LSP setup (--skip-lsp)
+2026-04-18 21:15:06,812 [INFO] Subsection 1/1: src/nmon
+2026-04-18 21:15:06,813 [INFO]   Step 1/6: Per-file docs
+2026-04-18 21:15:06,813 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local.ps1 -TargetDir src/nmon
+2026-04-18 21:15:07,196 [DEBUG] ============================================
+2026-04-18 21:15:07,201 [DEBUG]   archgen_local.ps1 -- Local LLM Doc Gen
+2026-04-18 21:15:07,225 [DEBUG] ============================================
+2026-04-18 21:15:07,227 [DEBUG] Repo root:       C:/Coding/WorkFolder/nmonLocalLLM
+2026-04-18 21:15:07,246 [DEBUG] Codebase:        nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-18 21:15:07,249 [DEBUG] Preset:          python
+2026-04-18 21:15:07,260 [DEBUG] Target:          src/nmon
+2026-04-18 21:15:07,261 [DEBUG] LLM:             qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-18 21:15:07,276 [DEBUG] Max file lines:  800
+2026-04-18 21:15:07,277 [DEBUG] Max output tok:  800
+2026-04-18 21:15:07,289 [DEBUG] Files:           18 total  |  unchanged=0  trivial=2  |  process: 16
+2026-04-18 21:15:07,291 [DEBUG] Prompt:          C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local_prompt.txt
+2026-04-18 21:15:07,292 [DEBUG] Serena context:  NO
+2026-04-18 21:15:07,293 [DEBUG] 
+2026-04-18 21:15:07,295 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-18 21:15:07,296 [DEBUG] 
+2026-04-18 21:15:28,024 [DEBUG] 
+2026-04-18 21:15:30,903 [DEBUG] PROGRESS: 1/16  rate=0.05/s  eta=0h05m00s                                       
+2026-04-18 21:15:35,044 [DEBUG] PROGRESS: 2/16  rate=0.08/s  eta=0h02m55s                                       
+2026-04-18 21:15:36,983 [DEBUG] PROGRESS: 3/16  rate=0.11/s  eta=0h01m58s                                       
+2026-04-18 21:15:41,163 [DEBUG] PROGRESS: 4/16  rate=0.13/s  eta=0h01m32s                                       
+2026-04-18 21:15:44,195 [DEBUG] PROGRESS: 5/16  rate=0.15/s  eta=0h01m13s                                       
+2026-04-18 21:15:47,179 [DEBUG] PROGRESS: 6/16  rate=0.16/s  eta=0h01m02s                                       
+2026-04-18 21:15:48,765 [DEBUG] PROGRESS: 7/16  rate=0.18/s  eta=0h00m50s                                       
+2026-04-18 21:15:52,583 [DEBUG] PROGRESS: 8/16  rate=0.19/s  eta=0h00m42s                                       
+2026-04-18 21:15:54,779 [DEBUG] PROGRESS: 9/16  rate=0.2/s  eta=0h00m35s                                        
+2026-04-18 21:15:57,090 [DEBUG] PROGRESS: 10/16  rate=0.21/s  eta=0h00m29s                                      
+2026-04-18 21:16:01,484 [DEBUG] PROGRESS: 11/16  rate=0.22/s  eta=0h00m23s                                      
+2026-04-18 21:16:05,183 [DEBUG] PROGRESS: 12/16  rate=0.22/s  eta=0h00m18s                                      
+2026-04-18 21:16:08,139 [DEBUG] PROGRESS: 13/16  rate=0.22/s  eta=0h00m14s                                      
+2026-04-18 21:16:11,101 [DEBUG] PROGRESS: 14/16  rate=0.23/s  eta=0h00m09s                                      
+2026-04-18 21:16:15,012 [DEBUG] PROGRESS: 15/16  rate=0.24/s  eta=0h00m04s                                      
+2026-04-18 21:16:15,017 [DEBUG] PROGRESS: 16/16  rate=0.24/s  eta=?                                             
+2026-04-18 21:16:15,019 [DEBUG] 
+2026-04-18 21:16:15,052 [DEBUG] Done. 16 files processed. Docs in: C:\Coding\WorkFolder\nmonLocalLLM\architecture
+2026-04-18 21:16:15,070 [INFO]   Step 2/6: Cross-reference index
+2026-04-18 21:16:15,071 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archxref.ps1
+2026-04-18 21:16:15,460 [DEBUG] ============================================
+2026-04-18 21:16:15,479 [DEBUG]   archxref.ps1 - Cross-Reference Index
+2026-04-18 21:16:15,486 [DEBUG] ============================================
+2026-04-18 21:16:15,490 [DEBUG] Doc root:  C:\Coding\WorkFolder\nmonLocalLLM\architecture
+2026-04-18 21:16:15,504 [DEBUG] Output:    C:\Coding\WorkFolder\nmonLocalLLM\architecture\xref_index.md
+2026-04-18 21:16:15,504 [DEBUG] 
+2026-04-18 21:16:15,519 [DEBUG] Parsing 41 per-file docs...
+2026-04-18 21:16:15,581 [DEBUG] Extracted:
+2026-04-18 21:16:15,582 [DEBUG]   Functions:    175
+2026-04-18 21:16:15,590 [DEBUG]   Call edges:   2
+2026-04-18 21:16:15,606 [DEBUG]   Globals:      0
+2026-04-18 21:16:15,610 [DEBUG]   Include deps: 0
+2026-04-18 21:16:15,612 [DEBUG] 
+2026-04-18 21:16:15,662 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM\architecture\xref_index.md (392 lines)
+2026-04-18 21:16:15,683 [DEBUG] Done.
+2026-04-18 21:16:15,704 [INFO]   Step 3/6: Mermaid diagrams
+2026-04-18 21:16:15,704 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgraph.ps1
+2026-04-18 21:16:15,944 [DEBUG] ============================================
+2026-04-18 21:16:15,945 [DEBUG]   archgraph.ps1 - Call Graph Generator
+2026-04-18 21:16:15,946 [DEBUG] ============================================
+2026-04-18 21:16:15,947 [DEBUG] Doc root:  C:\Coding\WorkFolder\nmonLocalLLM\architecture
+2026-04-18 21:16:15,948 [DEBUG] Max edges: 150
+2026-04-18 21:16:15,948 [DEBUG] 
+2026-04-18 21:16:15,961 [DEBUG] Parsing 41 per-file docs...
+2026-04-18 21:16:16,013 [DEBUG] Found 177 functions, 2 call edges.
+2026-04-18 21:16:16,049 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM\architecture\callgraph.mermaid
+2026-04-18 21:16:16,062 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM\architecture\subsystems.mermaid
+2026-04-18 21:16:16,069 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM\architecture\callgraph.md
+2026-04-18 21:16:16,069 [DEBUG] 
+2026-04-18 21:16:16,070 [DEBUG] Done. View Mermaid diagrams in GitHub, VS Code, or mermaid.live
+2026-04-18 21:16:16,087 [INFO]   Step 4/6: Architecture overview
+2026-04-18 21:16:16,088 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\arch_overview_local.ps1
+2026-04-18 21:16:16,375 [DEBUG] ============================================
+2026-04-18 21:16:16,376 [DEBUG]   arch_overview_local.ps1 -- Architecture
+2026-04-18 21:16:16,376 [DEBUG] ============================================
+2026-04-18 21:16:16,376 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-18 21:16:16,377 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-18 21:16:16,377 [DEBUG] Target:         all
+2026-04-18 21:16:16,378 [DEBUG] Mode:           single
+2026-04-18 21:16:16,379 [DEBUG] Per-file docs:  41
+2026-04-18 21:16:16,379 [DEBUG] Summary lines:  119 (threshold: 400)
+2026-04-18 21:16:16,380 [DEBUG] Output:         C:\Coding\WorkFolder\nmonLocalLLM\architecture\architecture.md
+2026-04-18 21:16:16,380 [DEBUG] 
+2026-04-18 21:16:16,381 [DEBUG] Press Ctrl+Q to cancel (checked between subsystems).
+2026-04-18 21:16:16,381 [DEBUG] 
+2026-04-18 21:16:16,381 [DEBUG] Generating overview in single pass...
+2026-04-18 21:16:21,856 [DEBUG] Done. Overview written to: C:\Coding\WorkFolder\nmonLocalLLM\architecture\architecture.md
+2026-04-18 21:16:21,872 [INFO]   Step 5/6: Pass 2 context
+2026-04-18 21:16:21,872 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_context.ps1
+2026-04-18 21:16:22,086 [DEBUG] ============================================
+2026-04-18 21:16:22,086 [DEBUG]   archpass2_context.ps1 - Targeted Context
+2026-04-18 21:16:22,087 [DEBUG] ============================================
+2026-04-18 21:16:22,088 [DEBUG] Repo root:    C:/Coding/WorkFolder/nmonLocalLLM
+2026-04-18 21:16:22,090 [DEBUG] Docs found:   44
+2026-04-18 21:16:22,091 [DEBUG] Output:       C:\Coding\WorkFolder\nmonLocalLLM\architecture\.pass2_context
+2026-04-18 21:16:22,091 [DEBUG] 
+2026-04-18 21:16:22,191 [DEBUG] Done. 36 targeted context files written to: C:\Coding\WorkFolder\nmonLocalLLM\architecture\.pass2_context
+2026-04-18 21:16:22,214 [INFO]   Step 6/6: Pass 2 analysis
+2026-04-18 21:16:22,219 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
+2026-04-18 21:16:23,245 [DEBUG] ============================================
+2026-04-18 21:16:23,248 [DEBUG]   archpass2_local.ps1 -- Pass 2 (Local LLM)
+2026-04-18 21:16:23,248 [DEBUG] ============================================
+2026-04-18 21:16:23,259 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-18 21:16:23,272 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-18 21:16:23,280 [DEBUG] Candidates:     18  |  unchanged=0  |  process: 18
+2026-04-18 21:16:23,287 [DEBUG] Output:         architecture/<path>.pass2.md
+2026-04-18 21:16:23,287 [DEBUG] 
+2026-04-18 21:16:23,288 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-18 21:16:23,288 [DEBUG] 
+2026-04-18 21:16:26,619 [DEBUG] 
+2026-04-18 21:16:29,998 [DEBUG] PROGRESS: 1/18  rate=0.3/s  eta=0h00m57s                                        
+2026-04-18 21:16:33,677 [DEBUG] PROGRESS: 2/18  rate=0.3/s  eta=0h00m53s                                        
+2026-04-18 21:16:36,848 [DEBUG] PROGRESS: 3/18  rate=0.29/s  eta=0h00m52s                                       
+2026-04-18 21:16:39,812 [DEBUG] PROGRESS: 4/18  rate=0.3/s  eta=0h00m47s                                        
+2026-04-18 21:16:42,502 [DEBUG] PROGRESS: 5/18  rate=0.3/s  eta=0h00m43s                                        
+2026-04-18 21:16:45,755 [DEBUG] PROGRESS: 6/18  rate=0.31/s  eta=0h00m39s                                       
+2026-04-18 21:16:48,982 [DEBUG] PROGRESS: 7/18  rate=0.31/s  eta=0h00m35s                                       
+2026-04-18 21:16:51,913 [DEBUG] PROGRESS: 8/18  rate=0.31/s  eta=0h00m32s                                       
+2026-04-18 21:16:54,678 [DEBUG] PROGRESS: 9/18  rate=0.31/s  eta=0h00m29s                                       
+2026-04-18 21:16:57,448 [DEBUG] PROGRESS: 10/18  rate=0.32/s  eta=0h00m25s                                      
+2026-04-18 21:16:59,900 [DEBUG] PROGRESS: 11/18  rate=0.32/s  eta=0h00m22s                                      
+2026-04-18 21:17:02,100 [DEBUG] PROGRESS: 12/18  rate=0.33/s  eta=0h00m18s                                      
+2026-04-18 21:17:04,276 [DEBUG] PROGRESS: 13/18  rate=0.33/s  eta=0h00m15s                                      
+2026-04-18 21:17:08,430 [DEBUG] PROGRESS: 14/18  rate=0.34/s  eta=0h00m12s                                      
+2026-04-18 21:17:11,733 [DEBUG] PROGRESS: 15/18  rate=0.33/s  eta=0h00m09s                                      
+2026-04-18 21:17:14,291 [DEBUG] PROGRESS: 16/18  rate=0.33/s  eta=0h00m06s                                      
+2026-04-18 21:17:16,894 [DEBUG] PROGRESS: 17/18  rate=0.33/s  eta=0h00m03s                                      
+2026-04-18 21:17:16,895 [DEBUG] PROGRESS: 18/18  rate=0.34/s  eta=?                                             
+2026-04-18 21:17:16,895 [DEBUG] 
+2026-04-18 21:17:16,906 [DEBUG] Done. 18 files processed. Pass 2 docs in: C:\Coding\WorkFolder\nmonLocalLLM\architecture
+2026-04-18 21:17:16,922 [INFO] Pipeline complete.
+2026-04-18 21:18:56,486 [INFO] Pipeline started at 2026-04-18 21:18:56.485994
+2026-04-18 21:18:56,486 [INFO] === One-time setup steps ===
+2026-04-18 21:18:56,486 [INFO] Running: C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-18 21:18:56,486 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,486 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\serena_extract.ps1
+2026-04-18 21:18:56,486 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,487 [INFO] Subsection 1/1: src/nmon
+2026-04-18 21:18:56,487 [INFO]   Step 1/6: Per-file docs
+2026-04-18 21:18:56,487 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local.ps1 -TargetDir src/nmon
+2026-04-18 21:18:56,487 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,487 [INFO]   Step 2/6: Cross-reference index
+2026-04-18 21:18:56,487 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archxref.ps1
+2026-04-18 21:18:56,487 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,487 [INFO]   Step 3/6: Mermaid diagrams
+2026-04-18 21:18:56,487 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgraph.ps1
+2026-04-18 21:18:56,487 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,487 [INFO]   Step 4/6: Architecture overview
+2026-04-18 21:18:56,487 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\arch_overview_local.ps1
+2026-04-18 21:18:56,487 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,487 [INFO]   Step 5/6: Pass 2 context
+2026-04-18 21:18:56,487 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_context.ps1
+2026-04-18 21:18:56,487 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,488 [INFO]   Step 6/6: Pass 2 analysis
+2026-04-18 21:18:56,488 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
+2026-04-18 21:18:56,488 [INFO] [DRY RUN] Skipped
+2026-04-18 21:18:56,488 [INFO] Pipeline complete.
+2026-04-19 21:48:21,372 [INFO] Pipeline started at 2026-04-19 21:48:21.372905
+2026-04-19 21:48:21,374 [INFO] === One-time setup steps ===
+2026-04-19 21:48:21,374 [INFO] Running: C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-19 21:48:21,462 [DEBUG] Scanning C:\Coding\WorkFolder\nmonLocalLLM2 for build artifacts ...
+2026-04-19 21:48:21,463 [DEBUG]   Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-19 21:48:21,469 [ERROR] Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM2 for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-19 21:48:21,470 [ERROR] PIPELINE FAILED: Command failed (exit 1): C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\nmonLocalLLM2 for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-19 21:48:50,557 [INFO] Pipeline started at 2026-04-19 21:48:50.557727
+2026-04-19 21:48:50,559 [INFO] Skipping LSP setup (--skip-lsp)
+2026-04-19 21:48:50,560 [INFO] Subsection 1/1: src/nmon
+2026-04-19 21:48:50,561 [INFO]   Step 1/6: Per-file docs
+2026-04-19 21:48:50,562 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local.ps1 -TargetDir src/nmon
+2026-04-19 21:48:50,925 [DEBUG] ============================================
+2026-04-19 21:48:50,926 [DEBUG]   archgen_local.ps1 -- Local LLM Doc Gen
+2026-04-19 21:48:50,926 [DEBUG] ============================================
+2026-04-19 21:48:50,927 [DEBUG] Repo root:       C:\Coding\WorkFolder\nmonLocalLLM2
+2026-04-19 21:48:50,927 [DEBUG] Codebase:        nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-19 21:48:50,928 [DEBUG] Preset:          python
+2026-04-19 21:48:50,928 [DEBUG] Target:          src/nmon
+2026-04-19 21:48:50,929 [DEBUG] LLM:             qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-19 21:48:50,930 [DEBUG] Max file lines:  800
+2026-04-19 21:48:50,930 [DEBUG] Max output tok:  800
+2026-04-19 21:48:50,931 [DEBUG] Files:           17 total  |  unchanged=0  trivial=2  |  process: 15
+2026-04-19 21:48:50,932 [DEBUG] Prompt:          C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local_prompt.txt
+2026-04-19 21:48:50,932 [DEBUG] Serena context:  NO
+2026-04-19 21:48:50,933 [DEBUG] 
+2026-04-19 21:48:50,933 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-19 21:48:50,933 [DEBUG] 
+2026-04-19 21:49:12,040 [DEBUG] 
+2026-04-19 21:49:14,314 [DEBUG] PROGRESS: 1/15  rate=0.05/s  eta=0h04m40s                                       
+2026-04-19 21:49:19,597 [DEBUG] PROGRESS: 2/15  rate=0.09/s  eta=0h02m24s                                       
+2026-04-19 21:49:22,321 [DEBUG] PROGRESS: 3/15  rate=0.1/s  eta=0h02m00s                                        
+2026-04-19 21:49:25,362 [DEBUG] PROGRESS: 4/15  rate=0.13/s  eta=0h01m25s                                       
+2026-04-19 21:49:28,526 [DEBUG] PROGRESS: 5/15  rate=0.15/s  eta=0h01m07s                                       
+2026-04-19 21:49:32,364 [DEBUG] PROGRESS: 6/15  rate=0.16/s  eta=0h00m56s                                       
+2026-04-19 21:49:35,383 [DEBUG] PROGRESS: 7/15  rate=0.17/s  eta=0h00m47s                                       
+2026-04-19 21:49:38,015 [DEBUG] PROGRESS: 8/15  rate=0.18/s  eta=0h00m39s                                       
+2026-04-19 21:49:41,815 [DEBUG] PROGRESS: 9/15  rate=0.19/s  eta=0h00m32s                                       
+2026-04-19 21:49:44,795 [DEBUG] PROGRESS: 10/15  rate=0.2/s  eta=0h00m25s                                       
+2026-04-19 21:49:48,176 [DEBUG] PROGRESS: 11/15  rate=0.2/s  eta=0h00m20s                                       
+2026-04-19 21:49:51,753 [DEBUG] PROGRESS: 12/15  rate=0.21/s  eta=0h00m14s                                      
+2026-04-19 21:49:54,044 [DEBUG] PROGRESS: 13/15  rate=0.21/s  eta=0h00m10s                                      
+2026-04-19 21:49:56,718 [DEBUG] PROGRESS: 14/15  rate=0.22/s  eta=0h00m05s                                      
+2026-04-19 21:49:56,718 [DEBUG] PROGRESS: 15/15  rate=0.23/s  eta=?                                             
+2026-04-19 21:49:56,719 [DEBUG] 
+2026-04-19 21:49:56,734 [DEBUG] Done. 15 files processed. Docs in: C:\Coding\WorkFolder\nmonLocalLLM2\architecture
+2026-04-19 21:49:56,755 [INFO]   Step 2/6: Cross-reference index
+2026-04-19 21:49:56,755 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archxref.ps1
+2026-04-19 21:49:57,042 [DEBUG] ============================================
+2026-04-19 21:49:57,043 [DEBUG]   archxref.ps1 - Cross-Reference Index
+2026-04-19 21:49:57,043 [DEBUG] ============================================
+2026-04-19 21:49:57,045 [DEBUG] Doc root:  C:\Coding\WorkFolder\nmonLocalLLM2\architecture
+2026-04-19 21:49:57,046 [DEBUG] Output:    C:\Coding\WorkFolder\nmonLocalLLM2\architecture\xref_index.md
+2026-04-19 21:49:57,046 [DEBUG] 
+2026-04-19 21:49:57,056 [DEBUG] Parsing 17 per-file docs...
+2026-04-19 21:49:57,087 [DEBUG] Extracted:
+2026-04-19 21:49:57,089 [DEBUG]   Functions:    39
+2026-04-19 21:49:57,090 [DEBUG]   Call edges:   0
+2026-04-19 21:49:57,090 [DEBUG]   Globals:      0
+2026-04-19 21:49:57,091 [DEBUG]   Include deps: 0
+2026-04-19 21:49:57,091 [DEBUG] 
+2026-04-19 21:49:57,119 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\xref_index.md (107 lines)
+2026-04-19 21:49:57,120 [DEBUG] Done.
+2026-04-19 21:49:57,138 [INFO]   Step 3/6: Mermaid diagrams
+2026-04-19 21:49:57,139 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgraph.ps1
+2026-04-19 21:49:57,487 [DEBUG] ============================================
+2026-04-19 21:49:57,497 [DEBUG]   archgraph.ps1 - Call Graph Generator
+2026-04-19 21:49:57,505 [DEBUG] ============================================
+2026-04-19 21:49:57,529 [DEBUG] Doc root:  C:\Coding\WorkFolder\nmonLocalLLM2\architecture
+2026-04-19 21:49:57,545 [DEBUG] Max edges: 150
+2026-04-19 21:49:57,546 [DEBUG] 
+2026-04-19 21:49:57,575 [DEBUG] Parsing 17 per-file docs...
+2026-04-19 21:49:57,608 [DEBUG] Found 39 functions, 0 call edges.
+2026-04-19 21:49:57,638 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\callgraph.mermaid
+2026-04-19 21:49:57,667 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\subsystems.mermaid
+2026-04-19 21:49:57,671 [DEBUG] Wrote: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\callgraph.md
+2026-04-19 21:49:57,672 [DEBUG] 
+2026-04-19 21:49:57,694 [DEBUG] Done. View Mermaid diagrams in GitHub, VS Code, or mermaid.live
+2026-04-19 21:49:57,712 [INFO]   Step 4/6: Architecture overview
+2026-04-19 21:49:57,712 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\arch_overview_local.ps1
+2026-04-19 21:49:58,024 [DEBUG] ============================================
+2026-04-19 21:49:58,025 [DEBUG]   arch_overview_local.ps1 -- Architecture
+2026-04-19 21:49:58,027 [DEBUG] ============================================
+2026-04-19 21:49:58,028 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-19 21:49:58,029 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-19 21:49:58,031 [DEBUG] Target:         all
+2026-04-19 21:49:58,037 [DEBUG] Mode:           single
+2026-04-19 21:49:58,042 [DEBUG] Per-file docs:  17
+2026-04-19 21:49:58,045 [DEBUG] Summary lines:  69 (threshold: 400)
+2026-04-19 21:49:58,047 [DEBUG] Output:         C:\Coding\WorkFolder\nmonLocalLLM2\architecture\architecture.md
+2026-04-19 21:49:58,048 [DEBUG] 
+2026-04-19 21:49:58,056 [DEBUG] Press Ctrl+Q to cancel (checked between subsystems).
+2026-04-19 21:49:58,057 [DEBUG] 
+2026-04-19 21:49:58,062 [DEBUG] Generating overview in single pass...
+2026-04-19 21:50:02,956 [DEBUG] Done. Overview written to: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\architecture.md
+2026-04-19 21:50:02,974 [INFO]   Step 5/6: Pass 2 context
+2026-04-19 21:50:02,975 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_context.ps1
+2026-04-19 21:50:03,303 [DEBUG] ============================================
+2026-04-19 21:50:03,304 [DEBUG]   archpass2_context.ps1 - Targeted Context
+2026-04-19 21:50:03,305 [DEBUG] ============================================
+2026-04-19 21:50:03,306 [DEBUG] Repo root:    C:\Coding\WorkFolder\nmonLocalLLM2
+2026-04-19 21:50:03,308 [DEBUG] Docs found:   20
+2026-04-19 21:50:03,309 [DEBUG] Output:       C:\Coding\WorkFolder\nmonLocalLLM2\architecture\.pass2_context
+2026-04-19 21:50:03,309 [DEBUG] 
+2026-04-19 21:50:03,370 [DEBUG] Done. 18 targeted context files written to: C:\Coding\WorkFolder\nmonLocalLLM2\architecture\.pass2_context
+2026-04-19 21:50:03,387 [INFO]   Step 6/6: Pass 2 analysis
+2026-04-19 21:50:03,387 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
+2026-04-19 21:50:03,756 [DEBUG] ============================================
+2026-04-19 21:50:03,757 [DEBUG]   archpass2_local.ps1 -- Pass 2 (Local LLM)
+2026-04-19 21:50:03,759 [DEBUG] ============================================
+2026-04-19 21:50:03,760 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-19 21:50:03,760 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-19 21:50:03,762 [DEBUG] Candidates:     17  |  unchanged=0  |  process: 17
+2026-04-19 21:50:03,762 [DEBUG] Output:         architecture/<path>.pass2.md
+2026-04-19 21:50:03,762 [DEBUG] 
+2026-04-19 21:50:03,763 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-19 21:50:03,763 [DEBUG] 
+2026-04-19 21:50:07,640 [DEBUG] 
+2026-04-19 21:50:11,617 [DEBUG] PROGRESS: 1/17  rate=0.26/s  eta=0h01m02s                                       
+2026-04-19 21:50:14,967 [DEBUG] PROGRESS: 2/17  rate=0.25/s  eta=0h01m00s                                       
+2026-04-19 21:50:17,785 [DEBUG] PROGRESS: 3/17  rate=0.27/s  eta=0h00m52s                                       
+2026-04-19 21:50:20,518 [DEBUG] PROGRESS: 4/17  rate=0.29/s  eta=0h00m45s                                       
+2026-04-19 21:50:23,308 [DEBUG] PROGRESS: 5/17  rate=0.3/s  eta=0h00m40s                                        
+2026-04-19 21:50:27,229 [DEBUG] PROGRESS: 6/17  rate=0.31/s  eta=0h00m35s                                       
+2026-04-19 21:50:29,749 [DEBUG] PROGRESS: 7/17  rate=0.3/s  eta=0h00m33s                                        
+2026-04-19 21:50:32,194 [DEBUG] PROGRESS: 8/17  rate=0.31/s  eta=0h00m29s                                       
+2026-04-19 21:50:35,177 [DEBUG] PROGRESS: 9/17  rate=0.32/s  eta=0h00m25s                                       
+2026-04-19 21:50:38,158 [DEBUG] PROGRESS: 10/17  rate=0.32/s  eta=0h00m22s                                      
+2026-04-19 21:50:40,471 [DEBUG] PROGRESS: 11/17  rate=0.32/s  eta=0h00m19s                                      
+2026-04-19 21:50:43,126 [DEBUG] PROGRESS: 12/17  rate=0.33/s  eta=0h00m15s                                      
+2026-04-19 21:50:45,921 [DEBUG] PROGRESS: 13/17  rate=0.33/s  eta=0h00m12s                                      
+2026-04-19 21:50:48,462 [DEBUG] PROGRESS: 14/17  rate=0.33/s  eta=0h00m09s                                      
+2026-04-19 21:50:51,692 [DEBUG] PROGRESS: 15/17  rate=0.34/s  eta=0h00m06s                                      
+2026-04-19 21:50:54,450 [DEBUG] PROGRESS: 16/17  rate=0.33/s  eta=0h00m03s                                      
+2026-04-19 21:50:54,451 [DEBUG] PROGRESS: 17/17  rate=0.34/s  eta=?                                             
+2026-04-19 21:50:54,457 [DEBUG] 
+2026-04-19 21:50:54,468 [DEBUG] Done. 17 files processed. Pass 2 docs in: C:\Coding\WorkFolder\nmonLocalLLM2\architecture
+2026-04-19 21:50:54,486 [INFO] Pipeline complete.
+2026-04-19 22:17:14,962 [INFO] Pipeline started at 2026-04-19 22:17:14.962167
+2026-04-19 22:17:14,962 [INFO] === One-time setup steps ===
+2026-04-19 22:17:14,962 [INFO] Running: C:\Python\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-19 22:17:14,962 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,962 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\serena_extract.ps1
+2026-04-19 22:17:14,962 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO] Subsection 1/1: src/nmon
+2026-04-19 22:17:14,963 [INFO]   Step 1/6: Per-file docs
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local.ps1 -TargetDir src/nmon
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO]   Step 2/6: Cross-reference index
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archxref.ps1
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO]   Step 3/6: Mermaid diagrams
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgraph.ps1
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO]   Step 4/6: Architecture overview
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\arch_overview_local.ps1
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO]   Step 5/6: Pass 2 context
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_context.ps1
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO]   Step 6/6: Pass 2 analysis
+2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
+2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
+2026-04-19 22:17:14,963 [INFO] Pipeline complete.

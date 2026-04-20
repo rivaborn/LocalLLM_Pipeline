@@ -26,12 +26,12 @@ class ProgressState:
 
 Immutable snapshot of progress read from disk.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `last_completed` | `int` | Last fully completed step number (-1 if none) |
-| `sub_step` | `int` or `None` | Sub-step within the current step |
-| `mode` | `str` or `None` | Pipeline mode (e.g. `"allclaude"`, `"default"`) |
-| `target_dir` | `str` or `None` | Target directory for the run |
+| Field            | Type            | Description                                     |
+| ---------------- | --------------- | ----------------------------------------------- |
+| `last_completed` | `int`           | Last fully completed step number (-1 if none)   |
+| `sub_step`       | `int` or `None` | Sub-step within the current step                |
+| `mode`           | `str` or `None` | Pipeline mode (e.g. `"allclaude"`, `"default"`) |
+| `target_dir`     | `str` or `None` | Target directory for the run                    |
 
 ---
 
@@ -46,8 +46,8 @@ Manages reading, writing, and clearing a progress sentinel file.
 
 **Constructor parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name   | Type   | Description                                                       |
+| ------ | ------ | ----------------------------------------------------------------- |
 | `path` | `Path` | Path to the progress file (e.g. `.progress` or `.debug_progress`) |
 
 #### Methods
@@ -63,13 +63,13 @@ not exist, returns a default state with `last_completed=-1`.
 
 **Parsed keys:**
 
-| Key | Maps to | Notes |
-|-----|---------|-------|
-| `LastCompleted` | `last_completed` | Must be a digit string |
-| `SubStep` | `sub_step` | Must be a digit string |
-| `Mode` | `mode` | Free-form string |
-| `TargetDir` | `target_dir` | Free-form string |
-| `Engine` | `mode` (legacy) | `"claude"` -> `"allclaude"`, `"local"` -> `"default"` |
+| Key             | Maps to          | Notes                                                 |
+| --------------- | ---------------- | ----------------------------------------------------- |
+| `LastCompleted` | `last_completed` | Must be a digit string                                |
+| `SubStep`       | `sub_step`       | Must be a digit string                                |
+| `Mode`          | `mode`           | Free-form string                                      |
+| `TargetDir`     | `target_dir`     | Free-form string                                      |
+| `Engine`        | `mode` (legacy)  | `"claude"` -> `"allclaude"`, `"local"` -> `"default"` |
 
 The `Engine` key is a legacy compatibility shim from before the "AllClaude"
 mode was introduced. It is only used if `Mode` was not already set.
@@ -114,12 +114,12 @@ TargetDir=C:\Code\MyProject
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `step` | `int` | (required) | Step number just completed |
-| `sub_step` | `int` or `None` | `None` | Sub-step within the step |
-| `mode` | `str` or `None` | `None` | Pipeline mode string |
-| `target_dir` | `str` or `None` | `None` | Target directory path |
+| Name         | Type            | Default    | Description                |
+| ------------ | --------------- | ---------- | -------------------------- |
+| `step`       | `int`           | (required) | Step number just completed |
+| `sub_step`   | `int` or `None` | `None`     | Sub-step within the step   |
+| `mode`       | `str` or `None` | `None`     | Pipeline mode string       |
+| `target_dir` | `str` or `None` | `None`     | Target directory path      |
 
 ##### `clear`
 

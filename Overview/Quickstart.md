@@ -47,14 +47,14 @@ One file drives every pipeline. Key knobs:
 | Key | Default | Used by |
 |---|---|---|
 | `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.126:11434` | All LLM calls |
-| `LLM_MODEL` | `qwen3-coder:30b` | Analysis + Debug |
+| `LLM_DEFAULT_MODEL` | `qwen3-coder:30b` | Universal fallback — every role key below falls back to this when blank/unset |
+| `LLM_MODEL` | blank (→ DEFAULT) | Analysis + Debug |
+| `LLM_PLANNING_MODEL` | `gemma4:26b` | Coding stages 0/1/2a/2b/3a/3b when `--local` |
+| `LLM_AIDER_MODEL` | blank (→ DEFAULT) | Coding stages 4 (`run_aider.py`) + 5 (`fix_imports.py`) |
 | `LLM_NUM_CTX` | `32768` | Debug (Analysis overrides to 49152) |
 | `LLM_ANALYSIS_NUM_CTX` | `49152` | Promoted into `LLM_NUM_CTX` by Analysis scripts |
-| `LLM_MODEL_HIGH_CTX` | `qwen3-coder:30b` | Legacy; same tag now |
-| `LLM_PLANNING_MODEL` | `gemma4:26b` | Coding stages 2a/2b/3a/3b when `-Local` |
-| `LLM_PLANNING_NUM_CTX` | `24576` | Same |
-| `LLM_AIDER_MODEL` | `qwen3.5:27b` | `run_aider.py --local` |
-| `LLM_AIDER_NUM_CTX` | `40960` | Same |
+| `LLM_PLANNING_NUM_CTX` | `98304` | Planning stages (thinking + output) |
+| `LLM_AIDER_NUM_CTX` | `40960` | Aider context window |
 | `LLM_TEMPERATURE` | `0.1` | All |
 | `LLM_TIMEOUT` | `300` seconds | All |
 | `PRESET` | `python` | File inclusion regex |

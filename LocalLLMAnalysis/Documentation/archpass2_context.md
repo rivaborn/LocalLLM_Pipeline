@@ -17,13 +17,13 @@ large codebases.
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| PowerShell 5.1+ or pwsh 7+ | Uses `Set-StrictMode -Version Latest` |
-| `../Common/.env` | Configuration file |
+| Requirement                    | Details                                                               |
+| ------------------------------ | --------------------------------------------------------------------- |
+| PowerShell 5.1+ or pwsh 7+     | Uses `Set-StrictMode -Version Latest`                                 |
+| `../Common/.env`               | Configuration file                                                    |
 | `architecture/architecture.md` | Output of `arch_overview_local.ps1` (or any `*architecture.md` files) |
-| `architecture/xref_index.md` | Output of `archxref.ps1` (or any `*xref_index.md` files) |
-| Per-file docs | Output of `archgen_local.ps1` in `architecture/` |
+| `architecture/xref_index.md`   | Output of `archxref.ps1` (or any `*xref_index.md` files)              |
+| Per-file docs                  | Output of `archgen_local.ps1` in `architecture/`                      |
 
 ## Usage
 
@@ -33,11 +33,11 @@ large codebases.
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `-TargetDir` | string | `"."` | Subdirectory to process. `"."` processes all docs. |
-| `-EnvFile` | string | `../Common/.env` | Alternative `.env` file. |
-| `-Test` | switch | off | Run the built-in unit test suite. |
+| Parameter    | Type   | Default          | Description                                        |
+| ------------ | ------ | ---------------- | -------------------------------------------------- |
+| `-TargetDir` | string | `"."`            | Subdirectory to process. `"."` processes all docs. |
+| `-EnvFile`   | string | `../Common/.env` | Alternative `.env` file.                           |
+| `-Test`      | switch | off              | Run the built-in unit test suite.                  |
 
 ## How It Is Invoked
 
@@ -56,16 +56,16 @@ python Common/ArchPipeline.py analysis
 
 ## Input Files
 
-| Input | Location | Description |
-|---|---|---|
-| Architecture overview(s) | `<repo>/architecture/architecture.md` (or `*architecture.md`) | Subsystem headings and descriptions |
-| Cross-reference index | `<repo>/architecture/xref_index.md` (or `*xref_index.md`) | Function-to-file mappings, call edges, globals |
-| Per-file docs | `<repo>/architecture/**/*.md` | Used to enumerate files needing context |
+| Input                    | Location                                                      | Description                                    |
+| ------------------------ | ------------------------------------------------------------- | ---------------------------------------------- |
+| Architecture overview(s) | `<repo>/architecture/architecture.md` (or `*architecture.md`) | Subsystem headings and descriptions            |
+| Cross-reference index    | `<repo>/architecture/xref_index.md` (or `*xref_index.md`)     | Function-to-file mappings, call edges, globals |
+| Per-file docs            | `<repo>/architecture/**/*.md`                                 | Used to enumerate files needing context        |
 
 ## Output Files
 
-| Output | Location | Description |
-|---|---|---|
+| Output                 | Location                                                | Description                                                                         |
+| ---------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Targeted context files | `<repo>/architecture/.pass2_context/<rel_path>.ctx.txt` | One file per source file containing relevant architecture sections and xref entries |
 
 ### Context File Format
@@ -97,10 +97,10 @@ This script reads `.env` for basic configuration but does not use LLM-specific k
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success |
-| `2` | Missing `architecture.md` or `xref_index.md` (run prerequisite scripts first) |
+| Code | Meaning                                                                       |
+| ---- | ----------------------------------------------------------------------------- |
+| `0`  | Success                                                                       |
+| `2`  | Missing `architecture.md` or `xref_index.md` (run prerequisite scripts first) |
 
 ## Examples
 

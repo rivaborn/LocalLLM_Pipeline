@@ -8,11 +8,11 @@ Worker scripts only need to dot-source `llm_common.ps1`; it loads everything.
 
 **Files:**
 
-| File | Lines | Responsibility |
-|------|-------|----------------|
-| `llm_common.ps1` | 17 | Shim -- loads the two sub-modules |
-| `llm_core.ps1` | 175 | LLM invocation, endpoint resolution, .env parsing, cancel key, config lookup |
-| `file_helpers.ps1` | 230 | Presets, hashing, fence-lang mapping, trivial-file detection, truncation, architecture/LSP resolution, progress display |
+| File               | Lines   | Responsibility                                                                                                          |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `llm_common.ps1`   | 17      | Shim -- loads the two sub-modules                                                                                       |
+| `llm_core.ps1`     | 175     | LLM invocation, endpoint resolution, .env parsing, cancel key, config lookup                                            |
+| `file_helpers.ps1` | 230     | Presets, hashing, fence-lang mapping, trivial-file detection, truncation, architecture/LSP resolution, progress display |
 
 **Location:** `LocalLLM_Pipeline/Common/`
 
@@ -106,10 +106,10 @@ Calls the Ollama chat API and returns the generated text (trimmed).
 
 **Two API modes:**
 
-| Condition | API Endpoint | Body format |
-|-----------|-------------|-------------|
-| `NumCtx > 0` | `/api/chat` (native Ollama) | `options.num_ctx`, `options.temperature`, `options.num_predict` |
-| `NumCtx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens` |
+| Condition     | API Endpoint                           | Body format                                                     |
+| ------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `NumCtx > 0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
+| `NumCtx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens`                                     |
 
 When `NumCtx` is -1 (the default), it reads `LLM_NUM_CTX` from the config;
 if that key is absent or `0`, the OpenAI-compat path is used.
@@ -158,8 +158,8 @@ Parses a `.env` file into a hashtable. Handles:
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name    | Type   | Description                      |
+| ------- | ------ | -------------------------------- |
 | `$path` | string | Absolute path to the `.env` file |
 
 **Returns:** Hashtable `@{ KEY = 'value'; ... }`
@@ -225,26 +225,26 @@ engine preset. Used to filter source files for analysis.
 
 **Supported presets:**
 
-| Name(s) | Description |
-|---------|-------------|
+| Name(s)                                       | Description                    |
+| --------------------------------------------- | ------------------------------ |
 | `quake`, `quake2`, `quake3`, `doom`, `idtech` | id Software C engine codebases |
-| `unreal`, `ue4`, `ue5` | Unreal Engine C++/C# |
-| `godot` | Godot engine (C++/GDScript/C#) |
-| `unity` | Unity (C#/shader) |
-| `source`, `valve` | Source Engine (Valve C++) |
-| `rust` | Rust codebase (.rs, .toml) |
-| `python`, `py` | Python codebase (.py, .toml) |
-| `generals`, `cnc`, `sage` | C&C Generals / SAGE engine |
-| `''` (empty) | Generic game engine fallback |
+| `unreal`, `ue4`, `ue5`                        | Unreal Engine C++/C#           |
+| `godot`                                       | Godot engine (C++/GDScript/C#) |
+| `unity`                                       | Unity (C#/shader)              |
+| `source`, `valve`                             | Source Engine (Valve C++)      |
+| `rust`                                        | Rust codebase (.rs, .toml)     |
+| `python`, `py`                                | Python codebase (.py, .toml)   |
+| `generals`, `cnc`, `sage`                     | C&C Generals / SAGE engine     |
+| `''` (empty)                                  | Generic game engine fallback   |
 
 **Return hashtable keys:**
 
-| Key | Description |
-|-----|-------------|
+| Key       | Description                               |
+| --------- | ----------------------------------------- |
 | `Include` | Regex matching file extensions to include |
 | `Exclude` | Regex matching directory paths to exclude |
-| `Desc` | Human-readable description |
-| `Fence` | Default markdown fence language |
+| `Desc`    | Human-readable description                |
+| `Fence`   | Default markdown fence language           |
 
 **Example:**
 
@@ -264,10 +264,10 @@ Maps a file's extension to the appropriate markdown code-fence language tag.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `$file` | string | File path (extension is extracted) |
-| `$def` | string | Fallback language if extension is unknown |
+| Name    | Type   | Description                               |
+| ------- | ------ | ----------------------------------------- |
+| `$file` | string | File path (extension is extracted)        |
+| `$def`  | string | Fallback language if extension is unknown |
 
 **Supported extensions:** `.c`, `.h`, `.cpp`, `.cc`, `.cs`, `.java`, `.py`,
 `.rs`, `.lua`, `.gd`, `.swift`, `.m`, `.mm`, `.shader`, `.hlsl`, `.toml`,
@@ -299,11 +299,11 @@ stub doc instead of full analysis.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `$rel` | string | Relative path (used for filename pattern matching) |
-| `$fullPath` | string | Absolute path to read the file |
-| `$minLines` | int | Minimum line count threshold |
+| Name        | Type   | Description                                        |
+| ----------- | ------ | -------------------------------------------------- |
+| `$rel`      | string | Relative path (used for filename pattern matching) |
+| `$fullPath` | string | Absolute path to read the file                     |
+| `$minLines` | int    | Minimum line count threshold                       |
 
 **Example:**
 
@@ -331,12 +331,12 @@ detailed analysis is needed.
 
 Returns an adaptive `max_tokens` value scaled to file size.
 
-| Line count | Budget |
-|-----------|--------|
-| < 50 | 300 |
-| < 200 | 400 |
-| < 500 | 600 |
-| >= 500 | 800 |
+| Line count  | Budget   |
+| ----------- | -------- |
+| < 50        | 300      |
+| < 200       | 400      |
+| < 500       | 600      |
+| >= 500      | 800      |
 
 **Example:**
 
@@ -415,10 +415,10 @@ symbol information for each source file.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name                | Type   | Description                          |
+| ------------------- | ------ | ------------------------------------ |
 | `$serenaContextDir` | string | Path to the Serena context directory |
-| `$rel` | string | Relative path of the source file |
+| `$rel`              | string | Relative path of the source file     |
 
 The function looks for `<serenaContextDir>/<rel>.serena_context.txt` and
 extracts the `## Symbol Overview` section using a regex.
@@ -442,11 +442,11 @@ rate and ETA from elapsed time.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `$done` | int | Number of items completed |
-| `$total` | int | Total number of items |
-| `$startTime` | datetime | Pipeline start time |
+| Name         | Type     | Description               |
+| ------------ | -------- | ------------------------- |
+| `$done`      | int      | Number of items completed |
+| `$total`     | int      | Total number of items     |
+| `$startTime` | datetime | Pipeline start time       |
 
 **Example:**
 
@@ -464,14 +464,14 @@ for ($i = 0; $i -lt $total; $i++) {
 
 These keys are read via `Cfg` or `Read-EnvFile` across the three files:
 
-| Key | Used by | Default | Description |
-|-----|---------|---------|-------------|
-| `LLM_ENDPOINT` | `Get-LLMEndpoint` | (none) | Full Ollama endpoint URL |
-| `LLM_HOST` | `Get-LLMEndpoint` | `192.168.1.126` | Ollama server hostname |
-| `LLM_PORT` | `Get-LLMEndpoint` | `11434` | Ollama server port |
-| `LLM_NUM_CTX` | `Invoke-LocalLLM` | `0` | Context window size (0 = OpenAI compat mode) |
-| `ARCHITECTURE_DIR` | `Resolve-ArchFile` | (none) | Path to architecture docs directory |
-| `SERENA_CONTEXT_DIR` | `Get-SerenaContextDir` | (none) | Path to Serena LSP context files |
+| Key                  | Used by                | Default         | Description                                  |
+| -------------------- | ---------------------- | --------------- | -------------------------------------------- |
+| `LLM_ENDPOINT`       | `Get-LLMEndpoint`      | (none)          | Full Ollama endpoint URL                     |
+| `LLM_HOST`           | `Get-LLMEndpoint`      | `192.168.1.126` | Ollama server hostname                       |
+| `LLM_PORT`           | `Get-LLMEndpoint`      | `11434`         | Ollama server port                           |
+| `LLM_NUM_CTX`        | `Invoke-LocalLLM`      | `0`             | Context window size (0 = OpenAI compat mode) |
+| `ARCHITECTURE_DIR`   | `Resolve-ArchFile`     | (none)          | Path to architecture docs directory          |
+| `SERENA_CONTEXT_DIR` | `Get-SerenaContextDir` | (none)          | Path to Serena LSP context files             |
 
 ---
 

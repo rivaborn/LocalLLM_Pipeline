@@ -1,0 +1,58 @@
+# LocalLLM_Pipeline -- Cline rules
+
+Loaded on every Cline task in this repo. Keep rules terse; put details in `Common/Documentation/`.
+
+## Hard rules (do not violate without explicit user OK)
+
+- **No emojis.** Anywhere -- source, docs, commits, CLI output, chat output.
+- **No defensive programming.** No try/except for can't-happen cases, no input validation inside trusted internal code. Only validate at system boundaries (user input, subprocess output, external APIs).
+- **No backwards-compat shims.** No `# removed` comments, no dead re-exports, no renamed `_unused` vars -- delete instead.
+- **No `--no-verify`, no `--no-gpg-sign`.** Fix pre-commit hook failures, don't bypass them.
+- **Comments are rare.** Only write one when the WHY is non-obvious (hidden constraint, subtle invariant, workaround for a specific bug). Never explain WHAT -- the code already does that. No "added for X flow" / "used by Y" references; those rot.
+- **Don't add features beyond the task.** A bug fix doesn't need surrounding cleanup. A one-shot operation doesn't need a helper. Three similar lines beats a premature abstraction.
+
+## Workflow
+
+- **Plan Mode first** for any non-trivial change. Switch to Act Mode only after the plan is confirmed.
+- **Read `Common/Documentation/<module>.md`** before editing that module. When behavior changes, update the doc in the same task.
+- For risky / irreversible actions (destructive git, force-push, deleting files, pushing to remote, closing PRs), confirm with the user before acting -- even if Cline is in Act Mode.
+
+## Repository layout
+
+- Python orchestrator: `Common/_pipeline/` (entry point `Common/ArchPipeline.py`)
+- PowerShell workers: `LocalLLMDebug/`, `LocalLLMAnalysis/`, `LocalLLMCoding/` (one worker per analysis step)
+- Modes: `Common/_pipeline/modes/{coding,debug,analysis}` -- each has its own `register()` / `run()`
+- Prompt templates: `Common/_pipeline/modes/coding/prompts/`
+- Shared config / env: `Common/_pipeline/config.py` + `Common/.env`
+- Per-module docs: `Common/Documentation/`
+
+## When adding or modifying a coding-mode stage
+
+Touch ALL of these in the same change -- they're coupled:
+
+- `STAGE_DEFAULTS` + `_STAGE_ROLES` in `Common/_pipeline/modes/coding/router.py`
+- `get_engine()` if default-mode routing changes
+- `describe_models()` if new status cases are introduced
+- Prompt template `Common/_pipeline/modes/coding/prompts/stage<N><letter>_*.md`
+- CLI wiring in `Common/_pipeline/modes/coding/cli.py` (skip-stage / from-stage gating)
+- Stage tables in `Common/Documentation/ArchPipeline.md`
+- Living doc `Common/PromptOptimizations.md` (Part 1 = implemented, Part 2 = proposed)
+
+Claude review stages (2c, 3c) need `permission_mode="acceptEdits"` passed to `invoke_claude`, otherwise the non-interactive CLI hangs on Edit-tool permission prompts.
+
+## Prompt-template changes
+
+- Update `Common/PromptOptimizations.md` alongside any template change -- that's the living record of what defenses are in place against LLM drift.
+- Stage 4's runtime drift detection (`_detect_aider_drift`, `_is_src_path` in `LocalLLMCoding/_aider/runner.py`) guards test-only steps from writing to `src/`. Don't remove the guard -- it catches real drift, not theoretical.
+- `parse_steps` in `LocalLLMCoding/_aider/parser.py` fails loudly on malformed `## Step N` sections by design. Don't soften to silent skip.
+
+## Analysis / debug artifacts (if you've run either pipeline on this repo)
+
+`architecture/INTERFACES.md`, `architecture/DATA_FLOW.md`, `architecture/xref_index.md`, `architecture/callgraph.md` -- usage workflow is in `Common/Documentation/Cline.md`. @-mention them at task start for any debugging task.
+
+## Git
+
+- Commit subjects short and declarative. Put the "why" in the body only if non-obvious.
+- Create NEW commits rather than amending, unless the user explicitly asks for `--amend`.
+- No `Co-Authored-By` credits unless the user requests them.
+- Never force-push `main`.

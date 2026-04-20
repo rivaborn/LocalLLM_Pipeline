@@ -45,10 +45,10 @@ Prints a colored message to stderr. The color is applied as a prefix and
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `msg` | `str` | (required) | Message text |
-| `color` | `str` | `Color.RESET` | ANSI color code from `Color` class |
+| Name    | Type   | Default       | Description                        |
+| ------- | ------ | ------------- | ---------------------------------- |
+| `msg`   | `str`  | (required)    | Message text                       |
+| `color` | `str`  | `Color.RESET` | ANSI color code from `Color` class |
 
 **Example:**
 
@@ -130,10 +130,10 @@ Creates and configures a logger with both file and console handlers.
 
 **Handlers:**
 
-| Handler | Level | Format | Output |
-|---------|-------|--------|--------|
-| File | `DEBUG` | `%(asctime)s [%(levelname)s] %(message)s` | `log_path` file |
-| Console | `INFO` | `%(message)s` | `sys.stderr` |
+| Handler   | Level   | Format                                    | Output          |
+| --------- | ------- | ----------------------------------------- | --------------- |
+| File      | `DEBUG` | `%(asctime)s [%(levelname)s] %(message)s` | `log_path` file |
+| Console   | `INFO`  | `%(message)s`                             | `sys.stderr`    |
 
 The log directory is created automatically (`mkdir -p`). If the logger
 already has handlers (e.g., from a re-import in tests), it is returned
@@ -141,10 +141,10 @@ as-is to avoid duplicate handlers.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `log_path` | `Path` | (required) | Path to the log file |
-| `logger_name` | `str` | `"archpipeline"` | Logger name for `logging.getLogger` |
+| Name          | Type   | Default          | Description                         |
+| ------------- | ------ | ---------------- | ----------------------------------- |
+| `log_path`    | `Path` | (required)       | Path to the log file                |
+| `logger_name` | `str`  | `"archpipeline"` | Logger name for `logging.getLogger` |
 
 **Returns:** `logging.Logger` -- the configured logger instance.
 
@@ -181,11 +181,11 @@ Prints a visually prominent section banner to stderr:
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `title` | `str` | (required) | Banner title text |
-| `color` | `str` | `Color.CYAN` | Color for the banner lines |
-| `width` | `int` | `60` | Width of the separator lines |
+| Name    | Type   | Default      | Description                  |
+| ------- | ------ | ------------ | ---------------------------- |
+| `title` | `str`  | (required)   | Banner title text            |
+| `color` | `str`  | `Color.CYAN` | Color for the banner lines   |
+| `width` | `int`  | `60`         | Width of the separator lines |
 
 **Example:**
 

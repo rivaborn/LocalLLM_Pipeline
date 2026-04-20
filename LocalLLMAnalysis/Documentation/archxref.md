@@ -15,11 +15,11 @@ processing and runs quickly even on 1000+ file codebases.
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| PowerShell 5.1+ or pwsh 7+ | Uses `Set-StrictMode -Version Latest` |
-| `../Common/.env` | Configuration file |
-| Per-file docs | Output of `archgen_local.ps1` in `<repo>/architecture/` |
+| Requirement                | Details                                                 |
+| -------------------------- | ------------------------------------------------------- |
+| PowerShell 5.1+ or pwsh 7+ | Uses `Set-StrictMode -Version Latest`                   |
+| `../Common/.env`           | Configuration file                                      |
+| Per-file docs              | Output of `archgen_local.ps1` in `<repo>/architecture/` |
 
 **Note:** This script does NOT require `llm_common.ps1` or Ollama. It has its own `Read-EnvFile`.
 
@@ -31,11 +31,11 @@ processing and runs quickly even on 1000+ file codebases.
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `-TargetDir` | string | `"."` | Subdirectory within `architecture/` to scan. `"."` or `"all"` scans the entire doc tree. |
-| `-EnvFile` | string | `../Common/.env` | Alternative `.env` file. |
-| `-Test` | switch | off | Run the built-in unit test suite. |
+| Parameter    | Type   | Default          | Description                                                                              |
+| ------------ | ------ | ---------------- | ---------------------------------------------------------------------------------------- |
+| `-TargetDir` | string | `"."`            | Subdirectory within `architecture/` to scan. `"."` or `"all"` scans the entire doc tree. |
+| `-EnvFile`   | string | `../Common/.env` | Alternative `.env` file.                                                                 |
+| `-Test`      | switch | off              | Run the built-in unit test suite.                                                        |
 
 ## How It Is Invoked
 
@@ -53,10 +53,10 @@ python Common/ArchPipeline.py analysis
 
 ## Input Files
 
-| Input | Location | Description |
-|---|---|---|
+| Input         | Location                      | Description                                                                                                     |
+| ------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Per-file docs | `<repo>/architecture/**/*.md` | Architecture docs with `## Key Functions`, `## Global / File-Static State`, `## External Dependencies` sections |
-| `.env` | `../Common/.env` | Basic configuration |
+| `.env`        | `../Common/.env`              | Basic configuration                                                                                             |
 
 ### What the Parser Extracts
 
@@ -69,8 +69,8 @@ From each per-file doc, `Parse-DocFile` extracts:
 
 ## Output Files
 
-| Output | Location | Description |
-|---|---|---|
+| Output                | Location                            | Description                                                         |
+| --------------------- | ----------------------------------- | ------------------------------------------------------------------- |
 | Cross-reference index | `<repo>/architecture/xref_index.md` | Comprehensive index (or `<prefix>_xref_index.md` with `-TargetDir`) |
 
 ### Index Sections
@@ -90,10 +90,10 @@ This script reads `.env` for basic configuration only. No LLM-specific keys are 
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success |
-| `1` | No per-file docs found (run `archgen_local.ps1` first) |
+| Code | Meaning                                                |
+| ---- | ------------------------------------------------------ |
+| `0`  | Success                                                |
+| `1`  | No per-file docs found (run `archgen_local.ps1` first) |
 
 ## Examples
 

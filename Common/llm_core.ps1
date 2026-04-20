@@ -19,6 +19,26 @@ function Get-LLMEndpoint {
     return "http://${host_}:${port}"
 }
 
+function Get-LLMModel {
+    # Resolve a model name via the chain:
+    #   role-specific key (if set and non-empty) ->
+    #   LLM_DEFAULT_MODEL   (if set and non-empty) ->
+    #   -Fallback argument
+    # Cfg already treats empty string as unset, so callers can leave
+    # LLM_MODEL= in .env to document the key without overriding default.
+    param(
+        [string]$RoleKey  = '',
+        [string]$Fallback = 'qwen3-coder:30b'
+    )
+    if ($RoleKey) {
+        $roleVal = Cfg $RoleKey ''
+        if ($roleVal -ne '') { return $roleVal }
+    }
+    $defaultVal = Cfg 'LLM_DEFAULT_MODEL' ''
+    if ($defaultVal -ne '') { return $defaultVal }
+    return $Fallback
+}
+
 function Test-CancelKey {
     try {
         if ([Console]::IsInputRedirected) { return }

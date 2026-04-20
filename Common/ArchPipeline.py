@@ -7,9 +7,10 @@ Replaces the legacy triple:
     LocalLLMDebug/Arch_Debug_Pipeline.ps1
 
 Usage:
-    python ArchPipeline.py analysis [flags]
-    python ArchPipeline.py debug    [flags]    (phase 2 -- not yet wired)
-    python ArchPipeline.py coding   [flags]    (phase 3 -- not yet wired)
+    python ArchPipeline.py [all]     [flags]    (default when no subcommand)
+    python ArchPipeline.py analysis  [flags]
+    python ArchPipeline.py debug     [flags]
+    python ArchPipeline.py coding    [flags]
 
 Run from the target project's directory; the working directory is
 treated as the repo root for path resolution, matching the convention
@@ -29,7 +30,7 @@ from _pipeline.modes import all_modes, analysis, coding, debug
 from _pipeline.ui import enable_windows_ansi
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
     parser = argparse.ArgumentParser(
         prog="ArchPipeline",
         description="Unified orchestrator for the LocalLLM_Pipeline toolkit "
@@ -40,15 +41,16 @@ def build_parser() -> argparse.ArgumentParser:
     analysis.register(subparsers)
     debug.register(subparsers)
     coding.register(subparsers)
-    return parser
+    return parser, subparsers
 
 
 def main() -> int:
     enable_windows_ansi()
-    parser = build_parser()
+    parser, subparsers = build_parser()
     argv = sys.argv[1:]
     # Default to 'all' when no subcommand is given.
-    if not argv or argv[0] not in ("all", "analysis", "debug", "coding", "-h", "--help"):
+    known = set(subparsers.choices) | {"-h", "--help"}
+    if not argv or argv[0] not in known:
         argv = ["all"] + argv
     args = parser.parse_args(argv)
     if args.mode is None:

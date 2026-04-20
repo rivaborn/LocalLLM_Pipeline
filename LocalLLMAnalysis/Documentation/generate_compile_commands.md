@@ -16,11 +16,11 @@ exporters for CMake, Meson, Ninja, or Bazel.
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| Python 3.6+ | Standard library only (no pip dependencies) |
-| Build artifacts | At least one of: existing `compile_commands.json`, `.vcxproj`, `.vcproj`, `.dsp`, `CMakeLists.txt`, `meson.build`, `build.ninja`, or `WORKSPACE` |
-| (Delegate mode) cmake, meson, ninja, or bazel | Required on PATH if the corresponding build system is detected and no VC++ projects exist |
+| Requirement                                   | Details                                                                                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Python 3.6+                                   | Standard library only (no pip dependencies)                                                                                                      |
+| Build artifacts                               | At least one of: existing `compile_commands.json`, `.vcxproj`, `.vcproj`, `.dsp`, `CMakeLists.txt`, `meson.build`, `build.ninja`, or `WORKSPACE` |
+| (Delegate mode) cmake, meson, ninja, or bazel | Required on PATH if the corresponding build system is detected and no VC++ projects exist                                                        |
 
 ## Usage
 
@@ -30,10 +30,10 @@ python generate_compile_commands.py [--root <path>] [--output <path>]
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `--root` | Path | `.` (current directory) | Repository root directory to scan for build artifacts |
-| `--output` | Path | `<root>/compile_commands.json` | Output path for the generated file |
+| Parameter  | Type | Default                        | Description                                           |
+| ---------- | ---- | ------------------------------ | ----------------------------------------------------- |
+| `--root`   | Path | `.` (current directory)        | Repository root directory to scan for build artifacts |
+| `--output` | Path | `<root>/compile_commands.json` | Output path for the generated file                    |
 
 ## How It Is Invoked
 
@@ -53,19 +53,19 @@ the main analysis steps. This setup phase can be skipped with the `--skip-setup`
 
 ## Input Files
 
-| Input | Source | Description |
-|---|---|---|
-| `.vcxproj` files | Recursive glob from `--root` | MSBuild project files (VS 2010+) |
-| `.vcproj` files | Recursive glob from `--root` | Pre-MSBuild project files (VS 2002-2008) |
-| `.dsp` files | Recursive glob from `--root` | Visual C++ 6.0 project files |
-| `.sln` files | Recursive glob from `--root` | Solution files (parsed for project references, informational) |
-| `compile_commands.json` | Recursive glob from `--root` | Pre-existing compile database (copied if found) |
-| `CMakeLists.txt` / `meson.build` / `build.ninja` / `WORKSPACE` | Root directory | Triggers delegate build system |
+| Input                                                          | Source                       | Description                                                   |
+| -------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `.vcxproj` files                                               | Recursive glob from `--root` | MSBuild project files (VS 2010+)                              |
+| `.vcproj` files                                                | Recursive glob from `--root` | Pre-MSBuild project files (VS 2002-2008)                      |
+| `.dsp` files                                                   | Recursive glob from `--root` | Visual C++ 6.0 project files                                  |
+| `.sln` files                                                   | Recursive glob from `--root` | Solution files (parsed for project references, informational) |
+| `compile_commands.json`                                        | Recursive glob from `--root` | Pre-existing compile database (copied if found)               |
+| `CMakeLists.txt` / `meson.build` / `build.ninja` / `WORKSPACE` | Root directory               | Triggers delegate build system                                |
 
 ## Output Files
 
-| Output | Location | Description |
-|---|---|---|
+| Output                  | Location                                                    | Description                               |
+| ----------------------- | ----------------------------------------------------------- | ----------------------------------------- |
 | `compile_commands.json` | `<root>/compile_commands.json` (default) or `--output` path | JSON array of compile commands for clangd |
 
 ### Output Format
@@ -91,11 +91,11 @@ This script does not read `.env` files. It uses no environment variables beyond 
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success (file generated or already exists) |
-| `1` | No parseable build artifacts found under the repo root |
-| `2` | Delegate build tool not on PATH, or delegate exporter failed |
+| Code | Meaning                                                      |
+| ---- | ------------------------------------------------------------ |
+| `0`  | Success (file generated or already exists)                   |
+| `1`  | No parseable build artifacts found under the repo root       |
+| `2`  | Delegate build tool not on PATH, or delegate exporter failed |
 
 ## Project File Parsing Details
 
