@@ -88,9 +88,11 @@ $defaultFence = Cfg 'DEFAULT_FENCE'       $presetData.Fence
 $maxFileLines = [int](Cfg 'MAX_FILE_LINES' '800')
 
 $llmEndpoint      = Get-LLMEndpoint
-# Prefer LLM_MODEL_HIGH_CTX if set (this script needs a 12k-context variant for
-# 4000-token fix calls); otherwise fall back to the standard LLM_MODEL.
-$llmModel         = Cfg 'LLM_MODEL_HIGH_CTX' (Cfg 'LLM_MODEL' 'qwen2.5-coder:14b')
+# Model resolution via Get-LLMModel:
+#   LLM_MODEL -> LLM_DEFAULT_MODEL -> 'qwen3-coder:30b' fallback.
+# (The former LLM_MODEL_HIGH_CTX preference is retired; per-request num_ctx
+# handles the 12k fix-call window.)
+$llmModel         = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature   = [double](Cfg 'LLM_TEMPERATURE'   '0.1')
 $llmTimeout       = [int](Cfg 'LLM_TIMEOUT'          '300')   # 4000-token fix calls on a 32B model regularly exceed 120s
 $analyseMaxTokens = [int](Cfg 'BUGHUNT_ANALYSE_TOKENS' '900')

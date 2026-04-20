@@ -64,31 +64,31 @@ Sends a chat completion request to Ollama and returns the generated text.
 
 **Two API modes:**
 
-| Condition | Endpoint | Request shape |
-|-----------|----------|---------------|
-| `num_ctx > 0` | `/api/chat` (native Ollama) | `options.num_ctx`, `options.temperature`, `options.num_predict` |
-| `num_ctx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens` |
+| Condition      | Endpoint                               | Request shape                                                   |
+| -------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `num_ctx > 0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
+| `num_ctx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens`                                     |
 
 When `num_ctx` is -1 (default), the value is read from `env["LLM_NUM_CTX"]`,
 defaulting to `0` if absent.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `user_prompt` | `str` | (required) | The user message content |
-| `env` | `dict[str, str]` | (required) | Loaded .env configuration |
-| `system_prompt` | `str` or `None` | `None` | Optional system message |
-| `endpoint` | `str` or `None` | `None` | Explicit endpoint URL; auto-resolved if None |
-| `model` | `str` | `"qwen2.5-coder:14b"` | Ollama model name |
-| `temperature` | `float` | `0.1` | Sampling temperature |
-| `max_tokens` | `int` | `800` | Maximum output tokens (`num_predict` in native mode) |
-| `num_ctx` | `int` | `-1` | Context window size; -1 reads from env |
-| `timeout` | `int` | `120` | HTTP request timeout in seconds |
-| `max_retries` | `int` | `3` | Maximum retry attempts |
-| `retry_delay` | `int` | `5` | Seconds between retries |
-| `think` | `bool` | `False` | Enable thinking/reasoning mode |
-| `thinking_file` | `Path` or `None` | `None` | File to write reasoning trace |
+| Name            | Type             | Default               | Description                                          |
+| --------------- | ---------------- | --------------------- | ---------------------------------------------------- |
+| `user_prompt`   | `str`            | (required)            | The user message content                             |
+| `env`           | `dict[str, str]` | (required)            | Loaded .env configuration                            |
+| `system_prompt` | `str` or `None`  | `None`                | Optional system message                              |
+| `endpoint`      | `str` or `None`  | `None`                | Explicit endpoint URL; auto-resolved if None         |
+| `model`         | `str`            | `"qwen2.5-coder:14b"` | Ollama model name                                    |
+| `temperature`   | `float`          | `0.1`                 | Sampling temperature                                 |
+| `max_tokens`    | `int`            | `800`                 | Maximum output tokens (`num_predict` in native mode) |
+| `num_ctx`       | `int`            | `-1`                  | Context window size; -1 reads from env               |
+| `timeout`       | `int`            | `120`                 | HTTP request timeout in seconds                      |
+| `max_retries`   | `int`            | `3`                   | Maximum retry attempts                               |
+| `retry_delay`   | `int`            | `5`                   | Seconds between retries                              |
+| `think`         | `bool`           | `False`               | Enable thinking/reasoning mode                       |
+| `thinking_file` | `Path` or `None` | `None`                | File to write reasoning trace                        |
 
 **Returns:** `str` -- the trimmed response content.
 
@@ -103,9 +103,13 @@ sidecar file.
 
 **Retry logic:**
 
-Catches `URLError`, `HTTPError`, `JSONDecodeError`, and `LLMError`. Retries
-up to `max_retries` times with `retry_delay` seconds between each attempt.
-Prints a `[retry N/M]` message to stdout on each retry.
+Two separate `except` branches handle different failure modes:
+
+- **`TimeoutError`** (and its alias `socket.timeout` on Python 3.10+) is caught on its own branch. `urllib.request.urlopen` raises `socket.timeout` when the `timeout` parameter expires — this is NOT a subclass of `urllib.error.URLError`, so a combined except clause would miss it (this was a real bug fixed earlier in the project's history — the symptom was `Unexpected error: timed out` propagating up unhandled). On timeout, the handler converts the exception to an `LLMError` with a hint: *"LLM request timed out after Ns (model=..., num_ctx=...). Raise LLM_PLANNING_TIMEOUT (or LLM_TIMEOUT) in .env if the model legitimately needs longer, or lower num_ctx / max_tokens."* — so the caller gets an actionable diagnostic rather than a bare timeout.
+
+- **`URLError`, `HTTPError`, `JSONDecodeError`, `LLMError`** share the general retry branch.
+
+Both branches retry up to `max_retries` times with `retry_delay` seconds between each attempt. A `[retry N/M]` message prints to stdout on each retry. After `max_retries` exhausted attempts, the final exception (whether a timeout-hinted `LLMError` or one of the other classes) is re-raised inside the function's terminating `raise LLMError(f"LLM call failed after {max_retries} attempts: {last_err}")`.
 
 **Sanity checks (same as PowerShell version):**
 
@@ -149,12 +153,12 @@ not check `os.environ`.
 
 ## .env Keys Consumed
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `LLM_ENDPOINT` | (none) | Full Ollama API URL |
-| `LLM_HOST` | `192.168.1.126` | Ollama server hostname |
-| `LLM_PORT` | `11434` | Ollama server port |
-| `LLM_NUM_CTX` | `0` | Context window; 0 = OpenAI compat mode |
+| Key            | Default         | Description                            |
+| -------------- | --------------- | -------------------------------------- |
+| `LLM_ENDPOINT` | (none)          | Full Ollama API URL                    |
+| `LLM_HOST`     | `192.168.1.126` | Ollama server hostname                 |
+| `LLM_PORT`     | `11434`         | Ollama server port                     |
+| `LLM_NUM_CTX`  | `0`             | Context window; 0 = OpenAI compat mode |
 
 ---
 

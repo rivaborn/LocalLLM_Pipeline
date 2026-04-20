@@ -28,12 +28,12 @@
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `-SrcDir` | string | `"src"` | Source code directory (relative to repo root). |
-| `-TestDir` | string | `"tests"` | Test directory (relative to repo root). Must exist. |
-| `-Clean` | switch | off | Delete the entire `test_gaps/` directory and cache before running. |
-| `-EnvFile` | string | `Common/.env` | Path to the `.env` configuration file. |
+| Parameter   | Type   | Default       | Description                                                        |
+| ----------- | ------ | ------------- | ------------------------------------------------------------------ |
+| `-SrcDir`   | string | `"src"`       | Source code directory (relative to repo root).                     |
+| `-TestDir`  | string | `"tests"`     | Test directory (relative to repo root). Must exist.                |
+| `-Clean`    | switch | off           | Delete the entire `test_gaps/` directory and cache before running. |
+| `-EnvFile`  | string | `Common/.env` | Path to the `.env` configuration file.                             |
 
 ## How It Is Invoked
 
@@ -44,35 +44,33 @@ cd C:\Projects\MyApp
 .\LocalLLMDebug\testgap_local.ps1 -SrcDir src -TestDir tests
 ```
 
-### Via Arch_Debug_Pipeline.ps1 (legacy orchestrator)
+### Via ArchPipeline.py (current)
 
-The legacy debug pipeline calls `testgap_local.ps1` as step 3 of its 6-step sequence:
+`ArchPipeline.py debug` mode calls `testgap_local.ps1` as **step 3** of its 6-step sequence. The orchestrator at `Common/_pipeline/modes/debug/cli.py` invokes it as a subprocess via `subprocess_runner.powershell_cmd()`, forwarding `--target-dir` → `-SrcDir`, `--test-dir` → `-TestDir`, and resolving `-EnvFile` from `Common/.env` automatically.
 
 ```
 Step 1: dataflow_local.ps1
 Step 2: interfaces_local.ps1
 Step 3: testgap_local.ps1       <-- this script
 Step 4: bughunt_local.ps1
-Step 5: LLM-based bug fixing
-Step 6: Archive summary
+Step 5: fix_bugs.py (inline)
+Step 6: Archive
 ```
 
-### Via ArchPipeline.py
-
-The unified `ArchPipeline.py` debug mode is not yet fully wired but is expected to call this script when completed.
+The legacy `Arch_Debug_Pipeline.ps1` has been retired; it remains in `legacy/` for reference only.
 
 ## Input Files
 
-| Input | Description |
-|-------|-------------|
-| `.py` source files under `SrcDir` | All Python files, excluding `__pycache__` and `.egg-info` directories. |
-| Test files under `TestDir` | Matched to source files via naming conventions (see below). |
-| `tests/conftest.py` (optional) | Shared pytest fixtures. When present, included in every per-file analysis prompt so the LLM understands available fixtures. |
+| Input                                  | Description                                                                                                                              |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `.py` source files under `SrcDir`      | All Python files, excluding `__pycache__` and `.egg-info` directories.                                                                   |
+| Test files under `TestDir`             | Matched to source files via naming conventions (see below).                                                                              |
+| `tests/conftest.py` (optional)         | Shared pytest fixtures. When present, included in every per-file analysis prompt so the LLM understands available fixtures.              |
 | `tests/test_integration.py` (optional) | Integration tests. When present, included as supplementary context for files that have unit tests (not included for files with no test). |
-| `Common/.env` | Configuration for LLM endpoint, model, temperature, and token limits. |
-| `testgap_file_prompt.txt` | Prompt schema for files that have a matching test file. |
-| `testgap_notest_prompt.txt` | Prompt schema for files with no test file. |
-| `testgap_synth_prompt.txt` | Prompt schema for the synthesis pass. |
+| `Common/.env`                          | Configuration for LLM endpoint, model, temperature, and token limits.                                                                    |
+| `testgap_file_prompt.txt`              | Prompt schema for files that have a matching test file.                                                                                  |
+| `testgap_notest_prompt.txt`            | Prompt schema for files with no test file.                                                                                               |
+| `testgap_synth_prompt.txt`             | Prompt schema for the synthesis pass.                                                                                                    |
 
 ### Test File Discovery
 
@@ -86,12 +84,12 @@ Path segments after `src/<package>/` are used to build the test file name. The `
 
 ## Output Files and Directories
 
-| Output | Description |
-|--------|-------------|
-| `test_gaps/GAP_REPORT.md` | The final synthesised, prioritised test gap report. Includes an HTML comment header with generation metadata (date, codebase, source/test dirs, file count, model). |
-| `test_gaps/<src_rel>.gap.md` | Per-file gap analysis in Markdown. One file per source module. |
+| Output                                     | Description                                                                                                                                                                  |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_gaps/GAP_REPORT.md`                  | The final synthesised, prioritised test gap report. Includes an HTML comment header with generation metadata (date, codebase, source/test dirs, file count, model).          |
+| `test_gaps/<src_rel>.gap.md`               | Per-file gap analysis in Markdown. One file per source module.                                                                                                               |
 | `test_gaps/.testgap_state/cache/<key>.txt` | Cached analysis results keyed by `<src_sha>_<test_sha>` (or `<src_sha>_notest` for files without tests). Only re-analyses files where either the source or test has changed. |
-| `test_gaps/.testgap_state/last_error.log` | Timestamped log of analysis and synthesis failures. |
+| `test_gaps/.testgap_state/last_error.log`  | Timestamped log of analysis and synthesis failures.                                                                                                                          |
 
 ### Fallback Behavior
 
@@ -99,27 +97,27 @@ If the synthesis call fails, the script writes a fallback document containing al
 
 ## Environment Variables / .env Keys
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `PRESET` | `""` | Named preset for codebase description and language settings. |
-| `CODEBASE_DESC` | from preset | Human-readable codebase description for LLM system prompts. |
-| `DEFAULT_FENCE` | from preset | Code fence language identifier. |
-| `MAX_FILE_LINES` | `800` | Files longer than this are truncated before sending to the LLM. |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | — | Ollama API endpoint. |
-| `LLM_MODEL_HIGH_CTX` | fallback to `LLM_MODEL` | Preferred model name. High-context variant preferred because the synthesis pass reads ~10k tokens of per-file analyses. |
-| `LLM_MODEL` | `qwen2.5-coder:14b` | Fallback model name. |
-| `LLM_TEMPERATURE` | `0.1` | LLM sampling temperature. |
-| `LLM_TIMEOUT` | `120` | Base per-request timeout in seconds. The synthesis call uses `3x` this value. |
-| `TESTGAP_FILE_TOKENS` | `700` | Max output tokens per file analysis call (Pass 1). |
-| `TESTGAP_SYNTH_TOKENS` | `1800` | Max output tokens for the synthesis call (Pass 2). |
+| Key                                     | Default                 | Description                                                                                                             |
+| --------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `PRESET`                                | `""`                    | Named preset for codebase description and language settings.                                                            |
+| `CODEBASE_DESC`                         | from preset             | Human-readable codebase description for LLM system prompts.                                                             |
+| `DEFAULT_FENCE`                         | from preset             | Code fence language identifier.                                                                                         |
+| `MAX_FILE_LINES`                        | `800`                   | Files longer than this are truncated before sending to the LLM.                                                         |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Ollama API endpoint.                                                                                                    |
+| `LLM_MODEL`                             | blank (→ `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`) | Model name. Resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` covers the ~10k synth-pass window.              |
+| `LLM_DEFAULT_MODEL`                     | `qwen3-coder:30b`       | Universal fallback used when `LLM_MODEL` is blank/unset.                                                                |
+| `LLM_TEMPERATURE`                       | `0.1`                   | LLM sampling temperature.                                                                                               |
+| `LLM_TIMEOUT`                           | `120`                   | Base per-request timeout in seconds. The synthesis call uses `3x` this value.                                           |
+| `TESTGAP_FILE_TOKENS`                   | `700`                   | Max output tokens per file analysis call (Pass 1).                                                                      |
+| `TESTGAP_SYNTH_TOKENS`                  | `1800`                  | Max output tokens for the synthesis call (Pass 2).                                                                      |
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success. Gap report and per-file analyses written. |
-| `1` | Source or test directory not found, no analyses succeeded, or synthesis failed (fallback written). |
-| `2` | Required prompt file is missing. |
+| Code   | Meaning                                                                                            |
+| ------ | -------------------------------------------------------------------------------------------------- |
+| `0`    | Success. Gap report and per-file analyses written.                                                 |
+| `1`    | Source or test directory not found, no analyses succeeded, or synthesis failed (fallback written). |
+| `2`    | Required prompt file is missing.                                                                   |
 
 Individual analysis failures do not cause the script to exit. The synthesis proceeds with whatever analyses succeeded.
 

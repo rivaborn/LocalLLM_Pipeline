@@ -55,12 +55,12 @@ Spawns a subprocess and streams its output in real time.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `cmd` | `list[str]` | (required) | Command and arguments to execute |
-| `cwd` | `Path` | (required) | Working directory for the subprocess |
-| `logger` | `logging.Logger` | (required) | Logger for recording output |
-| `dry_run` | `bool` | `False` | If True, logs the command but does not execute |
+| Name      | Type             | Default    | Description                                    |
+| --------- | ---------------- | ---------- | ---------------------------------------------- |
+| `cmd`     | `list[str]`      | (required) | Command and arguments to execute               |
+| `cwd`     | `Path`           | (required) | Working directory for the subprocess           |
+| `logger`  | `logging.Logger` | (required) | Logger for recording output                    |
+| `dry_run` | `bool`           | `False`    | If True, logs the command but does not execute |
 
 **Behavior:**
 
@@ -116,10 +116,10 @@ flags used throughout the pipeline.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `script` | `Path` | Path to the `.ps1` script |
-| `*args` | `str` | Additional arguments passed to the script |
+| Name     | Type   | Description                               |
+| -------- | ------ | ----------------------------------------- |
+| `script` | `Path` | Path to the `.ps1` script                 |
+| `*args`  | `str`  | Additional arguments passed to the script |
 
 **Returns:** `list[str]` -- command list in the form:
 
@@ -130,11 +130,11 @@ flags used throughout the pipeline.
 
 **Flags used:**
 
-| Flag | Purpose |
-|------|---------|
-| `-NoProfile` | Skip loading the user's PowerShell profile for faster startup |
-| `-ExecutionPolicy Bypass` | Allow running unsigned scripts |
-| `-File` | Execute the script at the given path |
+| Flag                      | Purpose                                                       |
+| ------------------------- | ------------------------------------------------------------- |
+| `-NoProfile`              | Skip loading the user's PowerShell profile for faster startup |
+| `-ExecutionPolicy Bypass` | Allow running unsigned scripts                                |
+| `-File`                   | Execute the script at the given path                          |
 
 **Example:**
 

@@ -124,6 +124,21 @@ def run(args: argparse.Namespace) -> int:
     cprint(f"  Started at {datetime.datetime.now():%Y-%m-%d %H:%M:%S}", Color.CYAN)
     logger.info("Debug pipeline started; target=%s", args.target_dir)
 
+    # Per-mode models summary — debug routes steps 1-4 (ps1 workers) and
+    # step 5 (inline fix_bugs.py) all through the same local LLM.
+    env_preview = cfg.load_env()
+    dbg_model = cfg.resolve_model(env_preview, "LLM_MODEL", "qwen3-coder:30b")
+    cprint("\n  Models for this run:", Color.CYAN)
+    cprint(
+        f"    Steps 1-4 (dataflow, interfaces, testgap, bughunt)   ->  local '{dbg_model}'",
+        Color.CYAN,
+    )
+    cprint(
+        f"    Step 5 (fix_bugs inline)                              ->  local '{dbg_model}' "
+        f"(uses LLM_FIX_MAX_TOKENS / LLM_TIMEOUT per-file)",
+        Color.CYAN,
+    )
+
     progress = ProgressFile(repo_root / ".debug_progress")
     if args.restart:
         progress.clear()

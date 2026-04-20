@@ -18,7 +18,20 @@
       "Bash(git rm *)",
       "Bash(git revert *)",
       "Bash(ls -d /c/Coding/LocalLLM_Pipeline/*/Documentation)",
-      "Bash(find /c/Coding/LocalLLM_Pipeline/*/Documentation -name \"*.md\")"
+      "Bash(find /c/Coding/LocalLLM_Pipeline/*/Documentation -name \"*.md\")",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(cp LocalLLMCodePrompts/aidercommands.md LocalLLMCodePrompts/aidercommands.md.post-fence-fix)",
+      "Bash(cp LocalLLMCodePrompts/aidercommands.md.pre-fence-fix LocalLLMCodePrompts/aidercommands.md)",
+      "Bash(echo \"--- exit code: $? ---\")",
+      "Bash(python C:/Coding/LocalLLM_Pipeline/LocalLLMCoding/run_aider.py --dry-run)",
+      "Bash(echo \"exit code \\(broken file\\): $?\")",
+      "Bash(cp LocalLLMCodePrompts/aidercommands.md.post-fence-fix LocalLLMCodePrompts/aidercommands.md)",
+      "Bash(rm LocalLLMCodePrompts/aidercommands.md.post-fence-fix)",
+      "Bash(echo \"exit code \\(fixed file\\): $?\")",
+      "Bash(awk '/Models for this run/{flag=1} flag{print} flag && /^  -+$/{cnt++; if\\(cnt==2\\) exit}')",
+      "Bash(.venv/Scripts/pip.exe show *)",
+      "Bash(claude -p --output-format stream-json --model haiku)",
+      "Bash(claude -p --output-format stream-json --verbose --include-partial-messages --model haiku)"
     ]
   }
 }

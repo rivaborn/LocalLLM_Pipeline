@@ -94,3 +94,20 @@ def resolve_ollama_endpoint(
         port = env.get("LLM_PORT", "11434")
         return f"http://{env['LLM_HOST']}:{port}"
     return DEFAULT_OLLAMA_ENDPOINT
+
+
+def resolve_model(env: dict[str, str], role_key: str, fallback: str) -> str:
+    """Return the LLM model name for a pipeline role, following the chain:
+    role-specific key (if set and non-empty) ->
+    LLM_DEFAULT_MODEL (if set and non-empty) ->
+    fallback.
+
+    Blank strings count as unset so an operator can leave `LLM_MODEL=` in
+    their .env to document the key without overriding the default."""
+    role = env.get(role_key, "").strip()
+    if role:
+        return role
+    default = env.get("LLM_DEFAULT_MODEL", "").strip()
+    if default:
+        return default
+    return fallback

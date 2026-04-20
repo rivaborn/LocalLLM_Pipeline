@@ -172,7 +172,7 @@ The strongest local code model in its class. Produces the most thorough bug repo
 
 Fits comfortably on 12 GB GPUs at the default 32k context -- no custom variants needed. Roughly 80% of the 32b's review depth in practice. Still a capable code reviewer and generator. The right choice when VRAM is limited.
 
-When using the 14b model, set a single `LLM_MODEL` in `.env` and leave `LLM_MODEL_HIGH_CTX` unset. All scripts fall back to `LLM_MODEL`, and the 14b's default 32k context window handles everything -- analysis, synthesis, and fix calls -- without needing separate variants.
+When using the 14b model, set `LLM_DEFAULT_MODEL=qwen2.5-coder:14b` in `.env` and leave the role-specific keys blank. The 14b's default 32k context window handles everything -- analysis, synthesis, and fix calls -- without needing separate variants.
 
 ### qwen2.5-coder:7b -- adequate (~5 GB weights)
 
@@ -194,31 +194,46 @@ If you see `BLOAT` or `DIVERGING` statuses firing frequently, a weak or agentic 
 
 ## 7. Wiring Models to Scripts via .env
 
-The pipelines use one or two model keys in their `.env` files:
+The pipelines resolve the model per role through a single fallback chain
+(`cfg.resolve_model` in Python, `Get-LLMModel` in PowerShell):
 
-| Key                 | Used by                                                                        |
-|---------------------|--------------------------------------------------------------------------------|
-| `LLM_MODEL`         | All scripts (default)                                                          |
-| `LLM_MODEL_HIGH_CTX` | Preferred over `LLM_MODEL` by the three heavy debugging scripts when set     |
+```
+role-specific key  ->  LLM_DEFAULT_MODEL  ->  hardcoded fallback
+```
 
-### 24 GB GPU configuration (two variants)
+| Key                  | Used by                                                                  |
+|----------------------|--------------------------------------------------------------------------|
+| `LLM_DEFAULT_MODEL`  | Universal fallback for every role key below (blank/unset => fallback)    |
+| `LLM_MODEL`          | Debug + analysis workers                                                 |
+| `LLM_PLANNING_MODEL` | Coding planning stages (0, 1, 2a, 2b, 3a, 3b) when `--local`             |
+| `LLM_AIDER_MODEL`    | Coding stages 4 (`run_aider.py`) + 5 (`fix_imports.py`)                  |
+
+### 24 GB GPU configuration (one model everywhere)
 
 ```ini
-LLM_MODEL=qwen2.5-coder:32b-8k
-LLM_MODEL_HIGH_CTX=qwen2.5-coder:32b-12k
+LLM_DEFAULT_MODEL=qwen3-coder:30b
 LLM_TIMEOUT=300
 ```
 
-Most scripts use the 8k model. `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and `testgap_local.ps1` automatically use the 12k model.
+All role keys left blank => every worker uses `qwen3-coder:30b`. Per-request
+`num_ctx` handles the high-context synthesis passes in the three heavy
+debug workers (`bughunt_iterative_local.ps1`, `interfaces_local.ps1`,
+`testgap_local.ps1`), so no separate "high-ctx" model variant is needed.
 
-### 12 GB GPU configuration (single model)
+### 12 GB GPU configuration (one model everywhere)
 
 ```ini
-LLM_MODEL=qwen2.5-coder:14b
+LLM_DEFAULT_MODEL=qwen2.5-coder:14b
 LLM_TIMEOUT=180
 ```
 
-Leave `LLM_MODEL_HIGH_CTX` unset. All scripts use the 14b model with its default 32k context.
+### Reasoning model for planning, coder model for everything else
+
+```ini
+LLM_DEFAULT_MODEL=qwen3-coder:30b
+LLM_PLANNING_MODEL=gemma4:26b
+LLM_THINK=true
+```
 
 ### Aider (LocalLLMCoding)
 

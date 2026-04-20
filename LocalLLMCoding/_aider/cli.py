@@ -21,14 +21,15 @@ except Exception:  # noqa: BLE001
 
 TOOLKIT_ROOT: Path = cfg.toolkit_root()
 _SCRIPT_DIR = TOOLKIT_ROOT / "LocalLLMCoding"
-_DEFAULT_LOCAL_MODEL = "qwen3.5:27b"
+_DEFAULT_LOCAL_MODEL = "qwen3-coder:30b"
 
 
 def resolve_local_config() -> tuple[str, str]:
-    """Return (endpoint, model) from Common/.env via shared config."""
+    """Return (endpoint, model) from Common/.env via shared config.
+    Model resolution chains LLM_AIDER_MODEL -> LLM_DEFAULT_MODEL -> fallback."""
     env = cfg.load_env()
     endpoint = cfg.resolve_ollama_endpoint(env)
-    model = env.get("LLM_AIDER_MODEL", _DEFAULT_LOCAL_MODEL)
+    model = cfg.resolve_model(env, "LLM_AIDER_MODEL", _DEFAULT_LOCAL_MODEL)
     return endpoint, model
 
 
@@ -52,6 +53,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-strict-outputs", action="store_true",
                         help="Don't fail a step when its declared output files "
                              "are missing or empty after aider exits 0")
+    parser.add_argument("--empty-retries", type=int, default=2, metavar="N",
+                        help="Retry up to N times if aider exits 0 but the "
+                             "declared output files are empty (default: 2, "
+                             "i.e. 3 total attempts). Set to 0 to disable.")
     parser.add_argument("--pyright", action="store_true",
                         help="Start a pyright-langserver and resolve CamelCase "
                              "symbol names in each step prompt against installed "
@@ -136,7 +141,8 @@ def main() -> None:
                           inject_symbols=not args.no_symbols,
                           future_steps=future,
                           strict_outputs=not args.no_strict_outputs,
-                          pyright_client=pyright_client)
+                          pyright_client=pyright_client,
+                          max_empty_retries=args.empty_retries)
             if not ok:
                 failed_at = n
                 break

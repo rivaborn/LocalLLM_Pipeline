@@ -43,7 +43,7 @@ $codebaseDesc   = Cfg 'CODEBASE_DESC' 'game engine / game codebase'
 $chunkThreshold = [int](Cfg 'CHUNK_THRESHOLD' '400')
 
 $llmEndpoint    = Get-LLMEndpoint
-$llmModel       = Cfg 'LLM_MODEL'       'qwen2.5-coder:14b'
+$llmModel       = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature = [double](Cfg 'LLM_TEMPERATURE' '0.1')
 $llmTimeout     = [int](Cfg 'LLM_TIMEOUT'        '120')
 

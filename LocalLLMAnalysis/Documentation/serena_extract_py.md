@@ -16,12 +16,12 @@ the session are tracked and cleaned up at exit.
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| Python 3.12+ | Run via `uv run --python 3.12` (typically invoked by `serena_extract.ps1`) |
-| `clangd` | On PATH or provided via `--clangd-path` |
-| `compile_commands.json` | At the repo root for clangd to resolve compilation flags |
-| Sufficient RAM | Each clangd instance uses ~3-8 GB depending on project size |
+| Requirement             | Details                                                                    |
+| ----------------------- | -------------------------------------------------------------------------- |
+| Python 3.12+            | Run via `uv run --python 3.12` (typically invoked by `serena_extract.ps1`) |
+| `clangd`                | On PATH or provided via `--clangd-path`                                    |
+| `compile_commands.json` | At the repo root for clangd to resolve compilation flags                   |
+| Sufficient RAM          | Each clangd instance uses ~3-8 GB depending on project size                |
 
 **No pip dependencies** -- the script uses only the Python standard library.
 
@@ -34,23 +34,23 @@ python serena_extract.py --test  # run unit tests
 
 ### CLI Options
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `--repo-root` | string | (required) | Repository root directory |
-| `--target-dir` | string | `"."` | Subdirectory to scan |
-| `--output-dir` | string | `architecture/.serena_context` | Output directory for context files |
-| `--clangd-path` | string | `"clangd"` | Path to clangd binary |
-| `--jobs` | int | `2` | clangd `-j` parallelism per instance (background index threads) |
-| `--workers` | int | `0` | Max parallel clangd instances. `0` = auto based on free RAM. |
-| `--file-list` | string | `None` | Path to a text file containing relative paths (one per line) |
-| `--include-rx` | string | `\.(cpp\|cc\|cxx\|h\|hpp\|inl\|c)$` | Include regex for file extensions |
-| `--exclude-rx` | string | (complex default) | Exclude regex for directories |
-| `--force` | flag | off | Re-extract even if hash matches (context is up-to-date) |
-| `--skip-refs` | flag | off | Skip reference queries (much faster, symbols only) |
-| `--compress` | flag | off | Collapse class methods into counts, show top-15 symbols |
-| `--min-free-ram` | float | `6.0` | Minimum free RAM in GB to maintain |
-| `--ram-per-worker` | float | `5.0` | Estimated RAM per clangd instance in GB |
-| `--test` | flag | off | Run unit tests (no clangd required) |
+| Parameter          | Type   | Default                             | Description                                                     |
+| ------------------ | ------ | ----------------------------------- | --------------------------------------------------------------- |
+| `--repo-root`      | string | (required)                          | Repository root directory                                       |
+| `--target-dir`     | string | `"."`                               | Subdirectory to scan                                            |
+| `--output-dir`     | string | `architecture/.serena_context`      | Output directory for context files                              |
+| `--clangd-path`    | string | `"clangd"`                          | Path to clangd binary                                           |
+| `--jobs`           | int    | `2`                                 | clangd `-j` parallelism per instance (background index threads) |
+| `--workers`        | int    | `0`                                 | Max parallel clangd instances. `0` = auto based on free RAM.    |
+| `--file-list`      | string | `None`                              | Path to a text file containing relative paths (one per line)    |
+| `--include-rx`     | string | `\.(cpp\|cc\|cxx\|h\|hpp\|inl\|c)$` | Include regex for file extensions                               |
+| `--exclude-rx`     | string | (complex default)                   | Exclude regex for directories                                   |
+| `--force`          | flag   | off                                 | Re-extract even if hash matches (context is up-to-date)         |
+| `--skip-refs`      | flag   | off                                 | Skip reference queries (much faster, symbols only)              |
+| `--compress`       | flag   | off                                 | Collapse class methods into counts, show top-15 symbols         |
+| `--min-free-ram`   | float  | `6.0`                               | Minimum free RAM in GB to maintain                              |
+| `--ram-per-worker` | float  | `5.0`                               | Estimated RAM per clangd instance in GB                         |
+| `--test`           | flag   | off                                 | Run unit tests (no clangd required)                             |
 
 ## How It Is Invoked
 
@@ -66,20 +66,20 @@ python serena_extract.py --repo-root C:/Coding/Generals --target-dir . --include
 
 ## Input Files
 
-| Input | Location | Description |
-|---|---|---|
-| Source files | `<repo>/<target-dir>/` | Files matching `--include-rx` and not `--exclude-rx` |
-| `compile_commands.json` | `<repo>/compile_commands.json` | Compilation database for clangd |
-| `.cache/clangd/index/` | `<repo>/.cache/clangd/index/` | clangd background index (built automatically on first run) |
+| Input                   | Location                       | Description                                                |
+| ----------------------- | ------------------------------ | ---------------------------------------------------------- |
+| Source files            | `<repo>/<target-dir>/`         | Files matching `--include-rx` and not `--exclude-rx`       |
+| `compile_commands.json` | `<repo>/compile_commands.json` | Compilation database for clangd                            |
+| `.cache/clangd/index/`  | `<repo>/.cache/clangd/index/`  | clangd background index (built automatically on first run) |
 
 ## Output Files
 
-| Output | Location | Description |
-|---|---|---|
-| Context files | `<output-dir>/<rel>.serena_context.txt` | Per-file LSP context |
-| Hash database | `<output-dir>/.state/hashes.tsv` | SHA-1 hashes for incremental skip |
-| Performance log | `<output-dir>/.state/perf.log` | Tab-separated timing data per file |
-| Error log | `<output-dir>/.state/errors.log` | Timestamped worker errors |
+| Output          | Location                                | Description                        |
+| --------------- | --------------------------------------- | ---------------------------------- |
+| Context files   | `<output-dir>/<rel>.serena_context.txt` | Per-file LSP context               |
+| Hash database   | `<output-dir>/.state/hashes.tsv`        | SHA-1 hashes for incremental skip  |
+| Performance log | `<output-dir>/.state/perf.log`          | Tab-separated timing data per file |
+| Error log       | `<output-dir>/.state/errors.log`        | Timestamped worker errors          |
 
 ### Context File Format
 
@@ -150,10 +150,10 @@ This script does not read `.env` directly. All configuration is passed via CLI a
 
 ## Exit Codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Success (or all tests passed with `--test`) |
-| `1` | No matching source files found, or tests failed |
+| Code | Meaning                                         |
+| ---- | ----------------------------------------------- |
+| `0`  | Success (or all tests passed with `--test`)     |
+| `1`  | No matching source files found, or tests failed |
 
 ## Examples
 

@@ -159,6 +159,19 @@ def run(args: argparse.Namespace) -> int:
         cprint("ERROR: No subsections found in .env", Color.RED)
         logger.error("No subsections found in .env")
         return 1
+
+    # Per-mode models summary — analysis routes every per-subsection
+    # worker through the same local LLM via $env:LLM_MODEL / $env:LLM_ENDPOINT
+    # inside the .ps1 scripts.
+    env = cfg.load_env()
+    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder:30b")
+    endpoint = cfg.resolve_ollama_endpoint(env)
+    cprint("\n  Models for this run:", Color.CYAN)
+    cprint(
+        f"    All six workers (archgen, archxref, archgraph, arch_overview, "
+        f"archpass2_context, archpass2_local) -> local '{model}' @ {endpoint}",
+        Color.CYAN,
+    )
     if args.start_from < 1:
         cprint("ERROR: --start-from must be >= 1", Color.RED)
         return 1

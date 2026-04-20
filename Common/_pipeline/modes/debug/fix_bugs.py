@@ -22,6 +22,7 @@ import logging
 import re
 from pathlib import Path
 
+from ... import config as cfg
 from ...ollama import LLMError, invoke_local_llm
 from ...progress import ProgressFile
 from ...subprocess_runner import StepFailed
@@ -206,7 +207,7 @@ def step5_fix_bugs(
         cprint(f"  Resuming from file {resume_sub + 1} ({resume_sub} of {total} done)",
                Color.YELLOW)
 
-    model = env.get("LLM_MODEL", "qwen3-coder:30b")
+    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder:30b")
     num_ctx = int(env.get("LLM_NUM_CTX", "32768"))
     timeout = int(env.get("LLM_TIMEOUT", "600"))
     max_tokens = int(env.get("LLM_FIX_MAX_TOKENS", "8192"))

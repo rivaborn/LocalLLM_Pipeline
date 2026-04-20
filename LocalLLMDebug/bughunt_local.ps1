@@ -49,7 +49,7 @@ $maxFileLines = [int](Cfg 'MAX_FILE_LINES' '800')
 
 # LLM settings
 $llmEndpoint    = Get-LLMEndpoint
-$llmModel       = Cfg 'LLM_MODEL'       'qwen2.5-coder:14b'
+$llmModel       = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature = [double](Cfg 'LLM_TEMPERATURE' '0.1')
 $llmTimeout     = [int](Cfg 'LLM_TIMEOUT'        '120')
 # Bug reports need more tokens than arch docs

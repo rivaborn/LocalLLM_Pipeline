@@ -37,9 +37,11 @@ _MAX_FILE_LINES = 400
 
 
 def resolve_diagnose_config() -> tuple[str, str]:
-    """Return (model, endpoint) using the shared endpoint precedence."""
+    """Return (model, endpoint) using the shared endpoint precedence.
+    Model resolution chains LLM_AIDER_MODEL -> LLM_DEFAULT_MODEL -> fallback
+    (LLM_FIX_IMPORTS_MODEL was deprecated; it always mirrored LLM_AIDER_MODEL)."""
     env = cfg.load_env()
-    model = env.get("LLM_FIX_IMPORTS_MODEL", DEFAULT_DIAGNOSE_MODEL)
+    model = cfg.resolve_model(env, "LLM_AIDER_MODEL", DEFAULT_DIAGNOSE_MODEL)
     endpoint = cfg.resolve_ollama_endpoint(env)
     return model, endpoint
 

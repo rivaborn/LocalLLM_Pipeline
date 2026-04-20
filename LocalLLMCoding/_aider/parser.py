@@ -20,6 +20,7 @@ def parse_steps(md_path: str) -> list[dict]:
         sys.exit(f"No steps found in {md_path}")
 
     steps: list[dict] = []
+    skipped: list[tuple[int, str, str]] = []  # (step_num, title, reason)
     for i, m in enumerate(matches):
         start = m.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(content)
@@ -48,11 +49,40 @@ def parse_steps(md_path: str) -> list[dict]:
                     break
 
         if not bash_cmd or not prompt:
-            print(f"  Warning: skipping unparseable section: {title}")
+            reasons: list[str] = []
+            if not bash_cmd:
+                reasons.append(
+                    "no aider command (no ```bash``` fence and no bare line starting with `aider `)"
+                )
+            if not prompt:
+                reasons.append("no non-bash code fence for the prompt body")
+            skipped.append((int(m.group(1)), title, "; ".join(reasons)))
             continue
 
         steps.append({"number": int(m.group(1)), "title": title,
                       "command": bash_cmd, "prompt": prompt})
+
+    if skipped:
+        total = len(matches)
+        lines_out = [
+            f"ERROR: {len(skipped)} of {total} step(s) in {md_path} are "
+            "unparseable; aborting Stage 4.",
+            "",
+        ]
+        for step_num, title, reason in skipped:
+            lines_out.append(f"  Step {step_num:>2} ({title}): {reason}")
+        lines_out += [
+            "",
+            "Every `## Step N` section must contain BOTH:",
+            "  (1) a bash command -- inside a ```bash``` fence OR as a bare "
+            "line starting with `aider `",
+            "  (2) a prompt body -- any non-bash ```...``` fenced code block",
+            "",
+            "Fix the affected sections in aidercommands.md and re-run. See "
+            "LocalLLMCoding/Documentation/run_aider.md for the expected step format.",
+        ]
+        sys.exit("\n".join(lines_out))
+
     return steps
 
 

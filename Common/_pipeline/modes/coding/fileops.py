@@ -73,10 +73,81 @@ _ALWAYS_INCLUDE_SECTIONS = (
 )
 
 
+# Files produced by the pipeline itself. If a Stage 3 step targets only
+# these, it's asking aider to re-write something the pipeline already
+# generated — skip it.
+PIPELINE_OUTPUT_FILES = frozenset({
+    "Architecture Plan.md",
+    "aidercommands.md",
+    "Implementation Planning Prompt.md",
+    "PromptUpdates.md",
+    "Codebase Summary.md",
+})
+
+
+def is_pipeline_output_only_step(step_files: str) -> bool:
+    files = [f.strip() for f in step_files.split(",") if f.strip()]
+    if not files:
+        return False
+    return all(Path(f).name in PIPELINE_OUTPUT_FILES for f in files)
+
+
+# Patterns that, when present in the architecture context fed to Stage 3b,
+# bias qwen3-coder and similar local models to copy stubs into their own
+# output. Neutralised before the LLM sees them.
+_ARCH_STUB_SUBS = [
+    # `def foo(...):` on a line, next line is only `pass` (with optional trailing comment).
+    (re.compile(r"(:[ \t]*\n[ \t]+)pass\b[ \t]*(?:#.*)?$", re.MULTILINE),
+     r"\1# [pseudocode stub - generated code MUST include a full implementation]"),
+    # Same for bare ellipsis bodies.
+    (re.compile(r"(:[ \t]*\n[ \t]+)\.\.\.[ \t]*(?:#.*)?$", re.MULTILINE),
+     r"\1# [pseudocode stub - generated code MUST include a full implementation]"),
+    # `# Placeholder implementation` anywhere.
+    (re.compile(r"#\s*Placeholder implementation\b", re.IGNORECASE),
+     "# [implement per the surrounding specification]"),
+    # Bare `# Placeholder` line (but not `# Placeholder: some note`).
+    (re.compile(r"^(\s*)#\s*Placeholder\s*$", re.MULTILINE),
+     r"\1# [implement per the surrounding specification]"),
+]
+
+
+def sanitize_arch_context(content: str) -> str:
+    """Neutralise stub patterns in the architecture context before it is
+    injected into a Stage 3b prompt.
+
+    Architecture plans describe methods in pseudocode, sometimes with
+    `pass` / `...` / `# Placeholder` as the body. Local models read those
+    as "this is the template to emit", copy them into their output, and
+    trigger the drift detector. Replacing them with explicit
+    "MUST include a full implementation" comments removes the pattern
+    without losing the method-signature context the LLM needs."""
+    for pattern, replacement in _ARCH_STUB_SUBS:
+        content = pattern.sub(replacement, content)
+    return content
+
+
 def architecture_slice(arch_content: str, files: list[str]) -> str:
     """Return the subset of Architecture Plan.md sections relevant to
-    the given files (by basename match) or always-included sections."""
-    basenames = [Path(f.replace("/", "\\")).name for f in files if f]
+    the given files (by basename match) or always-included sections.
+
+    Test files pull in their production module's section: a file named
+    `test_<stem>.py` also matches progressively-stripped variants of
+    `<stem>.py`. For `test_gpu_monitor.py` the candidates are
+    `gpu_monitor.py` and `monitor.py`, so a heading like
+    `## Module: src/nmon/gpu/monitor.py` is hit via the `monitor.py`
+    variant. Accepts some over-match (e.g. also pulls `llm/monitor.py`)
+    — the LLM gets distinguishing signal from the step title + file name."""
+    basenames: list[str] = []
+    for f in files:
+        if not f:
+            continue
+        b = Path(f.replace("/", "\\")).name
+        basenames.append(b)
+        if b.startswith("test_") and b.endswith(".py"):
+            stem = b[len("test_"):-len(".py")]  # "gpu_monitor"
+            tokens = stem.split("_")
+            for i in range(len(tokens)):
+                basenames.append("_".join(tokens[i:]) + ".py")
     parts = re.split(r"(?m)(?=^##\s)", arch_content)
     keep_parts: list[str] = []
     for part in parts:

@@ -57,7 +57,7 @@ $minTrivialLines = [int](Cfg 'MIN_TRIVIAL_LINES' '20')
 
 # LLM settings
 $llmEndpoint    = Get-LLMEndpoint
-$llmModel       = Cfg 'LLM_MODEL'       'qwen2.5-coder:14b'
+$llmModel       = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature = [double](Cfg 'LLM_TEMPERATURE' '0.1')
 $llmMaxTokens   = [int](Cfg 'LLM_MAX_TOKENS'    '800')
 $llmTimeout     = [int](Cfg 'LLM_TIMEOUT'        '120')

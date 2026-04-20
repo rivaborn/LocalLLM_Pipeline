@@ -50,7 +50,7 @@ $codebaseDesc = Cfg 'CODEBASE_DESC'       $presetData.Desc
 $defaultFence = Cfg 'DEFAULT_FENCE'       $presetData.Fence
 
 $llmEndpoint    = Get-LLMEndpoint
-$llmModel       = Cfg 'LLM_MODEL'       'qwen2.5-coder:14b'
+$llmModel       = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature = [double](Cfg 'LLM_TEMPERATURE' '0.1')
 $llmTimeout     = [int](Cfg 'LLM_TIMEOUT'        '120')
 

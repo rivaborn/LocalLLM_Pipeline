@@ -58,10 +58,10 @@ the ~3-second startup cost on each call.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `names` | `list[str]` | Symbol names to resolve |
-| `workspace_root` | `Path` | Project root (used as the LSP workspace) |
+| Name             | Type        | Description                              |
+| ---------------- | ----------- | ---------------------------------------- |
+| `names`          | `list[str]` | Symbol names to resolve                  |
+| `workspace_root` | `Path`      | Project root (used as the LSP workspace) |
 
 **Returns:** `str` -- formatted markdown block, or `""`.
 
@@ -129,10 +129,10 @@ are implemented.
 
 **Constructor parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `workspace_root` | `Path` | (required) | Project root directory |
-| `timeout` | `float` | `30.0` | Maximum seconds to wait for a response |
+| Name             | Type    | Default    | Description                            |
+| ---------------- | ------- | ---------- | -------------------------------------- |
+| `workspace_root` | `Path`  | (required) | Project root directory                 |
+| `timeout`        | `float` | `30.0`     | Maximum seconds to wait for a response |
 
 #### Lifecycle Methods
 
@@ -171,9 +171,9 @@ third-party packages since they are on the import path.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `query` | `str` | Substring to search for |
+| Name    | Type   | Description             |
+| ------- | ------ | ----------------------- |
+| `query` | `str`  | Substring to search for |
 
 **Returns:** `list[dict]` -- raw LSP symbol information entries.
 
@@ -195,8 +195,8 @@ Names shorter than 2 characters are skipped. If a symbol has no
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name    | Type        | Description             |
+| ------- | ----------- | ----------------------- |
 | `names` | `list[str]` | Symbol names to look up |
 
 **Returns:** `dict[str, list[tuple[str, str]]]` -- e.g.

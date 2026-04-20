@@ -14,9 +14,9 @@ from ...ollama import LLMError
 from ...progress import ProgressFile
 from ...subprocess_runner import UserCancelled
 from ...ui import Color, banner, cprint, setup_logging, stage_log
-from .router import get_mode
+from .router import describe_models, get_mode
 from .stages_exec import stage4_run_aider, stage5_fix_imports
-from .stages_llm import stage0, stage1, stage2, stage3
+from .stages_llm import stage0, stage1, stage2, stage2c_review, stage3, stage3c_review
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -58,6 +58,22 @@ def register(subparsers: argparse._SubParsersAction) -> None:
                         help="Print prompts/commands without running them.")
     parser.add_argument("--force", action="store_true",
                         help="Skip overwrite confirmation prompts.")
+    parser.add_argument("--review", action="store_true",
+                        help="Run Claude review + auto-fix at TWO checkpoints: "
+                             "(Stage 2c) after Architecture Plan.md is "
+                             "generated, audit vs. Implementation Planning "
+                             "Prompt.md and patch drift (missing Design "
+                             "Decisions, duplicate symbols, signature/import "
+                             "drift, stub bodies, phantom modules, etc.); "
+                             "(Stage 3c) after aidercommands.md is generated, "
+                             "audit + patch the step-level equivalents. Both "
+                             "stages BLOCK the next generation stage on any "
+                             "remaining blocking findings. Pre-patch snapshots "
+                             "saved to .bak files; audit logs to .review.md "
+                             "files in target_dir. NOTE: `--skip-stage N` also "
+                             "skips the corresponding review (2 skips 2c; 3 "
+                             "skips 3c) — use `--from-stage N --review` to "
+                             "audit existing artefacts without regenerating.")
     parser.add_argument("--package-dir", default=None, metavar="DIR",
                         help="[Stage 5] Package directory for fix_imports.py "
                              "(default: src/<--package-name> if given, else autodetect).")
@@ -90,7 +106,7 @@ def _resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path]:
 
 def _build_planning_cfg(env: dict[str, str], args: argparse.Namespace) -> dict:
     return {
-        "model":         env.get("LLM_PLANNING_MODEL", "gemma4:26b"),
+        "model":         cfg.resolve_model(env, "LLM_PLANNING_MODEL", "gemma4:26b"),
         "num_ctx":       int(env.get("LLM_PLANNING_NUM_CTX", "65536")),
         "max_tokens":    int(env.get("LLM_PLANNING_MAX_TOKENS", "49152")),
         "timeout":       int(env.get("LLM_PLANNING_TIMEOUT", env.get("LLM_TIMEOUT", "1200"))),
@@ -177,8 +193,37 @@ def run(args: argparse.Namespace) -> int:
         cprint(f"  Local endpoint: {planning_cfg['endpoint']}", Color.CYAN)
         cprint(f"  Local model:    {planning_cfg['model']} (num_ctx={planning_cfg['num_ctx']})", Color.CYAN)
 
+    # Per-stage model table — previews which engine/model every stage that
+    # will run in this invocation uses, before any LLM calls are made.
+    model_rows = describe_models(args, env, planning_cfg)
+    # Column widths derived from the longest cell in each column so the
+    # table renders cleanly regardless of model tags / statuses.
+    widths = {
+        "stage":  max(len("Stage"),  max(len(r["stage"])  for r in model_rows)),
+        "role":   max(len("Role"),   max(len(r["role"])   for r in model_rows)),
+        "engine": max(len("Engine"), max(len(r["engine"]) for r in model_rows)),
+        "model":  max(len("Model"),  max(len(r["model"])  for r in model_rows)),
+        "think":  max(len("Think"),  max(len(r["think"])  for r in model_rows)),
+    }
+    header = (f"  {'Stage':<{widths['stage']}}  {'Role':<{widths['role']}}  "
+              f"{'Engine':<{widths['engine']}}  {'Model':<{widths['model']}}  "
+              f"{'Think':<{widths['think']}}  Status")
+    divider = "  " + "-" * (len(header) - 2 + 8)  # leave room for Status column
+    cprint("\n  Models for this run:", Color.CYAN)
+    cprint(divider, Color.CYAN)
+    cprint(header, Color.CYAN)
+    cprint(divider, Color.CYAN)
+    for r in model_rows:
+        color = Color.GREEN if r["status"] == "will run" else Color.YELLOW
+        line = (f"  {r['stage']:<{widths['stage']}}  {r['role']:<{widths['role']}}  "
+                f"{r['engine']:<{widths['engine']}}  {r['model']:<{widths['model']}}  "
+                f"{r['think']:<{widths['think']}}  {r['status']}")
+        cprint(line, color)
+    cprint(divider, Color.CYAN)
+
     arch_plan = target_dir / "Architecture Plan.md"
     aider_commands = target_dir / "aidercommands.md"
+    impl_prompt = target_dir / "Implementation Planning Prompt.md"
     codebase_summary = repo_root / "Implemented Plans" / "Codebase Summary.md"
     skip = set(args.skip_stage)
 
@@ -201,12 +246,39 @@ def run(args: argparse.Namespace) -> int:
         else:
             cprint("\n  Skipping Stage 2 (Generate Architecture Plan)", Color.BLUE)
 
+        # Stage 2c review runs only when Stage 2 is not in --skip-stage
+        # (skipping Stage 2 also skips its review). It does run when Stage 2
+        # is above --from-stage — that's the "audit existing Arch Plan" case.
+        if args.review and 2 not in skip:
+            with stage_log(repo_root, "Stage 2c"):
+                if not stage2c_review(repo_root, target_dir, arch_plan,
+                                       impl_prompt, args, env, planning_cfg):
+                    cprint(
+                        "  Stage 3 blocked by Architecture Plan review. "
+                        "Patch the flagged sections (or restore from "
+                        "'Architecture Plan.md.bak') and re-run.",
+                        Color.RED + Color.BOLD,
+                    )
+                    return 1
+
         if from_stage <= 3 and 3 not in skip:
             with stage_log(repo_root, "Stage 3"):
                 stage3(repo_root, target_dir, arch_plan, aider_commands,
                        args, env, planning_cfg, progress, mode)
         else:
             cprint("\n  Skipping Stage 3 (Generate Aider Commands)", Color.BLUE)
+
+        # Same gating as Stage 2c: skipping Stage 3 also skips its review.
+        if args.review and 3 not in skip:
+            with stage_log(repo_root, "Stage 3c"):
+                if not stage3c_review(repo_root, target_dir, arch_plan,
+                                       aider_commands, args, env, planning_cfg):
+                    cprint(
+                        "  Stage 4 blocked by review. Patch the flagged "
+                        "steps and re-run (with or without --review).",
+                        Color.RED + Color.BOLD,
+                    )
+                    return 1
 
         if from_stage <= 4 and 4 not in skip:
             with stage_log(repo_root, "Stage 4"):

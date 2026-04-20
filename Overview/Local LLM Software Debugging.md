@@ -215,15 +215,15 @@ All configuration lives in `LocalLLMDebug/.env`. Key settings:
 | Setting               | Purpose                                                                |
 |-----------------------|------------------------------------------------------------------------|
 | `LLM_HOST` / `PORT`   | Ollama server address                                                  |
-| `LLM_MODEL`           | Model for most scripts (e.g. `qwen2.5-coder:32b-8k`)                  |
-| `LLM_MODEL_HIGH_CTX`  | Model for the three heavy scripts that need more context (e.g. `32b-12k`) |
+| `LLM_DEFAULT_MODEL`   | Universal fallback. Every role-specific key below falls back to it.    |
+| `LLM_MODEL`           | Debug + analysis model (leave blank to use `LLM_DEFAULT_MODEL`)        |
 | `LLM_TIMEOUT`         | Per-request timeout in seconds                                         |
 | `PRESET`              | File pattern preset (e.g. `python`, `cnc`)                             |
 | `INCLUDE_EXT_REGEX`   | Override file extensions to include                                    |
 | `EXCLUDE_DIRS_REGEX`  | Override directories to exclude                                        |
 | `MAX_FILE_LINES`      | Source truncation limit (default 800)                                  |
 
-Three scripts (`bughunt_iterative_local.ps1`, `interfaces_local.ps1`, `testgap_local.ps1`) automatically prefer `LLM_MODEL_HIGH_CTX` when set, because their synthesis passes read 10k+ tokens of input. All other scripts use `LLM_MODEL`. If `LLM_MODEL_HIGH_CTX` is unset, all scripts fall back to `LLM_MODEL`.
+All debug/analysis PowerShell workers resolve their model via `Get-LLMModel -RoleKey 'LLM_MODEL'`, which chains `LLM_MODEL` → `LLM_DEFAULT_MODEL` → hardcoded fallback. Per-request `num_ctx` handles the high-context synthesis passes in `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and `testgap_local.ps1`, so no separate `LLM_MODEL_HIGH_CTX` is needed.
 
 ---
 

@@ -12,13 +12,13 @@ to `Read-EnvFile` and `Cfg` from the PowerShell library.
 
 ## Constants
 
-| Name | Value | Description |
-|------|-------|-------------|
-| `BEGIN_MARKER` | `"#Subsections begin"` | Start of the subsections block in `.env` |
-| `END_MARKER` | `"#Subsections end"` | End of the subsections block in `.env` |
-| `TOOLKIT_COMMON` | `Path(__file__).resolve().parent.parent` | Absolute path to `Common/` |
-| `ENV_PATH` | `TOOLKIT_COMMON / ".env"` | Default `.env` file path |
-| `DEFAULT_OLLAMA_ENDPOINT` | `"http://192.168.1.126:11434"` | Fallback Ollama URL |
+| Name                      | Value                                    | Description                              |
+| ------------------------- | ---------------------------------------- | ---------------------------------------- |
+| `BEGIN_MARKER`            | `"#Subsections begin"`                   | Start of the subsections block in `.env` |
+| `END_MARKER`              | `"#Subsections end"`                     | End of the subsections block in `.env`   |
+| `TOOLKIT_COMMON`          | `Path(__file__).resolve().parent.parent` | Absolute path to `Common/`               |
+| `ENV_PATH`                | `TOOLKIT_COMMON / ".env"`                | Default `.env` file path                 |
+| `DEFAULT_OLLAMA_ENDPOINT` | `"http://192.168.1.126:11434"`           | Fallback Ollama URL                      |
 
 ---
 
@@ -42,8 +42,8 @@ special characters (em-dash, etc.) that would break cp1252 on Windows.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
+| Name   | Type   | Default    | Description             |
+| ------ | ------ | ---------- | ----------------------- |
 | `path` | `Path` | `ENV_PATH` | Path to the `.env` file |
 
 **Returns:** `dict[str, str]` -- key-value pairs from the file.
@@ -80,8 +80,8 @@ order.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
+| Name   | Type   | Default    | Description             |
+| ------ | ------ | ---------- | ----------------------- |
 | `path` | `Path` | `ENV_PATH` | Path to the `.env` file |
 
 **Returns:** `list[str]` -- subsection paths in order.
@@ -153,11 +153,11 @@ All returned values have trailing slashes stripped.
 
 **Parameters:**
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `env` | `dict` or `None` | `None` | Pre-loaded .env dict; loads fresh if None |
-| `explicit` | `str` or `None` | `None` | Explicit endpoint from CLI args |
-| `read_env_vars` | `bool` | `True` | Whether to check `os.environ` |
+| Name            | Type             | Default   | Description                               |
+| --------------- | ---------------- | --------- | ----------------------------------------- |
+| `env`           | `dict` or `None` | `None`    | Pre-loaded .env dict; loads fresh if None |
+| `explicit`      | `str` or `None`  | `None`    | Explicit endpoint from CLI args           |
+| `read_env_vars` | `bool`           | `True`    | Whether to check `os.environ`             |
 
 **Returns:** `str` -- the resolved endpoint URL.
 
@@ -178,12 +178,12 @@ endpoint = resolve_ollama_endpoint(explicit="http://localhost:11434")
 
 ## .env Keys Consumed
 
-| Key | Used by | Description |
-|-----|---------|-------------|
-| `LLM_ENDPOINT` | `resolve_ollama_endpoint` | Full Ollama API URL |
-| `LLM_HOST` | `resolve_ollama_endpoint` | Ollama server hostname |
-| `LLM_PORT` | `resolve_ollama_endpoint` | Ollama server port (default: 11434) |
-| `OLLAMA_API_BASE` | `resolve_ollama_endpoint` | Environment variable override |
+| Key               | Used by                   | Description                         |
+| ----------------- | ------------------------- | ----------------------------------- |
+| `LLM_ENDPOINT`    | `resolve_ollama_endpoint` | Full Ollama API URL                 |
+| `LLM_HOST`        | `resolve_ollama_endpoint` | Ollama server hostname              |
+| `LLM_PORT`        | `resolve_ollama_endpoint` | Ollama server port (default: 11434) |
+| `OLLAMA_API_BASE` | `resolve_ollama_endpoint` | Environment variable override       |
 
 ---
 

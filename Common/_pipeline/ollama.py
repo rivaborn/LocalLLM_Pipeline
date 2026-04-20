@@ -149,6 +149,20 @@ def invoke_local_llm(
                 )
             return trimmed
 
+        except TimeoutError:
+            # socket.timeout (aliased to TimeoutError on 3.10+) is NOT a URLError
+            # subclass, so we catch it separately and surface a caller-friendly
+            # hint pointing at LLM_PLANNING_TIMEOUT.
+            last_err = LLMError(
+                f"LLM request timed out after {timeout}s "
+                f"(model={model}, num_ctx={num_ctx}). "
+                "Raise LLM_PLANNING_TIMEOUT (or LLM_TIMEOUT) in .env if the model "
+                "legitimately needs longer, or lower num_ctx / max_tokens."
+            )
+            if attempt >= max_retries:
+                break
+            print(f"  [retry {attempt}/{max_retries}] {last_err}")
+            time.sleep(retry_delay)
         except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, LLMError) as exc:
             last_err = exc
             if attempt >= max_retries:
