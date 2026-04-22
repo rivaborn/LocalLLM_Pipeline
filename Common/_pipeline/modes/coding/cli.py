@@ -50,6 +50,9 @@ def register(subparsers: argparse._SubParsersAction) -> None:
                         help="Disable 'ultrathink. ' prefix for ALL Claude stages.")
     parser.add_argument("--from-stage", type=int, default=1,
                         help="Skip stages 0..N-1 (default: 1).")
+    parser.add_argument("--from-step", type=int, default=1, metavar="N",
+                        help="[Stage 4] Start aider at step N (skip steps 1..N-1 "
+                             "inside aidercommands.md). Default: 1.")
     parser.add_argument("--skip-stage", type=int, nargs="*", default=(),
                         help="Stage numbers to skip entirely.")
     parser.add_argument("--restart", action="store_true",

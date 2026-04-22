@@ -26,7 +26,7 @@ def parse_steps(md_path: str) -> list[dict]:
         end = matches[i + 1].start() if i + 1 < len(matches) else len(content)
         section = content[start:end]
 
-        title_match = re.match(r"## (Step \d+ — .+)", section)
+        title_match = re.match(r"## (Step \d+ -- .+)", section)
         title = title_match.group(1).strip() if title_match else f"Step {m.group(1)}"
 
         blocks = re.findall(r"```(\w*)\n(.*?)```", section, re.DOTALL)

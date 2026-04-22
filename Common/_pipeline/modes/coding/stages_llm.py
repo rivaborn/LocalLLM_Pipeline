@@ -176,7 +176,45 @@ def _detect_stage3b_drift(result: str, step_num: int, file_list: list[str],
                 "(`pass` / `...` / `# Placeholder`) — prompt reads as a "
                 "skeleton, not an implementation directive; qwen3-coder "
                 "and similar local models will produce an empty file")
+    # Check that the prompt body is inside a non-bash code fence.
+    # The run_aider parser requires (1) a ```bash fence for the aider command
+    # and (2) a separate non-bash ``` fence for the prompt body.  LLMs
+    # sometimes emit the prompt as plain text, which Stage 4 rejects.
+    blocks = re.findall(r"```(\w*)\n.*?```", stripped, re.DOTALL)
+    has_bash = any(lang == "bash" for lang in blocks)
+    has_prompt_fence = any(lang != "bash" for lang in blocks)
+    if has_bash and not has_prompt_fence:
+        return ("prompt body is plain text instead of a fenced code block "
+                "— run_aider requires a non-bash ``` fence around the "
+                "prompt body")
     return None
+
+
+def _fix_stage3b_fencing(result: str) -> str:
+    """Wrap unfenced prompt bodies in a plain ``` fence.
+
+    The run_aider parser requires every step to have a non-bash code fence
+    for the prompt body.  If the LLM produced a bash fence for the aider
+    command but left the prompt body as plain text, wrap everything after the
+    closing bash fence (up to the end of the result) in a plain ``` fence.
+    Returns the result unchanged if a non-bash fence already exists."""
+    blocks = re.findall(r"```(\w*)\n.*?```", result, re.DOTALL)
+    has_bash = any(lang == "bash" for lang in blocks)
+    has_prompt_fence = any(lang != "bash" for lang in blocks)
+    if not has_bash or has_prompt_fence:
+        return result  # nothing to fix, or no bash fence to anchor on
+
+    # Find the end of the bash fence and wrap the remaining text.
+    bash_close = re.search(r"```bash\n.*?```", result, re.DOTALL)
+    if not bash_close:
+        return result
+    after = result[bash_close.end():]
+    # Strip leading/trailing whitespace from the prompt body but keep the
+    # content intact.
+    body = after.strip()
+    if not body:
+        return result
+    return result[:bash_close.end()] + "\n\n```\n" + body + "\n```"
 
 
 def _pkg_constraint(args: argparse.Namespace) -> str:
@@ -803,6 +841,7 @@ def stage3(repo_root: Path, target_dir: Path, arch_plan: Path, aider_commands: P
                     Color.RED,
                 )
 
+        result = _fix_stage3b_fencing(result)
         with aider_commands.open("a", encoding="utf-8") as fh:
             fh.write(f"\n{result.strip()}\n\n---\n")
         cprint(f"    Step {step_num}/{total} - done", Color.GREEN)

@@ -40,19 +40,49 @@ def build_aider_cmd(step: dict, model: str | None, prompt: str | None = None) ->
     if parts and parts[0] == "aider":
         parts = parts[1:]  # drop 'aider', keep flags + file args
     message = prompt if prompt is not None else step["prompt"]
-    cmd = _aider_invocation() + ["--no-git", "--message", message] + parts
+    # Force aider's "whole edit format" (filename line + language-tagged
+    # fence + complete file body) unless the step's own aider invocation
+    # pins an edit format. Without this, aider auto-selects per model name
+    # and the required output structure silently drifts (e.g. to "diff")
+    # when the worker model changes — which breaks the OUTPUT FORMAT
+    # reminder appended to each prompt.
+    extra_fmt = [] if "--edit-format" in parts else ["--edit-format", "whole"]
+    cmd = _aider_invocation() + ["--no-git", *extra_fmt, "--message", message] + parts
     if model:
         cmd += ["--model", model]
     return cmd
 
 
+_OUTPUT_FORMAT_REMINDER = (
+    "\n\n---\n\n"
+    "# OUTPUT FORMAT (required by aider --edit-format whole)\n\n"
+    "Reply with one code block per file you are creating or rewriting. "
+    "Each block MUST be preceded by the file's path on its own line — no "
+    "bullet, no comment prefix, no quoting — then an opening "
+    "language-tagged fence, then the COMPLETE file contents, then a closing "
+    "fence.\n\n"
+    "Example for a JavaScript file:\n\n"
+    "src/phonebook/static/app.js\n"
+    "```javascript\n"
+    "// complete file contents go here\n"
+    "```\n\n"
+    "Do NOT start your reply with `/**`, `#`, `//`, `<!--`, `/*`, or any "
+    "other comment syntax: aider reads the first non-empty line as a "
+    "filename, and if that line is a comment it writes an empty file. "
+    "The filename line comes first; the code comes second."
+)
+
+
 _EMPTY_RETRY_SUFFIX = (
     "\n\n---\n\n"
     "# RETRY — PREVIOUS OUTPUT WAS EMPTY\n\n"
-    "A previous attempt at this step produced an empty or near-empty file "
-    "(only a preamble, no code). You MUST output the COMPLETE file contents "
-    "in the expected code block. Do not stop after writing a filename header "
-    "or a preamble. Include every function, class, and import specified above."
+    "A prior attempt produced an empty file. The most common cause is "
+    "emitting raw code without the filename-line + fenced-block wrapper "
+    "shown in \"OUTPUT FORMAT\" above. Re-read that section. Your reply "
+    "MUST start with the filename on its own line, then a language-tagged "
+    "fence, then the full file contents, then a closing fence. Do NOT "
+    "prefix your reply with a comment (`/**`, `#`, `//`, `<!--`) — aider "
+    "parses that line as a filename and writes an empty file."
 )
 
 
@@ -242,6 +272,13 @@ def run_step(step: dict, model: str | None, dry_run: bool,
             + "\n---\n\n".join(prefix_blocks)
         )
         prompt = prompt + suffix
+
+    # OUTPUT FORMAT reminder is the FINAL suffix so it is the last thing
+    # the model sees. Without it, smaller local models (qwen3-coder:30b)
+    # sometimes emit raw code without aider's filename-line + fence
+    # wrapper — aider then parses the first comment line (`/**`, `//`, `#`)
+    # as a filename and writes an empty file.
+    prompt = prompt + _OUTPUT_FORMAT_REMINDER
 
     if dry_run:
         cmd = build_aider_cmd(step, model, prompt=prompt)

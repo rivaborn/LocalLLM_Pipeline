@@ -32,6 +32,9 @@ def stage4_run_aider(repo_root: Path, aider_commands: Path,
 
     script = cfg.toolkit_root() / "LocalLLMCoding" / "run_aider.py"
     cmd = [sys.executable, str(script), str(aider_commands)]
+    from_step = getattr(args, "from_step", 1) or 1
+    if from_step > 1:
+        cmd += ["--from-step", str(from_step)]
     cprint(f"  Invoking: {' '.join(cmd)} (cwd={repo_root})", Color.BLUE)
     if args.dry_run:
         cprint("  [DRY RUN] Skipped", Color.BLUE)

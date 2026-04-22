@@ -14,7 +14,7 @@ usable):
 Now produce the step output. It MUST consist of exactly these four blocks in
 order, and nothing else (no preamble, no trailing commentary):
 
-1. A markdown H2 heading line: ## Step STEPNUM - STEPTITLE
+1. A markdown H2 heading line: ## Step STEPNUM -- STEPTITLE
 2. A blank line
 3. A bash fenced code block containing exactly one line: aider --yes AIDERFILES
 4. A plain (unfenced-language) triple-backtick code block whose BODY is a
@@ -43,6 +43,17 @@ order, and nothing else (no preamble, no trailing commentary):
    skeleton, every method body must be either (a) a real implementation or
    (b) a multi-line comment describing what the LLM must implement — never
    the `pass` / `...` one-liner.
+
+   NO LITERAL COMPLETE FILE BODIES. The opposite failure is just as bad:
+   embedding the entire finished file as a ready-to-use code block inside
+   the implementation prompt. Worker models (qwen3-coder, deepseek-coder)
+   echo that block verbatim without aider's filename-line + fence wrapper,
+   and aider then parses the block's leading character (`/**`, `//`, `#`,
+   `<!--`, etc.) as a filename and writes an empty file. Describe the
+   required types, function signatures, behavior, and edge cases in prose
+   or pseudocode — let the downstream LLM synthesize the full file from
+   your description. A few illustrative snippets of critical logic are
+   fine; a head-to-toe reproduction of the target file is not.
 
 CROSS-FILE CONSISTENCY (critical -- the aider steps are generated
 independently and one step cannot see what another produced, so symbol names
