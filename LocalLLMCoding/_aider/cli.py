@@ -62,6 +62,13 @@ def _build_parser() -> argparse.ArgumentParser:
                              "symbol names in each step prompt against installed "
                              "packages + the workspace (helps with PyQt6 etc. that "
                              "ctags cannot index)")
+    parser.add_argument("--no-sanity-check", action="store_true",
+                        help="Disable pre-step inspection of target files for "
+                             "corruption (size, repetition, language drift). "
+                             "Default: enabled. Quarantines flagged files to "
+                             "<repo>/.aider-quarantine/<timestamp>/ before "
+                             "aider runs, letting it regenerate from a clean "
+                             "slate.")
     return parser
 
 
@@ -142,7 +149,8 @@ def main() -> None:
                           future_steps=future,
                           strict_outputs=not args.no_strict_outputs,
                           pyright_client=pyright_client,
-                          max_empty_retries=args.empty_retries)
+                          max_empty_retries=args.empty_retries,
+                          sanity_check_enabled=not args.no_sanity_check)
             if not ok:
                 failed_at = n
                 break

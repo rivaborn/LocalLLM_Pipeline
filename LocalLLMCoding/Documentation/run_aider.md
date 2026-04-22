@@ -30,6 +30,7 @@ The `run_aider.py` file at the top level is a thin shim (34 lines). It adjusts `
 ### Configuration
 
 - `Common/.env` must exist with at minimum `LLM_HOST` + `LLM_PORT` (or `LLM_ENDPOINT`) and `LLM_AIDER_MODEL` set.
+- `~/.aider.model.settings.yml` (optional but recommended) — caps `num_predict` per model so runaway generations fail fast at the Ollama API level instead of running until the litellm timeout. Read directly by aider; the runner does not touch it. See [Runaway-generation defenses](#runaway-generation-defenses) below. **Not** `.aider.model.metadata.json` — that's a different file with different semantics.
 
 ### Prior Pipeline Steps
 
@@ -57,6 +58,7 @@ Run from the **target project's root directory** (the repo you want aider to edi
 | `--no-strict-outputs` | flag            | `False`                         | Do not fail a step when its declared output files are missing or empty after aider exits with code 0.                                                                                                                  |
 | `--empty-retries N`   | int             | `2`                             | Retry up to N times if aider exits 0 but the declared output files are empty (default 2, i.e. 3 total attempts). Set to 0 to disable. Each retry deletes empty outputs and appends an explicit "previous output was empty" warning to the prompt. See Empty-File Guard section below. |
 | `--pyright`           | flag            | `False`                         | Start a pyright-langserver process and resolve CamelCase symbol names in each step prompt against installed packages and the workspace. Helps with PyQt6, pynvml, and other packages whose symbols ctags cannot index. |
+| `--no-sanity-check`   | flag            | `False`                         | Disable the pre-step inspection of target files for corruption (size, repetition, language drift). Default: enabled. See [Pre-step Sanity Check](#pre-step-sanity-check) below. |
 
 ## How It Is Invoked
 
@@ -141,6 +143,104 @@ When `--no-planned` is not set, future steps (those with a higher step number th
 ### Pyright Symbol Resolution
 
 When `--pyright` is set, the tool starts a persistent `pyright-langserver` process at the beginning of the run. For each step, it scans the prompt for CamelCase identifiers (using a regex that matches `[A-Z][A-Za-z0-9_]{2,}`), filters out common stopwords (None, True, JSON, API, etc.), and asks pyright to resolve each candidate to its defining module. Resolved symbols are formatted into a block showing `SymbolName -> from module.path import SymbolName`. This is critical for packages like PyQt6 where ctags cannot index `.pyi` stubs or compiled extensions.
+
+### Pre-step Sanity Check
+
+Before each step's `subprocess.run(aider...)` call, the runner inspects every file in the step's `aider --yes <files>` list for signs of corruption from a prior failed run. This exists because aider loads the existing target file into context as "current state to edit" — a runaway from the previous attempt becomes the new prompt's bulk, which can blow past the model's context window and re-trigger failure for an entirely different reason.
+
+Implemented in `_aider/sanity.py`. Hooks into `_aider/runner.py::run_step()` immediately before the drift snapshot. Opt out with `--no-sanity-check`.
+
+#### Verdicts
+
+Each target file is classified into one of three verdicts; a single heuristic firing CORRUPT marks the file CORRUPT.
+
+| Verdict | Action | Notes |
+|---|---|---|
+| `CLEAN` | Proceed unchanged | Missing, empty, or under 1024 bytes always returns CLEAN by short-circuit. |
+| `SUSPECT` | Print warning, proceed | Currently fired only by an odd number of ` ``` ` fences (unclosed code block — possible mid-stream truncation). |
+| `CORRUPT` | Move to `<repo>/.aider-quarantine/<YYYYMMDD-HHMMSS>/<rel-path>`, then proceed | Original is recoverable from the quarantine dir. The runner appends `.aider-quarantine/` to the project's `.gitignore` on first use, idempotently. |
+
+#### Heuristics (CORRUPT triggers)
+
+Tuned against two known anchors: a legitimate 700-line test file (must stay CLEAN) and the Hebrew-repetition runaway from Step 28 of rustdeck_phonebook (8289 lines / 365KB / language drift — must be CORRUPT).
+
+| Heuristic | Threshold | Rationale |
+|---|---|---|
+| Size | ≥ 100 KB | Production source files are rarely this large; this is ~4× a substantial test module. |
+| Line count | ≥ 2000 lines | ~3× the largest legitimate test file we've observed. |
+| Line repetition | Any non-blank line appears ≥ 50 times | Pathological repetition is the signature of a model loop. |
+| Non-ASCII ratio (`.py` only) | > 5% | Real Python code is overwhelmingly ASCII; Hebrew/Arabic/CJK in a `.py` file is almost always model drift. Skipped for `.html`, `.css`, `.json`, etc. where Unicode is legitimate. |
+
+#### Quarantine layout
+
+```
+<repo_root>/.aider-quarantine/
+└── 20260422-133458/                    # one timestamp dir per step that quarantined files
+    └── tests/
+        └── test_static_css.py          # original repo-relative path preserved
+```
+
+Multiple files quarantined in the same step share a timestamp dir. Inspect or restore by hand; the helper does not auto-prune. Manual cleanup is `Remove-Item -Recurse <repo>/.aider-quarantine` whenever the directory grows tiresome.
+
+#### Output
+
+When the check fires, you'll see lines like:
+
+```
+  [sanity] CORRUPT: tests/test_static_css.py — lines=8289 > 2000; line repeated 3000x: 'שלב test...'; non-ASCII=14.3% > 5% — quarantined to .aider-quarantine/20260422-133458/tests/test_static_css.py
+  [sanity] SUSPECT: src/foo.py — unclosed code fence — proceeding
+```
+
+When all files are CLEAN, no `[sanity]` output appears.
+
+### Runaway-generation defenses
+
+Local coder models occasionally enter repetition loops on test-generation prompts that include large file inventories — emitting thousands of lines of variations on the same content until the underlying HTTP request times out. The runner enforces two coordinated defenses, neither of which lives in `aidercommands.md`:
+
+1. **Aider HTTP timeout — 1800 s.** `_aider/runner.py::build_aider_cmd` injects `--timeout 1800` into every aider invocation alongside `--no-git` and `--edit-format whole`. Litellm's default of 600 s is too tight for legitimate long generations on a 30B model at ~50 tok/s; 1800 s gives 3× headroom while still failing eventually if the model hangs.
+2. **Server-side `num_predict` cap — 12000 tokens.** Aider reads `~/.aider.model.settings.yml` directly (no orchestrator involvement) and applies any `extra_params.num_predict` it finds for the active model. With a cap of 12000 tokens (~360 lines of code), Ollama stops emitting tokens at the ceiling regardless of timeout, so a runaway loop fails fast (~4 min at 50 tok/s) with a partial file instead of running for the full 30-minute timeout.
+
+The two are complementary: the timeout protects *legitimate* long generations from premature kill; the `num_predict` cap protects against *illegitimate* runaway loops. Recommended `~/.aider.model.settings.yml` content for the four common Ollama models:
+
+```yaml
+- name: ollama_chat/qwen3-coder:30b
+  extra_params:
+    num_predict: 12000
+
+- name: ollama_chat/qwen2.5-coder:32b
+  extra_params:
+    num_predict: 12000
+
+- name: ollama_chat/qwen2.5-coder:14b
+  extra_params:
+    num_predict: 12000
+
+- name: ollama_chat/devstral-small-2:latest
+  extra_params:
+    num_predict: 12000
+```
+
+Aider matches by exact `name`. If you switch `LLM_AIDER_MODEL` to a model not listed here, the cap won't apply — add an entry.
+
+#### Why YAML settings and not JSON metadata
+
+Aider has **two** model-config files that look interchangeable but have different semantics:
+
+| File | Loaded by | Populates | Affects request kwargs? |
+|---|---|---|---|
+| `~/.aider.model.settings.yml` | `register_models()` (YAML) | `ModelSettings.extra_params` | **Yes** — via `kwargs.update(self.extra_params)` in `Model.send_completion()` |
+| `~/.aider.model.metadata.json` | `register_litellm_models()` (JSON) | `model_info_manager.local_model_metadata` (litellm's catalog) | **No** — informational only; provides max_tokens, context size, cost for litellm bookkeeping |
+
+Putting `extra_params.num_predict` in the JSON metadata file **looks** correct and **does** load (it appears in aider's "Model metadata" verbose dump), but it never flows into the actual API call. The runtime dump will show `extra_params: null` even though the metadata contains it. The YAML settings file is the only path that reaches the wire.
+
+To verify the cap is loading on a given run, invoke aider standalone with `--verbose` and grep for `extra_params`:
+
+```powershell
+aider --model ollama_chat/qwen3-coder:30b --verbose --message "say hi" --no-git <some_file> 2>&1 | Select-String -Pattern "extra_params"
+```
+
+Pass: the verbose output shows `extra_params: { "num_predict": 12000 }` as a live runtime value (not just inside a "Model metadata" JSON block).
+Fail: the output shows `extra_params: null`. The YAML file isn't being found, or the model `name` doesn't match `--model` exactly.
 
 ### Empty-File Guard (Strict Outputs) with Auto-Retry
 
@@ -268,3 +368,7 @@ Reads steps from `custom_plan.md` (resolved relative to cwd or `LocalLLMCodeProm
 | "[pyright] pyright-langserver not found" | pyright not installed                              | `pip install pyright` or omit `--pyright`.                                                   |
 | Step fails with "empty: src/foo.py"      | Aider exited 0 but produced a zero-byte file       | Re-run the step or use `--no-strict-outputs`.                                                |
 | Model outputs only a filename header     | Prompt too large with prepended context            | This was fixed by moving context to a suffix; if it recurs, use `--no-symbols --no-planned`. |
+| `litellm.Timeout: Connection timed out after 1800.0 seconds` | Model genuinely slow on a large prompt; or wedged in a repetition loop that survives the `num_predict` cap | First check the partial output for repetition. If it's a real long generation, raise the timeout in `_aider/runner.py::build_aider_cmd` (`--timeout` value) or trim the step prompt. If it's repetition, lower the `num_predict` cap in `~/.aider.model.settings.yml` or switch `LLM_AIDER_MODEL` to a more deterministic model (e.g. `qwen2.5-coder:32b`). |
+| Step exits fast with file at exactly the cap (~360 lines, ~12000 tokens) | `num_predict` cap from `~/.aider.model.settings.yml` triggered | This is the runaway-defense doing its job. Diagnose the prompt size (check the Step's block in `aidercommands.md` — >300 lines is suspicious) and trim it. Raising the cap is rarely the right fix. |
+| Runaway loop not stopped despite `.aider.model.settings.yml` in place; `--verbose` shows `extra_params: null` | Wrong file used (`.aider.model.metadata.json`) — its `extra_params` don't flow into request kwargs | Create `~/.aider.model.settings.yml` (note the `.settings.yml` extension, not `.metadata.json`) with the YAML schema shown in [Runaway-generation defenses](#runaway-generation-defenses). The JSON metadata file is for litellm's catalog only. |
+| Re-running a previously-failed step hits `chat context of N tokens exceeds the M token limit` with N vastly larger than the model's context window | The target file on disk contains the previous runaway's corrupt output. Aider loads existing file contents into context as "current state to edit"; a bloated garbage file eats the entire context budget before the real prompt is even sent. | **The pre-step sanity check (default on) auto-quarantines this case** — see [Pre-step Sanity Check](#pre-step-sanity-check). If the check is disabled (`--no-sanity-check`) or its heuristics missed the corruption, manually delete or move the file before re-running. After any Stage 4 failure, also check files NOT in the failing step's target list — drift detection might have left junk elsewhere. |

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .parser import step_file_list
 from .prompts import build_planned_block, extract_candidate_symbols
+from .sanity import Verdict, inspect_file, quarantine_file
 
 
 def _aider_invocation() -> list[str]:
@@ -47,7 +48,7 @@ def build_aider_cmd(step: dict, model: str | None, prompt: str | None = None) ->
     # when the worker model changes — which breaks the OUTPUT FORMAT
     # reminder appended to each prompt.
     extra_fmt = [] if "--edit-format" in parts else ["--edit-format", "whole"]
-    cmd = _aider_invocation() + ["--no-git", *extra_fmt, "--message", message] + parts
+    cmd = _aider_invocation() + ["--no-git", *extra_fmt, "--timeout", "1800", "--message", message] + parts
     if model:
         cmd += ["--model", model]
     return cmd
@@ -222,7 +223,8 @@ def run_step(step: dict, model: str | None, dry_run: bool,
              future_steps: list[dict] | None = None,
              strict_outputs: bool = True,
              pyright_client=None,
-             max_empty_retries: int = 2) -> bool:
+             max_empty_retries: int = 2,
+             sanity_check_enabled: bool = True) -> bool:
     print(f"\n{'='*60}")
     print(f"  {step['title']}")
     print(f"{'='*60}")
@@ -292,6 +294,20 @@ def run_step(step: dict, model: str | None, dry_run: bool,
         "tests/" in f.replace("\\", "/") or Path(f).name.startswith("test_")
         for f in expected_files
     )
+
+    # Pre-step sanity check: a previous failure may have left runaway
+    # garbage on disk. Aider would otherwise load it as the file's
+    # current state, ballooning prompt size and re-triggering failure.
+    if sanity_check_enabled:
+        for rel in expected_files:
+            f = repo_root / rel
+            verdict, reasons = inspect_file(f)
+            if verdict is Verdict.CORRUPT:
+                new = quarantine_file(f, repo_root)
+                print(f"  [sanity] CORRUPT: {rel} — {'; '.join(reasons)} — "
+                      f"quarantined to {new.relative_to(repo_root).as_posix()}")
+            elif verdict is Verdict.SUSPECT:
+                print(f"  [sanity] SUSPECT: {rel} — {'; '.join(reasons)} — proceeding")
 
     for attempt in range(max_empty_retries + 1):
         attempt_prompt = prompt if attempt == 0 else prompt + _EMPTY_RETRY_SUFFIX

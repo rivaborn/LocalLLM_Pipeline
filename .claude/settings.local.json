@@ -31,7 +31,15 @@
       "Bash(awk '/Models for this run/{flag=1} flag{print} flag && /^  -+$/{cnt++; if\\(cnt==2\\) exit}')",
       "Bash(.venv/Scripts/pip.exe show *)",
       "Bash(claude -p --output-format stream-json --model haiku)",
-      "Bash(claude -p --output-format stream-json --verbose --include-partial-messages --model haiku)"
+      "Bash(claude -p --output-format stream-json --verbose --include-partial-messages --model haiku)",
+      "Read(//c/Coding/WorkFolder/nmonLocalLLM/src/nmon/**)",
+      "Read(//c/Coding/WorkFolder/nmonLocalLLM/tests/**)",
+      "Read(//c/Coding/WorkFolder/nmonLocalLLM/**)",
+      "Bash(pip show *)",
+      "Bash(git pull *)",
+      "Bash(git checkout *)",
+      "Bash(git config *)",
+      "Bash(git push *)"
     ]
   }
 }
