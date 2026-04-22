@@ -1258,3 +1258,177 @@ C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\testgap_local.ps1 : A parameter cannot
 2026-04-19 22:17:21,346 [INFO] [DRY RUN] Skipped
 2026-04-19 22:17:21,346 [INFO] Step 5/6: Propose Bug Fixes (advisory)
 2026-04-19 22:17:21,347 [INFO] Step 6/6: Archive Bug Fix Proposals
+2026-04-22 17:19:57,929 [INFO] Debug pipeline started; target=src/phonebook
+2026-04-22 17:19:57,934 [INFO] Step 1/6: Data flow analysis
+2026-04-22 17:19:57,934 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\dataflow_local.ps1 -TargetDir src/phonebook
+2026-04-22 17:19:59,083 [DEBUG] ============================================
+2026-04-22 17:19:59,085 [DEBUG]   dataflow_local.ps1 -- Data Flow Trace
+2026-04-22 17:19:59,085 [DEBUG] ============================================
+2026-04-22 17:19:59,086 [DEBUG] Repo root:        C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:19:59,087 [DEBUG] Codebase:         nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:19:59,088 [DEBUG] Target:           src/phonebook
+2026-04-22 17:19:59,089 [DEBUG] LLM:              qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:19:59,090 [DEBUG] Files to extract: 10
+2026-04-22 17:19:59,091 [DEBUG] Extract tokens:   400  |  Synth tokens: 1800
+2026-04-22 17:19:59,093 [DEBUG] Output:           C:\Coding\WorkFolder\rustdeck_phonebook\architecture\DATA_FLOW.md
+2026-04-22 17:19:59,093 [DEBUG] 
+2026-04-22 17:19:59,094 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:19:59,094 [DEBUG] 
+2026-04-22 17:19:59,096 [DEBUG] Pass 1: extracting file interfaces...
+2026-04-22 17:19:59,097 [DEBUG] 
+2026-04-22 17:20:20,671 [DEBUG]   [1/10] src/phonebook/__init__.py done
+2026-04-22 17:20:21,729 [DEBUG]   [2/10] src/phonebook/config.py done
+2026-04-22 17:20:25,323 [DEBUG]   [3/10] src/phonebook/crud.py done
+2026-04-22 17:20:27,449 [DEBUG]   [4/10] src/phonebook/database.py done
+2026-04-22 17:20:28,770 [DEBUG]   [5/10] src/phonebook/main.py done
+2026-04-22 17:20:29,963 [DEBUG]   [6/10] src/phonebook/models.py done
+2026-04-22 17:20:31,323 [DEBUG]   [7/10] src/phonebook/routes/__init__.py done
+2026-04-22 17:20:35,401 [DEBUG]   [8/10] src/phonebook/routes/computers.py done
+2026-04-22 17:20:37,556 [DEBUG]   [9/10] src/phonebook/routes/export.py done
+2026-04-22 17:20:40,735 [DEBUG]   [10/10] src/phonebook/schemas.py done
+2026-04-22 17:20:40,735 [DEBUG] 
+2026-04-22 17:20:40,744 [DEBUG] Pass 1 complete: 10/10 files extracted  (42s)
+2026-04-22 17:20:40,745 [DEBUG] 
+2026-04-22 17:20:40,747 [DEBUG] Pass 2: synthesising data flow document...
+2026-04-22 17:20:40,759 [DEBUG]   [integration] architecture.md loaded: 2.3 KB (C:\Coding\WorkFolder\rustdeck_phonebook\architecture\architecture.md)
+2026-04-22 17:20:53,671 [DEBUG] Synthesis complete (13s)
+2026-04-22 17:20:53,671 [DEBUG] 
+2026-04-22 17:20:53,674 [DEBUG] ============================================
+2026-04-22 17:20:53,675 [DEBUG]   Data flow trace written
+2026-04-22 17:20:53,675 [DEBUG] ============================================
+2026-04-22 17:20:53,676 [DEBUG] Output: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\DATA_FLOW.md
+2026-04-22 17:20:53,676 [DEBUG] 
+2026-04-22 17:20:53,677 [DEBUG] Load in Claude Code:
+2026-04-22 17:20:53,678 [DEBUG]   Read architecture/DATA_FLOW.md
+2026-04-22 17:20:53,823 [INFO] Step 2/6: Interfaces extraction
+2026-04-22 17:20:53,824 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\interfaces_local.ps1 -TargetDir src/phonebook
+2026-04-22 17:20:54,950 [DEBUG] ============================================
+2026-04-22 17:20:54,952 [DEBUG]   interfaces_local.ps1 -- Contract Summary
+2026-04-22 17:20:54,953 [DEBUG] ============================================
+2026-04-22 17:20:54,954 [DEBUG] Repo root:       C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:20:54,954 [DEBUG] Codebase:        nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:20:54,955 [DEBUG] Target:          src/phonebook
+2026-04-22 17:20:54,956 [DEBUG] LLM:             qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:20:54,957 [DEBUG] Files:           10
+2026-04-22 17:20:54,958 [DEBUG] Extract tokens:  700  |  Synth tokens: 2000
+2026-04-22 17:20:54,960 [DEBUG] Output:          C:\Coding\WorkFolder\rustdeck_phonebook\architecture\INTERFACES.md
+2026-04-22 17:20:54,960 [DEBUG] 
+2026-04-22 17:20:54,961 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:20:54,961 [DEBUG] 
+2026-04-22 17:20:54,970 [DEBUG] Pass 1: extracting contracts...
+2026-04-22 17:20:54,970 [DEBUG] 
+2026-04-22 17:20:57,012 [DEBUG]   [1/10] src/phonebook/__init__.py done
+2026-04-22 17:20:59,725 [DEBUG]   [2/10] src/phonebook/config.py done
+2026-04-22 17:21:06,097 [DEBUG]   [3/10] src/phonebook/crud.py done
+2026-04-22 17:21:12,360 [DEBUG]   [4/10] src/phonebook/database.py done
+2026-04-22 17:21:15,530 [DEBUG]   [5/10] src/phonebook/main.py done
+2026-04-22 17:21:21,693 [DEBUG]   [6/10] src/phonebook/models.py done
+2026-04-22 17:21:23,163 [DEBUG]   [7/10] src/phonebook/routes/__init__.py done
+2026-04-22 17:21:29,776 [DEBUG]   [8/10] src/phonebook/routes/computers.py done
+2026-04-22 17:21:32,708 [DEBUG]   [9/10] src/phonebook/routes/export.py done
+2026-04-22 17:21:39,341 [DEBUG]   [10/10] src/phonebook/schemas.py done
+2026-04-22 17:21:39,342 [DEBUG] 
+2026-04-22 17:21:39,350 [DEBUG] Pass 1 complete: 10/10 contracts extracted  (44s)
+2026-04-22 17:21:39,351 [DEBUG] 
+2026-04-22 17:21:39,353 [DEBUG] Pass 2: synthesising combined contract reference...
+2026-04-22 17:21:59,693 [DEBUG] Synthesis complete (20s)
+2026-04-22 17:21:59,694 [DEBUG] 
+2026-04-22 17:21:59,696 [DEBUG] ============================================
+2026-04-22 17:21:59,697 [DEBUG]   Interface contracts written
+2026-04-22 17:21:59,698 [DEBUG] ============================================
+2026-04-22 17:21:59,699 [DEBUG] Combined:  C:\Coding\WorkFolder\rustdeck_phonebook\architecture\INTERFACES.md
+2026-04-22 17:21:59,700 [DEBUG] Per-file:  C:\Coding\WorkFolder\rustdeck_phonebook\architecture\interfaces
+2026-04-22 17:21:59,700 [DEBUG] 
+2026-04-22 17:21:59,701 [DEBUG] Load in Claude Code:
+2026-04-22 17:21:59,702 [DEBUG]   Read architecture/INTERFACES.md
+2026-04-22 17:21:59,846 [INFO] Step 3/6: Test gap analysis
+2026-04-22 17:21:59,846 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\testgap_local.ps1 -SrcDir src/phonebook -TestDir tests
+2026-04-22 17:22:00,949 [DEBUG] 
+2026-04-22 17:22:00,951 [DEBUG] ============================================
+2026-04-22 17:22:00,953 [DEBUG]   testgap_local.ps1 -- Test Gap Analysis
+2026-04-22 17:22:00,953 [DEBUG] ============================================
+2026-04-22 17:22:00,954 [DEBUG] Repo root:   C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:22:00,955 [DEBUG] Source dir:  src/phonebook
+2026-04-22 17:22:00,956 [DEBUG] Test dir:    tests
+2026-04-22 17:22:00,957 [DEBUG] LLM:         qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:22:00,958 [DEBUG] File tokens: 700  |  Synth tokens: 1800
+2026-04-22 17:22:00,960 [DEBUG] Output:      C:\Coding\WorkFolder\rustdeck_phonebook\test_gaps\GAP_REPORT.md
+2026-04-22 17:22:00,960 [DEBUG] 
+2026-04-22 17:22:00,961 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:22:00,962 [DEBUG] 
+2026-04-22 17:22:00,997 [DEBUG] Pass 0: mapping source files to test files...
+2026-04-22 17:22:00,997 [DEBUG] 
+2026-04-22 17:22:01,021 [DEBUG]   src/phonebook/__init__.py                               -> [NO TEST FILE]
+2026-04-22 17:22:01,027 [DEBUG]   src/phonebook/config.py                                 -> test_config.py
+2026-04-22 17:22:01,029 [DEBUG]   src/phonebook/crud.py                                   -> test_crud.py
+2026-04-22 17:22:01,030 [DEBUG]   src/phonebook/database.py                               -> [NO TEST FILE]
+2026-04-22 17:22:01,031 [DEBUG]   src/phonebook/main.py                                   -> test_main.py
+2026-04-22 17:22:01,033 [DEBUG]   src/phonebook/models.py                                 -> [NO TEST FILE]
+2026-04-22 17:22:01,034 [DEBUG]   src/phonebook/routes/__init__.py                        -> [NO TEST FILE]
+2026-04-22 17:22:01,036 [DEBUG]   src/phonebook/routes/computers.py                       -> test_routes_computers.py
+2026-04-22 17:22:01,037 [DEBUG]   src/phonebook/routes/export.py                          -> test_routes_export.py
+2026-04-22 17:22:01,039 [DEBUG]   src/phonebook/schemas.py                                -> [NO TEST FILE]
+2026-04-22 17:22:01,039 [DEBUG] 
+2026-04-22 17:22:01,040 [DEBUG]   10 source files  |  5 have tests  |  5 have no test file
+2026-04-22 17:22:01,041 [DEBUG] 
+2026-04-22 17:22:01,041 [DEBUG] Pass 1: per-file gap analysis...
+2026-04-22 17:22:01,042 [DEBUG] 
+2026-04-22 17:22:04,383 [DEBUG]   [1/10] src/phonebook/__init__.py done
+2026-04-22 17:22:08,270 [DEBUG]   [2/10] src/phonebook/config.py done
+2026-04-22 17:22:16,332 [DEBUG]   [3/10] src/phonebook/crud.py done
+2026-04-22 17:22:20,285 [DEBUG]   [4/10] src/phonebook/database.py done
+2026-04-22 17:22:24,612 [DEBUG]   [5/10] src/phonebook/main.py done
+2026-04-22 17:22:27,756 [DEBUG]   [6/10] src/phonebook/models.py done
+2026-04-22 17:22:30,241 [DEBUG]   [7/10] src/phonebook/routes/__init__.py done
+2026-04-22 17:22:36,848 [DEBUG]   [8/10] src/phonebook/routes/computers.py done
+2026-04-22 17:22:40,966 [DEBUG]   [9/10] src/phonebook/routes/export.py done
+2026-04-22 17:22:44,965 [DEBUG]   [10/10] src/phonebook/schemas.py done
+2026-04-22 17:22:44,966 [DEBUG] 
+2026-04-22 17:22:44,984 [DEBUG] Pass 1 complete: 10/10 analyses  (44s)
+2026-04-22 17:22:44,986 [DEBUG] 
+2026-04-22 17:22:44,987 [DEBUG] Pass 2: synthesising gap report...
+2026-04-22 17:23:02,984 [DEBUG] Synthesis complete (18s)
+2026-04-22 17:23:02,985 [DEBUG] 
+2026-04-22 17:23:02,987 [DEBUG] ============================================
+2026-04-22 17:23:02,988 [DEBUG]   Test gap report written
+2026-04-22 17:23:02,989 [DEBUG] ============================================
+2026-04-22 17:23:02,990 [DEBUG] Report:       C:\Coding\WorkFolder\rustdeck_phonebook\test_gaps\GAP_REPORT.md
+2026-04-22 17:23:02,991 [DEBUG] Per-file:     C:\Coding\WorkFolder\rustdeck_phonebook\test_gaps
+2026-04-22 17:23:02,992 [DEBUG] 
+2026-04-22 17:23:02,993 [DEBUG] Load in Claude Code:
+2026-04-22 17:23:02,994 [DEBUG]   Read test_gaps/GAP_REPORT.md
+2026-04-22 17:23:03,138 [INFO] Step 4/6: Bug hunt
+2026-04-22 17:23:03,138 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMDebug\bughunt_local.ps1 -TargetDir src/phonebook
+2026-04-22 17:23:04,311 [DEBUG]   [integration] xref_index.md loaded: 2.6 KB (C:\Coding\WorkFolder\rustdeck_phonebook\architecture\xref_index.md)
+2026-04-22 17:23:04,313 [DEBUG] ============================================
+2026-04-22 17:23:04,314 [DEBUG]   bughunt_local.ps1 -- LLM Bug Hunt
+2026-04-22 17:23:04,315 [DEBUG] ============================================
+2026-04-22 17:23:04,316 [DEBUG] Repo root:      C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:23:04,316 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:23:04,317 [DEBUG] Target:         src/phonebook
+2026-04-22 17:23:04,318 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:23:04,319 [DEBUG] Max file lines: 800
+2026-04-22 17:23:04,320 [DEBUG] Max output tok: 900
+2026-04-22 17:23:04,321 [DEBUG] Files:          10 total  |  unchanged=0  |  process: 10
+2026-04-22 17:23:04,323 [DEBUG] Output dir:     C:\Coding\WorkFolder\rustdeck_phonebook\bug_reports
+2026-04-22 17:23:04,323 [DEBUG] 
+2026-04-22 17:23:04,324 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:23:04,324 [DEBUG] 
+2026-04-22 17:23:07,181 [DEBUG] 
+2026-04-22 17:23:09,644 [DEBUG] PROGRESS: 1/10  rate=0.35/s  eta=0h00m26s                                       
+2026-04-22 17:23:13,006 [DEBUG] PROGRESS: 2/10  rate=0.38/s  eta=0h00m21s                                       
+2026-04-22 17:23:17,238 [DEBUG] PROGRESS: 3/10  rate=0.35/s  eta=0h00m20s                                       
+2026-04-22 17:23:20,988 [DEBUG] PROGRESS: 4/10  rate=0.31/s  eta=0h00m19s                                       
+2026-04-22 17:23:21,486 [DEBUG] PROGRESS: 5/10  rate=0.3/s  eta=0h00m17s                                        
+2026-04-22 17:23:21,999 [DEBUG] PROGRESS: 6/10  rate=0.35/s  eta=0h00m11s                                       
+2026-04-22 17:23:26,866 [DEBUG] PROGRESS: 7/10  rate=0.4/s  eta=0h00m08s                                        
+2026-04-22 17:23:31,911 [DEBUG] PROGRESS: 8/10  rate=0.35/s  eta=0h00m06s                                       
+2026-04-22 17:23:35,641 [DEBUG] PROGRESS: 9/10  rate=0.33/s  eta=0h00m03s                                       
+2026-04-22 17:23:35,641 [DEBUG] PROGRESS: 10/10  rate=0.32/s  eta=?                                             
+2026-04-22 17:23:35,642 [DEBUG] 
+2026-04-22 17:23:35,686 [DEBUG] 
+2026-04-22 17:23:35,688 [DEBUG] Done. 10 files analysed.
+2026-04-22 17:23:35,689 [DEBUG] HIGH: 8  MEDIUM: 9  LOW: 5
+2026-04-22 17:23:35,690 [DEBUG] Summary: C:\Coding\WorkFolder\rustdeck_phonebook\bug_reports\SUMMARY.md
+2026-04-22 17:23:35,842 [INFO] Step 5/6: Propose Bug Fixes (advisory)
+2026-04-22 17:24:47,571 [INFO] Step 6/6: Archive Bug Fix Proposals
