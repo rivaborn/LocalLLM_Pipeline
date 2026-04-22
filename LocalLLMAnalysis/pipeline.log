@@ -947,3 +947,148 @@ Scanning C:\Coding\WorkFolder\nmonLocalLLM2 for build artifacts ...
 2026-04-19 22:17:14,963 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
 2026-04-19 22:17:14,963 [INFO] [DRY RUN] Skipped
 2026-04-19 22:17:14,963 [INFO] Pipeline complete.
+2026-04-22 17:07:32,858 [INFO] Pipeline started at 2026-04-22 17:07:32.858295
+2026-04-22 17:07:32,862 [INFO] === One-time setup steps ===
+2026-04-22 17:07:32,862 [INFO] Running: C:\Users\folar\AppData\Local\Programs\Python\Python310\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-22 17:07:32,997 [DEBUG] Scanning C:\Coding\LocalLLM_Pipeline\Common for build artifacts ...
+2026-04-22 17:07:32,997 [DEBUG]   Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:07:33,081 [ERROR] Command failed (exit 1): C:\Users\folar\AppData\Local\Programs\Python\Python310\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\LocalLLM_Pipeline\Common for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:07:33,081 [ERROR] PIPELINE FAILED: Command failed (exit 1): C:\Users\folar\AppData\Local\Programs\Python\Python310\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\LocalLLM_Pipeline\Common for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:14:09,570 [INFO] Pipeline started at 2026-04-22 17:14:09.570733
+2026-04-22 17:14:09,572 [INFO] === One-time setup steps ===
+2026-04-22 17:14:09,572 [INFO] Running: C:\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+2026-04-22 17:14:09,780 [DEBUG] Scanning C:\Coding\WorkFolder\rustdeck_phonebook for build artifacts ...
+2026-04-22 17:14:09,780 [DEBUG]   Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:14:09,793 [ERROR] Command failed (exit 1): C:\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\rustdeck_phonebook for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:14:09,793 [ERROR] PIPELINE FAILED: Command failed (exit 1): C:\Python314\python.exe C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\generate_compile_commands.py
+output (last 50 lines):
+Scanning C:\Coding\WorkFolder\rustdeck_phonebook for build artifacts ...
+  Found: .sln=0  .vcxproj=0  .vcproj=0  .dsp=0
+2026-04-22 17:14:45,393 [INFO] Pipeline started at 2026-04-22 17:14:45.393228
+2026-04-22 17:14:45,394 [INFO] Skipping LSP setup (--skip-lsp)
+2026-04-22 17:14:45,397 [INFO] Subsection 1/1: src/phonebook
+2026-04-22 17:14:45,397 [INFO]   Step 1/6: Per-file docs
+2026-04-22 17:14:45,397 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local.ps1 -TargetDir src/phonebook
+2026-04-22 17:14:46,948 [DEBUG] ============================================
+2026-04-22 17:14:46,949 [DEBUG]   archgen_local.ps1 -- Local LLM Doc Gen
+2026-04-22 17:14:46,950 [DEBUG] ============================================
+2026-04-22 17:14:46,951 [DEBUG] Repo root:       C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:14:46,952 [DEBUG] Codebase:        nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:14:46,954 [DEBUG] Preset:          python
+2026-04-22 17:14:46,955 [DEBUG] Target:          src/phonebook
+2026-04-22 17:14:46,956 [DEBUG] LLM:             qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:14:46,958 [DEBUG] Max file lines:  800
+2026-04-22 17:14:46,959 [DEBUG] Max output tok:  800
+2026-04-22 17:14:46,961 [DEBUG] Files:           10 total  |  unchanged=0  |  process: 10
+2026-04-22 17:14:46,964 [DEBUG] Prompt:          C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgen_local_prompt.txt
+2026-04-22 17:14:46,965 [DEBUG] Serena context:  NO
+2026-04-22 17:14:46,965 [DEBUG] 
+2026-04-22 17:14:46,966 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:14:46,967 [DEBUG] 
+2026-04-22 17:15:09,208 [DEBUG] 
+2026-04-22 17:15:10,701 [DEBUG] PROGRESS: 1/10  rate=0.04/s  eta=0h03m45s                                       
+2026-04-22 17:15:14,086 [DEBUG] PROGRESS: 2/10  rate=0.08/s  eta=0h01m40s                                       
+2026-04-22 17:15:17,014 [DEBUG] PROGRESS: 3/10  rate=0.11/s  eta=0h01m04s                                       
+2026-04-22 17:15:19,715 [DEBUG] PROGRESS: 4/10  rate=0.13/s  eta=0h00m46s                                       
+2026-04-22 17:15:21,348 [DEBUG] PROGRESS: 5/10  rate=0.15/s  eta=0h00m33s                                       
+2026-04-22 17:15:22,616 [DEBUG] PROGRESS: 6/10  rate=0.17/s  eta=0h00m24s                                       
+2026-04-22 17:15:26,671 [DEBUG] PROGRESS: 7/10  rate=0.2/s  eta=0h00m15s                                        
+2026-04-22 17:15:29,304 [DEBUG] PROGRESS: 8/10  rate=0.2/s  eta=0h00m10s                                        
+2026-04-22 17:15:31,619 [DEBUG] PROGRESS: 9/10  rate=0.21/s  eta=0h00m05s                                       
+2026-04-22 17:15:31,622 [DEBUG] PROGRESS: 10/10  rate=0.22/s  eta=?                                             
+2026-04-22 17:15:31,622 [DEBUG] 
+2026-04-22 17:15:31,640 [DEBUG] Done. 10 files processed. Docs in: C:\Coding\WorkFolder\rustdeck_phonebook\architecture
+2026-04-22 17:15:31,786 [INFO]   Step 2/6: Cross-reference index
+2026-04-22 17:15:31,786 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archxref.ps1
+2026-04-22 17:15:32,547 [DEBUG] ============================================
+2026-04-22 17:15:32,548 [DEBUG]   archxref.ps1 - Cross-Reference Index
+2026-04-22 17:15:32,549 [DEBUG] ============================================
+2026-04-22 17:15:32,552 [DEBUG] Doc root:  C:\Coding\WorkFolder\rustdeck_phonebook\architecture
+2026-04-22 17:15:32,553 [DEBUG] Output:    C:\Coding\WorkFolder\rustdeck_phonebook\architecture\xref_index.md
+2026-04-22 17:15:32,553 [DEBUG] 
+2026-04-22 17:15:32,573 [DEBUG] Parsing 10 per-file docs...
+2026-04-22 17:15:32,616 [DEBUG] Extracted:
+2026-04-22 17:15:32,619 [DEBUG]   Functions:    29
+2026-04-22 17:15:32,620 [DEBUG]   Call edges:   0
+2026-04-22 17:15:32,621 [DEBUG]   Globals:      0
+2026-04-22 17:15:32,622 [DEBUG]   Include deps: 0
+2026-04-22 17:15:32,622 [DEBUG] 
+2026-04-22 17:15:32,679 [DEBUG] Wrote: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\xref_index.md (87 lines)
+2026-04-22 17:15:32,681 [DEBUG] Done.
+2026-04-22 17:15:32,820 [INFO]   Step 3/6: Mermaid diagrams
+2026-04-22 17:15:32,821 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archgraph.ps1
+2026-04-22 17:15:33,585 [DEBUG] ============================================
+2026-04-22 17:15:33,587 [DEBUG]   archgraph.ps1 - Call Graph Generator
+2026-04-22 17:15:33,588 [DEBUG] ============================================
+2026-04-22 17:15:33,590 [DEBUG] Doc root:  C:\Coding\WorkFolder\rustdeck_phonebook\architecture
+2026-04-22 17:15:33,592 [DEBUG] Max edges: 150
+2026-04-22 17:15:33,592 [DEBUG] 
+2026-04-22 17:15:33,618 [DEBUG] Parsing 10 per-file docs...
+2026-04-22 17:15:33,664 [DEBUG] Found 29 functions, 0 call edges.
+2026-04-22 17:15:33,710 [DEBUG] Wrote: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\callgraph.mermaid
+2026-04-22 17:15:33,741 [DEBUG] Wrote: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\subsystems.mermaid
+2026-04-22 17:15:33,753 [DEBUG] Wrote: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\callgraph.md
+2026-04-22 17:15:33,754 [DEBUG] 
+2026-04-22 17:15:33,755 [DEBUG] Done. View Mermaid diagrams in GitHub, VS Code, or mermaid.live
+2026-04-22 17:15:33,900 [INFO]   Step 4/6: Architecture overview
+2026-04-22 17:15:33,900 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\arch_overview_local.ps1
+2026-04-22 17:15:35,003 [DEBUG] ============================================
+2026-04-22 17:15:35,005 [DEBUG]   arch_overview_local.ps1 -- Architecture
+2026-04-22 17:15:35,005 [DEBUG] ============================================
+2026-04-22 17:15:35,006 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:15:35,007 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:15:35,008 [DEBUG] Target:         all
+2026-04-22 17:15:35,008 [DEBUG] Mode:           single
+2026-04-22 17:15:35,010 [DEBUG] Per-file docs:  10
+2026-04-22 17:15:35,011 [DEBUG] Summary lines:  41 (threshold: 400)
+2026-04-22 17:15:35,012 [DEBUG] Output:         C:\Coding\WorkFolder\rustdeck_phonebook\architecture\architecture.md
+2026-04-22 17:15:35,013 [DEBUG] 
+2026-04-22 17:15:35,014 [DEBUG] Press Ctrl+Q to cancel (checked between subsystems).
+2026-04-22 17:15:35,014 [DEBUG] 
+2026-04-22 17:15:35,015 [DEBUG] Generating overview in single pass...
+2026-04-22 17:15:39,626 [DEBUG] Done. Overview written to: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\architecture.md
+2026-04-22 17:15:39,767 [INFO]   Step 5/6: Pass 2 context
+2026-04-22 17:15:39,767 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_context.ps1
+2026-04-22 17:15:40,504 [DEBUG] ============================================
+2026-04-22 17:15:40,505 [DEBUG]   archpass2_context.ps1 - Targeted Context
+2026-04-22 17:15:40,506 [DEBUG] ============================================
+2026-04-22 17:15:40,507 [DEBUG] Repo root:    C:/Coding/WorkFolder/rustdeck_phonebook
+2026-04-22 17:15:40,511 [DEBUG] Docs found:   13
+2026-04-22 17:15:40,513 [DEBUG] Output:       C:\Coding\WorkFolder\rustdeck_phonebook\architecture\.pass2_context
+2026-04-22 17:15:40,513 [DEBUG] 
+2026-04-22 17:15:40,623 [DEBUG] Done. 10 targeted context files written to: C:\Coding\WorkFolder\rustdeck_phonebook\architecture\.pass2_context
+2026-04-22 17:15:40,763 [INFO]   Step 6/6: Pass 2 analysis
+2026-04-22 17:15:40,764 [INFO] Running: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Coding\LocalLLM_Pipeline\LocalLLMAnalysis\archpass2_local.ps1
+2026-04-22 17:15:42,062 [DEBUG] ============================================
+2026-04-22 17:15:42,063 [DEBUG]   archpass2_local.ps1 -- Pass 2 (Local LLM)
+2026-04-22 17:15:42,064 [DEBUG] ============================================
+2026-04-22 17:15:42,065 [DEBUG] Codebase:       nmon -- a Python terminal system/GPU monitor. Collects GPU metrics via NVML and nvidia-smi, stores samples in SQLite, and renders a live TUI (Rich-based) with a dashboard, history view, and configurable widgets. Stack: Python 3.10+, rich, pynvml, readchar, TOML config, pytest test suite.
+2026-04-22 17:15:42,066 [DEBUG] LLM:            qwen3-coder:30b @ http://192.168.1.126:11434
+2026-04-22 17:15:42,069 [DEBUG] Candidates:     10  |  unchanged=0  |  process: 10
+2026-04-22 17:15:42,069 [DEBUG] Output:         architecture/<path>.pass2.md
+2026-04-22 17:15:42,070 [DEBUG] 
+2026-04-22 17:15:42,070 [DEBUG] Press Ctrl+Q to cancel (checked between files).
+2026-04-22 17:15:42,071 [DEBUG] 
+2026-04-22 17:15:45,312 [DEBUG] 
+2026-04-22 17:15:47,867 [DEBUG] PROGRESS: 1/10  rate=0.31/s  eta=0h00m29s                                       
+2026-04-22 17:15:50,619 [DEBUG] PROGRESS: 2/10  rate=0.34/s  eta=0h00m24s                                       
+2026-04-22 17:15:52,775 [DEBUG] PROGRESS: 3/10  rate=0.35/s  eta=0h00m20s                                       
+2026-04-22 17:15:54,910 [DEBUG] PROGRESS: 4/10  rate=0.37/s  eta=0h00m16s                                       
+2026-04-22 17:15:57,335 [DEBUG] PROGRESS: 5/10  rate=0.39/s  eta=0h00m13s                                       
+2026-04-22 17:15:59,877 [DEBUG] PROGRESS: 6/10  rate=0.39/s  eta=0h00m10s                                       
+2026-04-22 17:16:02,516 [DEBUG] PROGRESS: 7/10  rate=0.39/s  eta=0h00m08s                                       
+2026-04-22 17:16:04,609 [DEBUG] PROGRESS: 8/10  rate=0.39/s  eta=0h00m05s                                       
+2026-04-22 17:16:07,422 [DEBUG] PROGRESS: 9/10  rate=0.4/s  eta=0h00m02s                                        
+2026-04-22 17:16:07,422 [DEBUG] PROGRESS: 10/10  rate=0.39/s  eta=?                                             
+2026-04-22 17:16:07,424 [DEBUG] 
+2026-04-22 17:16:07,439 [DEBUG] Done. 10 files processed. Pass 2 docs in: C:\Coding\WorkFolder\rustdeck_phonebook\architecture
+2026-04-22 17:16:07,586 [INFO] Pipeline complete.
