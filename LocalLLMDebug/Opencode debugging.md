@@ -156,6 +156,75 @@ If you find yourself referencing the same architecture section in every session,
 
 ---
 
+## Batch auditing with `opencode run`
+
+`opencode run --command <name> <args>` invokes any project-scoped slash command headlessly — so you can sweep `/bug` or `/gaps` over every artifact without opening the TUI per file. Useful as a **second-pass audit** of what debug-pipeline Step 5 already auto-applied: the `/bug` prompt explicitly checks whether each bug is still present and skips the ones Step 5 fixed.
+
+### Which commands fit the pattern
+
+- `/bug` and `/gaps` are **file-keyed** — each takes a relative source path as `$ARGUMENTS` and reads exactly one artifact. Batching them is a simple loop over the `.md` / `.gap.md` files under `bug_reports/src/` and `test_gaps/src/`.
+- `/iface` is **symbol-keyed**, not file-keyed — there's no natural file iteration. The consolidated catalog already lives at `architecture/INTERFACES.md`; invoke `/iface <symbol>` interactively on demand instead.
+
+### PowerShell loop
+
+Run from the project root. Replace `<pkg>` with your repo's top-level source package (e.g. `phonebook` for rust_phonebook):
+
+```powershell
+$ErrorActionPreference = "Stop"
+$opencode = "C:\Coding\Opencode\opencode.exe"
+$outRoot  = "opencode_reviews"
+New-Item -ItemType Directory -Force -Path "$outRoot\bug","$outRoot\gaps" | Out-Null
+
+function Invoke-Slash {
+    param($Command, $Arg, $OutFile)
+    if (Test-Path $OutFile) { Write-Host "skip (exists): $Arg"; return }
+    Write-Host "/$Command $Arg"
+    & $opencode run --command $Command $Arg 2>&1 | Tee-Object -FilePath $OutFile | Out-Null
+}
+
+# /bug over every bug_reports artifact
+$base = Resolve-Path "bug_reports\src\<pkg>"
+Get-ChildItem $base -Recurse -Filter "*.md" |
+    Where-Object { $_.Name -notmatch '^__init__' } |
+    ForEach-Object {
+        $rel  = $_.FullName.Substring($base.Path.Length + 1)
+        $arg  = $rel -replace '\.md$',''
+        $safe = $arg -replace '[\\/]','__'
+        Invoke-Slash -Command bug -Arg $arg -OutFile "$outRoot\bug\$safe.md"
+    }
+
+# /gaps over every test_gaps artifact
+$base = Resolve-Path "test_gaps\src\<pkg>"
+Get-ChildItem $base -Recurse -Filter "*.gap.md" |
+    Where-Object { $_.Name -notmatch '^__init__' } |
+    ForEach-Object {
+        $rel  = $_.FullName.Substring($base.Path.Length + 1)
+        $arg  = $rel -replace '\.gap\.md$',''
+        $safe = $arg -replace '[\\/]','__'
+        Invoke-Slash -Command gaps -Arg $arg -OutFile "$outRoot\gaps\$safe.md"
+    }
+```
+
+Outputs land in `opencode_reviews/bug/*.md` and `opencode_reviews/gaps/*.md`. The `Test-Path` skip makes the loop resumable — Ctrl+C mid-sweep is safe; re-running picks up where it stopped. `__init__.py` reports are filtered out because they're usually empty stubs.
+
+### Runtime cost
+
+Each `opencode run` call is an independent session, so serena re-indexes on every start (~30s on a warm cache, longer cold). ~10 files × 2 commands × 2–5 min per call on `qwen3:32b` is roughly **1–1.5 hr** over a LAN Ollama.
+
+To amortize the MCP bootstrap, run `opencode serve` once in the background and pass `--attach http://localhost:<port>` to every `run` call — all invocations then share a warm serena. More complex to orchestrate; skip unless the per-call startup is a real blocker.
+
+### Smoke-test one file first
+
+Before committing to the full loop, run one artifact and read the output:
+
+```powershell
+& "C:\Coding\Opencode\opencode.exe" run --command bug crud.py
+```
+
+If it surfaces real second-pass findings, run the full loop. If the review is mostly "already fixed by Step 5," Step 5 did its job and the sweep will be redundant — skip it.
+
+---
+
 ## Maintenance
 
 - The pipeline-generated docs reflect the codebase at the time the pipeline ran. As you fix bugs in opencode, the docs **drift**. Don't auto-trust a 2-week-old `bug_reports/src/crud.py.md` — the bug may already be fixed.
