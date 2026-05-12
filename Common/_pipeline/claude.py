@@ -10,14 +10,47 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from pathlib import Path  # noqa: F401  (used in type hint string)
+from pathlib import Path
+
+
+def _load_dotenv() -> None:
+    """Populate os.environ from `.env` at the repo root if present.
+
+    Real env vars set in the shell take precedence — values from .env are only
+    applied to keys not already set. The .env file is gitignored.
+    """
+    # claude.py -> _pipeline -> Common -> repo root
+    root = Path(__file__).resolve().parents[2]
+    env_path = root / ".env"
+    if not env_path.exists():
+        return
+    with env_path.open(encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv()
+
+
+def _resolve_dir(env_var: str, default: Path) -> str:
+    """Read an env-var path, expand `~`, fall back to `default` if unset."""
+    raw = os.environ.get(env_var)
+    return str(Path(raw).expanduser() if raw else default)
 
 
 # Map of account identifiers to their CLAUDE_CONFIG_DIR locations.
+# Override per-machine via CLAUDE1_CONFIG_DIR / CLAUDE2_CONFIG_DIR in .env.
 # Extend this dict if more accounts are added.
 ACCOUNT_CONFIG_DIRS: dict[str, str] = {
-    "claude1": str(Path.home() / ".claudemain"),
-    "claude2": str(Path.home() / ".claudealt"),
+    "claude1": _resolve_dir("CLAUDE1_CONFIG_DIR", Path.home() / ".claudemain"),
+    "claude2": _resolve_dir("CLAUDE2_CONFIG_DIR", Path.home() / ".claudealt"),
 }
 
 
