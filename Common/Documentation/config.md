@@ -3,8 +3,9 @@
 ## Overview
 
 `Common/_pipeline/config.py` handles `.env` file loading, subsection parsing,
-endpoint resolution, and toolkit path discovery. It is the Python counterpart
-to `Read-EnvFile` and `Cfg` from the PowerShell library.
+backend selection, endpoint resolution, and toolkit path discovery. It is the
+Python counterpart to `Read-EnvFile`, `Cfg`, `Get-LLMBackend`, and
+`Get-LLMEndpoint` from the PowerShell library.
 
 **Location:** `LocalLLM_Pipeline/Common/_pipeline/config.py`
 
@@ -18,7 +19,10 @@ to `Read-EnvFile` and `Cfg` from the PowerShell library.
 | `END_MARKER`              | `"#Subsections end"`                     | End of the subsections block in `.env`   |
 | `TOOLKIT_COMMON`          | `Path(__file__).resolve().parent.parent` | Absolute path to `Common/`               |
 | `ENV_PATH`                | `TOOLKIT_COMMON / ".env"`                | Default `.env` file path                 |
-| `DEFAULT_OLLAMA_ENDPOINT` | `"http://192.168.1.126:11434"`           | Fallback Ollama URL                      |
+| `DEFAULT_HOST`            | `"192.168.1.126"`                        | Fallback host (both backends)            |
+| `GATEWAY_PORT`            | `"11430"`                                | LLMConfig /v1 gateway port (vllm)        |
+| `OLLAMA_PORT`             | `"11434"`                                | Native Ollama port (ollama)              |
+| `VALID_BACKENDS`          | `("vllm", "ollama")`                     | Accepted `LLM_BACKEND` values            |
 
 ---
 
@@ -128,62 +132,71 @@ Returns the root of the LocalLLM_Pipeline toolkit (the directory containing
 
 ---
 
-### `resolve_ollama_endpoint`
+### `resolve_backend`
 
 ```python
-def resolve_ollama_endpoint(
+def resolve_backend(env: dict[str, str], explicit: str | None = None) -> str
+```
+
+Returns the local LLM backend, `"vllm"` (default) or `"ollama"`. Precedence:
+`explicit` arg -> `os.environ["LLM_BACKEND"]` -> `.env` `LLM_BACKEND` -> `"vllm"`.
+Raises `ValueError` on any other (non-empty) value.
+
+---
+
+### `resolve_endpoint`
+
+```python
+def resolve_endpoint(
     env: dict[str, str] | None = None,
+    *,
+    backend: str = "vllm",
     explicit: str | None = None,
     read_env_vars: bool = True,
 ) -> str
 ```
 
-Resolves the Ollama API base URL with a multi-level precedence chain.
+Resolves the base URL for the chosen backend:
+
+- `vllm`   -> the LLMConfig OpenAI `/v1` gateway (default port `11430`).
+- `ollama` -> the native Ollama server (default port `11434`).
 
 **Resolution order:**
 
 1. `explicit` argument (e.g. CLI `--local-endpoint`)
-2. `os.environ["OLLAMA_API_BASE"]` (if `read_env_vars` is True)
-3. `os.environ["LLM_ENDPOINT"]` (if `read_env_vars` is True)
+2. `os.environ["OLLAMA_API_BASE"]` (ollama backend only, if `read_env_vars`)
+3. `os.environ["LLM_ENDPOINT"]` (if `read_env_vars`)
 4. `.env` key `LLM_ENDPOINT`
-5. `.env` keys `LLM_HOST` + `LLM_PORT`
-6. `DEFAULT_OLLAMA_ENDPOINT` (`http://192.168.1.126:11434`)
+5. `http://<LLM_HOST or DEFAULT_HOST>:<gateway|ollama port>`
 
-All returned values have trailing slashes stripped.
-
-**Parameters:**
-
-| Name            | Type             | Default   | Description                               |
-| --------------- | ---------------- | --------- | ----------------------------------------- |
-| `env`           | `dict` or `None` | `None`    | Pre-loaded .env dict; loads fresh if None |
-| `explicit`      | `str` or `None`  | `None`    | Explicit endpoint from CLI args           |
-| `read_env_vars` | `bool`           | `True`    | Whether to check `os.environ`             |
-
-**Returns:** `str` -- the resolved endpoint URL.
+`LLM_PORT` applies to the ollama backend only; the vllm gateway always uses
+`11430` unless an explicit `LLM_ENDPOINT` overrides it. All returned values have
+trailing slashes stripped.
 
 **Example:**
 
 ```python
-from _pipeline.config import load_env, resolve_ollama_endpoint
+from _pipeline.config import load_env, resolve_backend, resolve_endpoint
 
 env = load_env()
-endpoint = resolve_ollama_endpoint(env=env)
-# -> "http://192.168.1.126:11434"
+backend = resolve_backend(env)                       # "vllm"
+endpoint = resolve_endpoint(env, backend=backend)    # "http://192.168.1.126:11430"
 
-# CLI override:
-endpoint = resolve_ollama_endpoint(explicit="http://localhost:11434")
+# Ollama fallback:
+resolve_endpoint(env, backend="ollama")              # "http://192.168.1.126:11434"
 ```
 
 ---
 
 ## .env Keys Consumed
 
-| Key               | Used by                   | Description                         |
-| ----------------- | ------------------------- | ----------------------------------- |
-| `LLM_ENDPOINT`    | `resolve_ollama_endpoint` | Full Ollama API URL                 |
-| `LLM_HOST`        | `resolve_ollama_endpoint` | Ollama server hostname              |
-| `LLM_PORT`        | `resolve_ollama_endpoint` | Ollama server port (default: 11434) |
-| `OLLAMA_API_BASE` | `resolve_ollama_endpoint` | Environment variable override       |
+| Key               | Used by            | Description                                 |
+| ----------------- | ------------------ | ------------------------------------------- |
+| `LLM_BACKEND`     | `resolve_backend`  | `vllm` (default) or `ollama`                |
+| `LLM_ENDPOINT`    | `resolve_endpoint` | Full backend base URL (overrides host/port) |
+| `LLM_HOST`        | `resolve_endpoint` | Backend hostname                            |
+| `LLM_PORT`        | `resolve_endpoint` | Ollama server port (ollama backend only)    |
+| `OLLAMA_API_BASE` | `resolve_endpoint` | os.environ override (ollama backend only)   |
 
 ---
 
@@ -199,10 +212,11 @@ endpoint = resolve_ollama_endpoint(explicit="http://localhost:11434")
 
 ```python
 # In ollama.py
-from _pipeline.config import load_env, resolve_ollama_endpoint
+from _pipeline.config import load_env, resolve_backend, resolve_endpoint
 
 env = load_env()
-endpoint = resolve_ollama_endpoint(env=env)
+backend = resolve_backend(env)
+endpoint = resolve_endpoint(env, backend=backend)
 
 # In the orchestrator (ArchPipeline.py)
 from _pipeline.config import load_env, parse_subsections, toolkit_root

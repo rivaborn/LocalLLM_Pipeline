@@ -1,8 +1,11 @@
-"""Ollama HTTP client. Python port of Invoke-LocalLLM from llm_common.ps1.
+"""Local-LLM HTTP client. Python port of Invoke-LocalLLM from llm_common.ps1.
 
-Two modes:
-    num_ctx == 0  -> OpenAI-compat /v1/chat/completions (legacy).
-    num_ctx  > 0  -> native /api/chat with options.num_ctx + optional think.
+Backend selects the wire protocol (see config.resolve_backend):
+    vllm   -> OpenAI /v1/chat/completions through the LLMConfig gateway
+              (auto-loads the model; context is fixed per vLLM alias, so
+              num_ctx / think are not sent).
+    ollama -> native /api/chat with options.num_ctx + optional think
+              (num_ctx == 0 falls back to Ollama's own /v1 endpoint).
 
 Keeps behavioural parity with the PowerShell helper: retry loop, empty-
 content detection with thinking-length diagnostic, sanity check that
@@ -17,9 +20,11 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import config as cfg
+
 
 class LLMError(RuntimeError):
-    """Raised when an Ollama call exhausts retries or returns unparseable content."""
+    """Raised when a local-LLM call exhausts retries or returns unparseable content."""
 
 
 @dataclass
@@ -28,24 +33,13 @@ class LLMResult:
     thinking: str | None = None
 
 
-def _resolve_endpoint(env: dict[str, str], explicit: str | None) -> str:
-    if explicit:
-        return explicit.rstrip("/")
-    if env.get("LLM_ENDPOINT"):
-        return env["LLM_ENDPOINT"].rstrip("/")
-    host = env.get("LLM_HOST")
-    if host:
-        port = env.get("LLM_PORT", "11434")
-        return f"http://{host}:{port}".rstrip("/")
-    return "http://192.168.1.126:11434"
-
-
 def invoke_local_llm(
     user_prompt: str,
     *,
     env: dict[str, str],
     system_prompt: str | None = None,
     endpoint: str | None = None,
+    backend: str | None = None,
     model: str = "qwen2.5-coder:14b",
     temperature: float = 0.1,
     max_tokens: int = 800,
@@ -56,19 +50,24 @@ def invoke_local_llm(
     think: bool = False,
     thinking_file: Path | None = None,
 ) -> str:
-    """Invoke Ollama and return generated content. Writes reasoning to
-    `thinking_file` if provided and the response contained thinking tokens."""
+    """Invoke the local LLM and return generated content. Writes reasoning to
+    `thinking_file` if provided and the response contained thinking tokens
+    (ollama backend only)."""
     if num_ctx < 0:
         num_ctx = int(env.get("LLM_NUM_CTX", "0"))
-
-    endpoint = _resolve_endpoint(env, endpoint)
+    if backend is None:
+        backend = cfg.resolve_backend(env)
+    endpoint = cfg.resolve_endpoint(env, backend=backend, explicit=endpoint)
 
     messages: list[dict[str, str]] = []
     if system_prompt and system_prompt.strip():
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": user_prompt})
 
-    if num_ctx > 0:
+    # Native /api/chat (num_ctx + think) is an Ollama-only path; the vLLM
+    # gateway is OpenAI-compatible and fixes context per alias at serve time.
+    native = backend == "ollama" and num_ctx > 0
+    if native:
         uri = f"{endpoint}/api/chat"
         body: dict = {
             "model": model,
@@ -108,7 +107,7 @@ def invoke_local_llm(
             parsed = json.loads(resp_body)
 
             thinking: str | None = None
-            if num_ctx > 0:
+            if native:
                 message = parsed.get("message", {}) or {}
                 content = message.get("content", "") or ""
                 thinking = message.get("thinking")
@@ -123,7 +122,7 @@ def invoke_local_llm(
                 content = choices[0].get("message", {}).get("content", "") or ""
 
             if not content or not content.strip():
-                if num_ctx > 0 and thinking and thinking.strip():
+                if native and thinking and thinking.strip():
                     raise LLMError(
                         f"Model exhausted budget inside <thinking> "
                         f"(thinking={len(thinking)} chars, num_predict={max_tokens}). "
@@ -140,7 +139,7 @@ def invoke_local_llm(
                 extra = (
                     f" -- thinking={len(thinking)} chars suggests budget "
                     "exhaustion during reasoning."
-                    if (num_ctx > 0 and thinking and thinking.strip())
+                    if (native and thinking and thinking.strip())
                     else ""
                 )
                 raise LLMError(
@@ -155,9 +154,9 @@ def invoke_local_llm(
             # hint pointing at LLM_PLANNING_TIMEOUT.
             last_err = LLMError(
                 f"LLM request timed out after {timeout}s "
-                f"(model={model}, num_ctx={num_ctx}). "
+                f"(model={model}, backend={backend}). "
                 "Raise LLM_PLANNING_TIMEOUT (or LLM_TIMEOUT) in .env if the model "
-                "legitimately needs longer, or lower num_ctx / max_tokens."
+                "legitimately needs longer, or lower max_tokens."
             )
             if attempt >= max_retries:
                 break

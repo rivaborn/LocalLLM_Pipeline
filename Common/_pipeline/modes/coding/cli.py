@@ -108,15 +108,18 @@ def _resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path]:
 
 
 def _build_planning_cfg(env: dict[str, str], args: argparse.Namespace) -> dict:
+    backend = cfg.resolve_backend(env)
     return {
-        "model":         cfg.resolve_model(env, "LLM_PLANNING_MODEL", "gemma4:26b"),
+        "backend":       backend,
+        "model":         cfg.resolve_model(env, "LLM_PLANNING_MODEL", "qwen3.5-27b"),
+        "coder_model":   cfg.resolve_model(env, "LLM_AIDER_MODEL", "qwen3-coder-30b"),
         "num_ctx":       int(env.get("LLM_PLANNING_NUM_CTX", "65536")),
-        "max_tokens":    int(env.get("LLM_PLANNING_MAX_TOKENS", "49152")),
+        "max_tokens":    int(env.get("LLM_PLANNING_MAX_TOKENS", "16384")),
         "timeout":       int(env.get("LLM_PLANNING_TIMEOUT", env.get("LLM_TIMEOUT", "1200"))),
         "temperature":   float(env.get("LLM_TEMPERATURE", "0.1")),
         "think":         env.get("LLM_THINK", "false").lower() in ("1", "true", "yes", "on"),
         "save_thinking": env.get("LLM_SAVE_THINKING", "false").lower() in ("1", "true", "yes", "on"),
-        "endpoint":      cfg.resolve_ollama_endpoint(env, explicit=args.local_endpoint),
+        "endpoint":      cfg.resolve_endpoint(env, backend=backend, explicit=args.local_endpoint),
     }
 
 
@@ -193,8 +196,12 @@ def run(args: argparse.Namespace) -> int:
     cprint(f"Claude account:   {args.claude}", Color.CYAN)
     cprint(f"Mode:             {mode}", Color.CYAN)
     if mode != "allclaude":
+        cprint(f"  Backend:        {planning_cfg['backend']}", Color.CYAN)
         cprint(f"  Local endpoint: {planning_cfg['endpoint']}", Color.CYAN)
-        cprint(f"  Local model:    {planning_cfg['model']} (num_ctx={planning_cfg['num_ctx']})", Color.CYAN)
+        if planning_cfg["backend"] == "ollama":
+            cprint(f"  Local model:    {planning_cfg['model']} (num_ctx={planning_cfg['num_ctx']})", Color.CYAN)
+        else:
+            cprint(f"  Local model:    {planning_cfg['model']}", Color.CYAN)
 
     # Per-stage model table — previews which engine/model every stage that
     # will run in this invocation uses, before any LLM calls are made.

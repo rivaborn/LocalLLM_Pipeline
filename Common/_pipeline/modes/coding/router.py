@@ -1,13 +1,16 @@
 """Mode / engine routing and the single entry point that dispatches a
-stage prompt to either Claude or the local Ollama server.
+stage prompt to either Claude or the local backend (vLLM/Ollama).
 
-Stage defaults (per sub-stage, not per top-level stage number):
-    0  sonnet  think=false  local_model=<planning default>
-    1  sonnet  think=false  local_model=<planning default>
-    2a opus    think=true   local_model=<planning default>
-    2b opus    think=true   local_model=<planning default>
-    3a opus    think=true   local_model=qwen3-coder:30b
-    3b sonnet  think=false  local_model=qwen3-coder:30b
+Stage defaults (per sub-stage, not per top-level stage number). local_model is
+the role on the local backend: "" -> the planning model, "coder" -> the coder
+model (LLM_AIDER_MODEL chain); both are resolved per-backend in planning_cfg, so
+the served-name (vllm) vs tag (ollama) is picked up from .env automatically:
+    0  sonnet  think=false  local=planning
+    1  sonnet  think=false  local=planning
+    2a opus    think=true   local=coder
+    2b opus    think=true   local=coder
+    3a opus    think=true   local=coder
+    3b sonnet  think=false  local=coder
 """
 from __future__ import annotations
 
@@ -24,11 +27,11 @@ from ...ui import Color, cprint
 STAGE_DEFAULTS: dict[str, dict] = {
     "0":  {"model": "sonnet", "think": False, "local_model": ""},
     "1":  {"model": "sonnet", "think": False, "local_model": ""},
-    "2a": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
-    "2b": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
+    "2a": {"model": "opus",   "think": True,  "local_model": "coder"},
+    "2b": {"model": "opus",   "think": True,  "local_model": "coder"},
     "2c": {"model": "sonnet", "think": True,  "local_model": ""},
-    "3a": {"model": "opus",   "think": True,  "local_model": "qwen3-coder:30b"},
-    "3b": {"model": "sonnet", "think": False, "local_model": "qwen3-coder:30b"},
+    "3a": {"model": "opus",   "think": True,  "local_model": "coder"},
+    "3b": {"model": "sonnet", "think": False, "local_model": "coder"},
     "3c": {"model": "sonnet", "think": True,  "local_model": ""},
 }
 
@@ -65,11 +68,12 @@ def _think_prefix(sub_stage: str, args: argparse.Namespace, engine: str) -> str:
     return "ultrathink. " if use else ""
 
 
-def _resolve_local_model(sub_stage: str, user_supplied: str | None, fallback: str) -> str:
+def _resolve_local_model(sub_stage: str, user_supplied: str | None,
+                         planning_model: str, coder_model: str) -> str:
     if user_supplied:
         return user_supplied
-    override = STAGE_DEFAULTS[sub_stage]["local_model"]
-    return override or fallback
+    role = STAGE_DEFAULTS[sub_stage]["local_model"]
+    return coder_model if role == "coder" else planning_model
 
 
 def _resolve_claude_model(sub_stage: str, user_override: str | None) -> str:
@@ -134,15 +138,19 @@ def invoke_stage(
                              stream_to=stream_to)
 
     # local engine
-    local_model = _resolve_local_model(sub_stage, args.local_model, planning_cfg["model"])
+    backend = planning_cfg["backend"]
+    local_model = _resolve_local_model(sub_stage, args.local_model,
+                                       planning_cfg["model"], planning_cfg["coder_model"])
     # Per-stage coder-model override disables thinking automatically (qwen3-coder
-    # is not a reasoning model; sending think:true to it wastes budget).
-    stage_think = planning_cfg["think"] and local_model == planning_cfg["model"]
+    # is not a reasoning model). Thinking is an Ollama-only path; the vLLM gateway
+    # ignores it (context + reasoning are fixed per alias at serve time).
+    stage_think = (backend == "ollama" and planning_cfg["think"]
+                   and local_model == planning_cfg["model"])
     adaptive = _adaptive_timeout(full_prompt, planning_cfg)
+    detail = f"ctx={planning_cfg['num_ctx']} think={stage_think} " if backend == "ollama" else ""
     cprint(
-        f"    [local: {local_model} @ {planning_cfg['endpoint']} "
-        f"ctx={planning_cfg['num_ctx']} think={stage_think} "
-        f"timeout={adaptive}s] - ({ts})",
+        f"    [{backend}: {local_model} @ {planning_cfg['endpoint']} "
+        f"{detail}timeout={adaptive}s] - ({ts})",
         Color.BLUE,
     )
     if args.dry_run:
@@ -152,6 +160,7 @@ def invoke_stage(
         full_prompt,
         env=env,
         endpoint=planning_cfg["endpoint"],
+        backend=backend,
         model=local_model,
         num_ctx=planning_cfg["num_ctx"],
         max_tokens=planning_cfg["max_tokens"],
@@ -223,18 +232,19 @@ def describe_models(args: argparse.Namespace, env: dict[str, str],
             think_str = "on" if think else "off"
         else:
             local_model = _resolve_local_model(
-                sub_stage, args.local_model, planning_cfg["model"]
+                sub_stage, args.local_model,
+                planning_cfg["model"], planning_cfg["coder_model"]
             )
             model = local_model
-            # Same logic as invoke_stage: think is disabled when a per-stage
-            # coder-model override is in effect (qwen3-coder is not a
-            # reasoning model).
-            stage_think = planning_cfg["think"] and local_model == planning_cfg["model"]
+            # Same logic as invoke_stage: thinking is an Ollama-only path, and is
+            # disabled when a per-stage coder-model override is in effect.
+            stage_think = (planning_cfg["backend"] == "ollama" and planning_cfg["think"]
+                           and local_model == planning_cfg["model"])
             think_str = "on" if stage_think else "off"
         rows.append({
             "stage":  sub_stage,
             "role":   _STAGE_ROLES[sub_stage],
-            "engine": "Claude" if engine == "claude" else "local",
+            "engine": "Claude" if engine == "claude" else planning_cfg["backend"],
             "model":  model,
             "think":  think_str,
             "status": classify_status(top_stage, is_review=is_review),
@@ -242,12 +252,13 @@ def describe_models(args: argparse.Namespace, env: dict[str, str],
 
     # Stage 4 — subprocess (run_aider.py). Model comes from LLM_AIDER_MODEL
     # (falls back to LLM_DEFAULT_MODEL via cfg.resolve_model).
-    aider_model = cfg.resolve_model(env, "LLM_AIDER_MODEL", "qwen3-coder:30b")
+    aider_model = cfg.resolve_model(env, "LLM_AIDER_MODEL", "qwen3-coder-30b")
+    aider_prefix = "openai/" if planning_cfg["backend"] == "vllm" else "ollama_chat/"
     rows.append({
         "stage":  "4",
         "role":   _STAGE_ROLES["4"],
         "engine": "subprocess",
-        "model":  f"ollama_chat/{aider_model}",
+        "model":  f"{aider_prefix}{aider_model}",
         "think":  "-",
         "status": classify_status(4),
     })
@@ -255,7 +266,7 @@ def describe_models(args: argparse.Namespace, env: dict[str, str],
     # Stage 5 — subprocess (fix_imports.py). Shares LLM_AIDER_MODEL with
     # Stage 4 (LLM_FIX_IMPORTS_MODEL was deprecated; both always pointed at
     # the same coder model in practice).
-    fix_model = cfg.resolve_model(env, "LLM_AIDER_MODEL", "qwen3-coder:30b")
+    fix_model = cfg.resolve_model(env, "LLM_AIDER_MODEL", "qwen3-coder-30b")
     rows.append({
         "stage":  "5",
         "role":   _STAGE_ROLES["5"],

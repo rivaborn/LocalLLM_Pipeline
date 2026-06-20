@@ -127,14 +127,15 @@ def run(args: argparse.Namespace) -> int:
     # Per-mode models summary — debug routes steps 1-4 (ps1 workers) and
     # step 5 (inline fix_bugs.py) all through the same local LLM.
     env_preview = cfg.load_env()
-    dbg_model = cfg.resolve_model(env_preview, "LLM_MODEL", "qwen3-coder:30b")
+    backend = cfg.resolve_backend(env_preview)
+    dbg_model = cfg.resolve_model(env_preview, "LLM_MODEL", "qwen3-coder-30b")
     cprint("\n  Models for this run:", Color.CYAN)
     cprint(
-        f"    Steps 1-4 (dataflow, interfaces, testgap, bughunt)   ->  local '{dbg_model}'",
+        f"    Steps 1-4 (dataflow, interfaces, testgap, bughunt)   ->  {backend} '{dbg_model}'",
         Color.CYAN,
     )
     cprint(
-        f"    Step 5 (fix_bugs inline)                              ->  local '{dbg_model}' "
+        f"    Step 5 (fix_bugs inline)                              ->  {backend} '{dbg_model}' "
         f"(uses LLM_FIX_MAX_TOKENS / LLM_TIMEOUT per-file)",
         Color.CYAN,
     )

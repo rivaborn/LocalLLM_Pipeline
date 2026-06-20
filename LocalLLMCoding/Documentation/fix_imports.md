@@ -15,13 +15,13 @@ An earlier version of this tool invoked aider in a repair loop. That approach wa
 ### Tools
 
 - **Python 3.10+** with the target project's virtual environment activated. The package must be importable (typically via `pip install -e .` in the project root).
-- **Ollama** server running and accessible at the configured endpoint.
+- **LLMConfig gateway** (vllm backend, default) or an **Ollama** server (ollama backend) reachable at the configured endpoint.
 
-No aider installation needed — the advisory path uses only `invoke_local_llm` against the local Ollama server.
+No aider installation needed — the advisory path uses only `invoke_local_llm` against the local backend (vLLM gateway or Ollama).
 
 ### Configuration
 
-- `Common/.env` must exist with Ollama endpoint configuration (`LLM_HOST` + `LLM_PORT` or `LLM_ENDPOINT`). The model is resolved via `cfg.resolve_model(env, 'LLM_AIDER_MODEL', 'qwen3-coder:30b')` — shares `LLM_AIDER_MODEL` with Stage 4. Set that key or `LLM_DEFAULT_MODEL` to override.
+- `Common/.env` must exist with `LLM_BACKEND` (`vllm`/`ollama`) and endpoint config (`LLM_HOST` or `LLM_ENDPOINT`). The model is resolved via `cfg.resolve_model(env, 'LLM_AIDER_MODEL', 'qwen3-coder-30b')` — shares `LLM_AIDER_MODEL` with Stage 4. Set that key or `LLM_DEFAULT_MODEL` to override (served-name on vllm, tag on ollama).
 
 ### Prior Pipeline Steps
 
@@ -72,7 +72,7 @@ python C:\Coding\LocalLLM_Pipeline\LocalLLMCoding\fix_imports.py --package src/m
 
 | File                              | Description                                                                                                |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Common/.env`                     | Shared configuration: Ollama endpoint. Model resolved via `LLM_AIDER_MODEL` → `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`. |
+| `Common/.env`                     | Shared configuration: backend + endpoint. Model resolved via `LLM_AIDER_MODEL` → `LLM_DEFAULT_MODEL` → `qwen3-coder-30b`. |
 | All `.py` files under `--package` | Discovered via recursive glob. Each is tested by attempting `import <dotted.module.name>` in a subprocess. |
 
 ### Module Discovery
@@ -97,24 +97,22 @@ Files named `__init__.py` are imported as their parent package (the `__init__` p
 
 | Key                     | Source         | Description                                                                                                                                          |
 | ----------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LLM_AIDER_MODEL`       | `Common/.env`  | Ollama model tag for the diagnosis LLM (shared with Stage 4 aider). Resolved via `cfg.resolve_model`: `LLM_AIDER_MODEL` → `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`. |
-| `LLM_HOST`              | `Common/.env`  | Ollama server hostname.                                                                                                                              |
-| `LLM_PORT`              | `Common/.env`  | Ollama server port (default `11434`).                                                                                                                |
-| `LLM_ENDPOINT`          | `Common/.env`  | Full Ollama endpoint URL override.                                                                                                                   |
-| `LLM_NUM_CTX`           | `Common/.env`  | Context window passed to the diagnosis LLM (default `32768`).                                                                                        |
-| `LLM_TIMEOUT`           | `Common/.env`  | HTTP timeout for the diagnosis LLM call (default `600` s).                                                                                           |
-| `LLM_FIX_MAX_TOKENS`    | `Common/.env`  | `num_predict` for the diagnosis LLM (default `4096`). Diagnoses are short — no need for a large budget.                                              |
-| `OLLAMA_API_BASE`       | set at runtime | The resolved endpoint is written to this env var at startup so any child process (typically none in this tool) inherits the correct Ollama URL.      |
+| `LLM_BACKEND`           | `Common/.env`  | `vllm` (default; gateway `/v1`) or `ollama` (native). Selects the wire protocol.                    |
+| `LLM_AIDER_MODEL`       | `Common/.env`  | Model id for the diagnosis LLM (shared with Stage 4). Resolved via `cfg.resolve_model`: `LLM_AIDER_MODEL` → `LLM_DEFAULT_MODEL` → `qwen3-coder-30b`. Served-name on vllm, tag on ollama. |
+| `LLM_HOST`              | `Common/.env`  | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`.                                              |
+| `LLM_PORT`              | `Common/.env`  | Ollama server port (ollama backend only; default `11434`).                                          |
+| `LLM_ENDPOINT`          | `Common/.env`  | Full backend base URL override.                                                                     |
+| `LLM_NUM_CTX`           | `Common/.env`  | Context window for the diagnosis LLM (ollama backend only; default `32768`).                        |
+| `LLM_TIMEOUT`           | `Common/.env`  | HTTP timeout for the diagnosis LLM call (default `600` s).                                          |
+| `LLM_FIX_MAX_TOKENS`    | `Common/.env`  | `num_predict` for the diagnosis LLM (default `4096`). Diagnoses are short — no need for a large budget. |
 
 ### Endpoint Resolution Precedence
 
-Handled by the shared `_pipeline.config.resolve_ollama_endpoint` (same precedence as all other pipeline stages):
+Handled by the shared `_pipeline.config.resolve_endpoint` (same precedence as all other pipeline stages):
 
-1. `OLLAMA_API_BASE` environment variable
-2. `LLM_ENDPOINT` environment variable
-3. `LLM_ENDPOINT` from `.env`
-4. `LLM_HOST` + `LLM_PORT` from `.env`
-5. Hardcoded default: `http://192.168.1.126:11434`
+1. `LLM_ENDPOINT` (os.environ, then `.env`)
+2. `OLLAMA_API_BASE` (ollama backend only)
+3. `LLM_HOST` + (vllm -> `:11430`; ollama -> `LLM_PORT`/`11434`)
 
 ## Key Behaviors
 
@@ -186,7 +184,7 @@ cd C:\Coding\nmonClaude
 python C:\Coding\LocalLLM_Pipeline\LocalLLMCoding\fix_imports.py
 ```
 
-Walks `src/nmon`, tests every `.py` module, diagnoses any failures via the model resolved from `LLM_AIDER_MODEL` (→ `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`), writes advice to `fix_imports.log`.
+Walks `src/nmon`, tests every `.py` module, diagnoses any failures via the model resolved from `LLM_AIDER_MODEL` (→ `LLM_DEFAULT_MODEL` → `qwen3-coder-30b`), writes advice to `fix_imports.log`.
 
 ### Example 2: Custom package with explicit Python
 
@@ -216,7 +214,7 @@ Just test all imports and list failures; skip the LLM step. Runs in seconds vs m
 
 Started:  2026-04-18 14:30:00
 Package:  C:\Coding\nmonClaude\src\nmon
-Model:    qwen3-coder:30b
+Model:    qwen3-coder-30b
 Endpoint: http://192.168.1.126:11434
 
 ## 3 module(s) failed.

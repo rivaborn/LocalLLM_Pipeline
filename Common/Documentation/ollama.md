@@ -3,8 +3,9 @@
 ## Overview
 
 `Common/_pipeline/ollama.py` is the Python port of `Invoke-LocalLLM` from
-the PowerShell library. It provides an HTTP client for the Ollama chat API
-with retry logic, thinking-model support, and response validation.
+the PowerShell library. It is an HTTP client for the local LLM that selects its
+wire protocol by backend (the vLLM `/v1` gateway vs native Ollama `/api/chat`),
+with retry logic, thinking-model support (ollama only), and response validation.
 
 **Location:** `LocalLLM_Pipeline/Common/_pipeline/ollama.py`
 
@@ -48,6 +49,7 @@ def invoke_local_llm(
     env: dict[str, str],
     system_prompt: str | None = None,
     endpoint: str | None = None,
+    backend: str | None = None,
     model: str = "qwen2.5-coder:14b",
     temperature: float = 0.1,
     max_tokens: int = 800,
@@ -60,17 +62,19 @@ def invoke_local_llm(
 ) -> str
 ```
 
-Sends a chat completion request to Ollama and returns the generated text.
+Sends a chat completion request to the local LLM and returns the generated text.
 
-**Two API modes:**
+**Backend selects the wire protocol:**
 
-| Condition      | Endpoint                               | Request shape                                                   |
-| -------------- | -------------------------------------- | --------------------------------------------------------------- |
-| `num_ctx > 0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
-| `num_ctx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens`                                     |
+| Backend                | Endpoint                               | Request shape                                                   |
+| ---------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `vllm` (default)       | `/v1/chat/completions` (gateway)       | `model`, `messages`, `temperature`, `max_tokens`               |
+| `ollama`, `num_ctx>0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
+| `ollama`, `num_ctx==0` | `/v1/chat/completions` (Ollama compat) | `temperature`, `max_tokens`                                     |
 
-When `num_ctx` is -1 (default), the value is read from `env["LLM_NUM_CTX"]`,
-defaulting to `0` if absent.
+`backend` defaults to `config.resolve_backend(env)`; the endpoint is resolved via
+`config.resolve_endpoint(env, backend=...)` unless `endpoint` is given. `num_ctx`
+(default -1 reads `env["LLM_NUM_CTX"]`) and `think` apply to the ollama backend only.
 
 **Parameters:**
 
@@ -80,7 +84,8 @@ defaulting to `0` if absent.
 | `env`           | `dict[str, str]` | (required)            | Loaded .env configuration                            |
 | `system_prompt` | `str` or `None`  | `None`                | Optional system message                              |
 | `endpoint`      | `str` or `None`  | `None`                | Explicit endpoint URL; auto-resolved if None         |
-| `model`         | `str`            | `"qwen2.5-coder:14b"` | Ollama model name                                    |
+| `backend`       | `str` or `None`  | `None`                | `vllm`/`ollama`; auto-resolved from env if None      |
+| `model`         | `str`            | `"qwen2.5-coder:14b"` | Model id (served-name on vllm, tag on ollama)        |
 | `temperature`   | `float`          | `0.1`                 | Sampling temperature                                 |
 | `max_tokens`    | `int`            | `800`                 | Maximum output tokens (`num_predict` in native mode) |
 | `num_ctx`       | `int`            | `-1`                  | Context window size; -1 reads from env               |
@@ -96,10 +101,10 @@ defaulting to `0` if absent.
 
 **Thinking model support:**
 
-When `think=True` and using native mode (`num_ctx > 0`), the request includes
-`"think": true`. If the response contains a `thinking` field and
-`thinking_file` is provided, the reasoning trace is written to disk as a
-sidecar file.
+On the ollama backend with `num_ctx > 0` and `think=True`, the request includes
+`"think": true`. If the response contains a `thinking` field and `thinking_file`
+is provided, the reasoning trace is written to disk as a sidecar file. The vLLM
+gateway has no reasoning-parser, so this is inert on the `vllm` backend.
 
 **Retry logic:**
 
@@ -138,27 +143,23 @@ print(result)
 
 ---
 
-### `_resolve_endpoint` (private)
+### Endpoint / backend resolution
 
-```python
-def _resolve_endpoint(env: dict[str, str], explicit: str | None) -> str
-```
-
-Internal endpoint resolution. Checks `explicit`, then `env["LLM_ENDPOINT"]`,
-then `env["LLM_HOST"]` + `env["LLM_PORT"]`, then falls back to the default.
-This is a simplified version of `config.resolve_ollama_endpoint` that does
-not check `os.environ`.
+`invoke_local_llm` delegates to `config.resolve_backend` and
+`config.resolve_endpoint` (the old private `_resolve_endpoint` helper was
+removed). Pass `backend=` / `endpoint=` to override the env-driven defaults.
 
 ---
 
 ## .env Keys Consumed
 
-| Key            | Default         | Description                            |
-| -------------- | --------------- | -------------------------------------- |
-| `LLM_ENDPOINT` | (none)          | Full Ollama API URL                    |
-| `LLM_HOST`     | `192.168.1.126` | Ollama server hostname                 |
-| `LLM_PORT`     | `11434`         | Ollama server port                     |
-| `LLM_NUM_CTX`  | `0`             | Context window; 0 = OpenAI compat mode |
+| Key            | Default         | Description                                        |
+| -------------- | --------------- | -------------------------------------------------- |
+| `LLM_BACKEND`  | `vllm`          | `vllm` (gateway /v1) or `ollama` (native)          |
+| `LLM_ENDPOINT` | (none)          | Full backend base URL (overrides host/port)        |
+| `LLM_HOST`     | `192.168.1.126` | Backend hostname                                   |
+| `LLM_PORT`     | `11434`         | Ollama server port (ollama backend only)           |
+| `LLM_NUM_CTX`  | `0`             | Context window (ollama backend only; vllm ignores) |
 
 ---
 

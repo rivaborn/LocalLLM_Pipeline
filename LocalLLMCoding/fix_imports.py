@@ -19,7 +19,6 @@ to do" so humans decide how to act on each proposal.
 """
 import argparse
 import datetime
-import os
 import re
 import subprocess
 import sys
@@ -30,20 +29,21 @@ sys.path.insert(0, str(SCRIPT_DIR.parent / "Common"))
 from _pipeline import config as cfg           # noqa: E402
 from _pipeline.ollama import LLMError, invoke_local_llm  # noqa: E402
 
-DEFAULT_DIAGNOSE_MODEL = "qwen3-coder:30b"
+DEFAULT_DIAGNOSE_MODEL = "qwen3-coder-30b"
 # Cap the per-file source we feed the LLM so huge files don't blow the
 # context window. 400 lines is enough to see imports + class signatures.
 _MAX_FILE_LINES = 400
 
 
-def resolve_diagnose_config() -> tuple[str, str]:
-    """Return (model, endpoint) using the shared endpoint precedence.
+def resolve_diagnose_config() -> tuple[str, str, str]:
+    """Return (model, endpoint, backend) using the shared backend/endpoint precedence.
     Model resolution chains LLM_AIDER_MODEL -> LLM_DEFAULT_MODEL -> fallback
     (LLM_FIX_IMPORTS_MODEL was deprecated; it always mirrored LLM_AIDER_MODEL)."""
     env = cfg.load_env()
+    backend = cfg.resolve_backend(env)
     model = cfg.resolve_model(env, "LLM_AIDER_MODEL", DEFAULT_DIAGNOSE_MODEL)
-    endpoint = cfg.resolve_ollama_endpoint(env)
-    return model, endpoint
+    endpoint = cfg.resolve_endpoint(env, backend=backend)
+    return model, endpoint, backend
 
 
 def find_modules(package_dir: Path) -> list[tuple[str, Path]]:
@@ -222,9 +222,8 @@ def main() -> None:
     src_root = pkg_dir.parent
 
     env = cfg.load_env()
-    model, endpoint = resolve_diagnose_config()
-    os.environ.setdefault("OLLAMA_API_BASE", endpoint)
-    print(f"[fix_imports] OLLAMA_API_BASE={endpoint}")
+    model, endpoint, backend = resolve_diagnose_config()
+    print(f"[fix_imports] backend={backend} endpoint={endpoint}")
     print(f"[fix_imports] model={model}")
 
     num_ctx = int(env.get("LLM_NUM_CTX", "32768"))

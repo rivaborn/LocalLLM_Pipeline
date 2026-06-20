@@ -164,12 +164,13 @@ def run(args: argparse.Namespace) -> int:
     # worker through the same local LLM via $env:LLM_MODEL / $env:LLM_ENDPOINT
     # inside the .ps1 scripts.
     env = cfg.load_env()
-    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder:30b")
-    endpoint = cfg.resolve_ollama_endpoint(env)
+    backend = cfg.resolve_backend(env)
+    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder-30b")
+    endpoint = cfg.resolve_endpoint(env, backend=backend)
     cprint("\n  Models for this run:", Color.CYAN)
     cprint(
         f"    All six workers (archgen, archxref, archgraph, arch_overview, "
-        f"archpass2_context, archpass2_local) -> local '{model}' @ {endpoint}",
+        f"archpass2_context, archpass2_local) -> {backend} '{model}' @ {endpoint}",
         Color.CYAN,
     )
     if args.start_from < 1:

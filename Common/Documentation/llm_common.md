@@ -11,7 +11,7 @@ Worker scripts only need to dot-source `llm_common.ps1`; it loads everything.
 | File               | Lines   | Responsibility                                                                                                          |
 | ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `llm_common.ps1`   | 17      | Shim -- loads the two sub-modules                                                                                       |
-| `llm_core.ps1`     | 175     | LLM invocation, endpoint resolution, .env parsing, cancel key, config lookup                                            |
+| `llm_core.ps1`     | ~210    | Backend + endpoint + model resolution, LLM invocation, .env parsing, cancel key, config lookup                         |
 | `file_helpers.ps1` | 230     | Presets, hashing, fence-lang mapping, trivial-file detection, truncation, architecture/LSP resolution, progress display |
 
 **Location:** `LocalLLM_Pipeline/Common/`
@@ -27,7 +27,7 @@ Every worker script begins with:
 . (Join-Path $PSScriptRoot '..\Common\llm_common.ps1')
 ```
 
-This single line makes all 16 functions below available in the caller's scope.
+This single line makes all the shared functions below available in the caller's scope.
 
 ---
 
@@ -37,25 +37,36 @@ This single line makes all 16 functions below available in the caller's scope.
 
 ---
 
+### `Get-LLMBackend`
+
+**Signature:** `Get-LLMBackend` (no parameters)
+
+Returns the local backend, `vllm` (default) or `ollama`. Precedence:
+`$env:LLM_BACKEND` -> config key `LLM_BACKEND` -> `vllm`. Throws on any other value.
+
+---
+
 ### `Get-LLMEndpoint`
 
-**Signature:** `Get-LLMEndpoint` (no parameters)
+**Signature:** `Get-LLMEndpoint [-Backend <string>]` (defaults to `Get-LLMBackend`)
 
-Resolves the Ollama API base URL. Returns a string with no trailing slash.
+Resolves the backend base URL (no trailing slash):
+
+- `vllm`   -> the LLMConfig OpenAI `/v1` gateway (default port `11430`)
+- `ollama` -> the native Ollama server (default port `11434`)
 
 **Resolution order:**
 
-1. Environment variable `$env:LLM_ENDPOINT`
-2. Config key `LLM_ENDPOINT` (from .env via `Cfg`)
-3. Config keys `LLM_HOST` + `LLM_PORT` (defaults: `192.168.1.126`, `11434`)
-
-**Returns:** String, e.g. `http://192.168.1.126:11434`
+1. `$env:OLLAMA_API_BASE` (ollama backend only)
+2. `$env:LLM_ENDPOINT`
+3. Config key `LLM_ENDPOINT`
+4. `LLM_HOST` + (`11430` for vllm, `LLM_PORT`/`11434` for ollama)
 
 **Example:**
 
 ```powershell
-$endpoint = Get-LLMEndpoint
-# -> "http://192.168.1.126:11434"
+Get-LLMEndpoint                    # -> "http://192.168.1.126:11430" (vllm default)
+Get-LLMEndpoint -Backend ollama    # -> "http://192.168.1.126:11434"
 ```
 
 ---
@@ -90,6 +101,7 @@ foreach ($file in $files) {
 Invoke-LocalLLM
     [-SystemPrompt <string>]
     [-UserPrompt <string>]
+    [-Backend <string>]            # default: '' (auto-resolved: vllm | ollama)
     [-Endpoint <string>]           # default: '' (auto-resolved)
     [-Model <string>]              # default: 'qwen2.5-coder:14b'
     [-Temperature <double>]        # default: 0.1
@@ -102,22 +114,22 @@ Invoke-LocalLLM
     [-ThinkingFile <string>]       # default: ''
 ```
 
-Calls the Ollama chat API and returns the generated text (trimmed).
+Calls the local LLM and returns the generated text (trimmed).
 
-**Two API modes:**
+**Backend selects the wire protocol:**
 
-| Condition     | API Endpoint                           | Body format                                                     |
-| ------------- | -------------------------------------- | --------------------------------------------------------------- |
-| `NumCtx > 0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
-| `NumCtx == 0` | `/v1/chat/completions` (OpenAI compat) | `temperature`, `max_tokens`                                     |
+| Backend                 | API Endpoint                           | Body format                                                     |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `vllm` (default)        | `/v1/chat/completions` (gateway)       | `model`, `messages`, `temperature`, `max_tokens`               |
+| `ollama`, `NumCtx > 0`  | `/api/chat` (native Ollama)            | `options.num_ctx`, `options.temperature`, `options.num_predict` |
+| `ollama`, `NumCtx == 0` | `/v1/chat/completions` (Ollama compat) | `temperature`, `max_tokens`                                     |
 
-When `NumCtx` is -1 (the default), it reads `LLM_NUM_CTX` from the config;
-if that key is absent or `0`, the OpenAI-compat path is used.
+`Backend` defaults to `Get-LLMBackend`; `Endpoint` to `Get-LLMEndpoint -Backend`.
+`NumCtx`/`Think` apply to the ollama backend only.
 
-**Thinking model support:** When `Think` is `$true` and using native mode,
-the request body includes `"think": true`. If the response contains a
-`thinking` field and `ThinkingFile` is set, the reasoning trace is written
-to that file as a sidecar.
+**Thinking model support:** On the ollama backend with `NumCtx > 0` and `Think`
+`$true`, the request body includes `"think": true`; a `thinking` field in the
+response is written to `ThinkingFile` if set. Inert on the vllm backend.
 
 **Retry logic:** On failure (network error, empty response, garbled output),
 retries up to `MaxRetries` times with `RetryDelay` seconds between attempts.
@@ -466,10 +478,11 @@ These keys are read via `Cfg` or `Read-EnvFile` across the three files:
 
 | Key                  | Used by                | Default         | Description                                  |
 | -------------------- | ---------------------- | --------------- | -------------------------------------------- |
-| `LLM_ENDPOINT`       | `Get-LLMEndpoint`      | (none)          | Full Ollama endpoint URL                     |
-| `LLM_HOST`           | `Get-LLMEndpoint`      | `192.168.1.126` | Ollama server hostname                       |
-| `LLM_PORT`           | `Get-LLMEndpoint`      | `11434`         | Ollama server port                           |
-| `LLM_NUM_CTX`        | `Invoke-LocalLLM`      | `0`             | Context window size (0 = OpenAI compat mode) |
+| `LLM_BACKEND`        | `Get-LLMBackend`       | `vllm`          | `vllm` (gateway /v1) or `ollama` (native)    |
+| `LLM_ENDPOINT`       | `Get-LLMEndpoint`      | (none)          | Full backend base URL (overrides host/port)  |
+| `LLM_HOST`           | `Get-LLMEndpoint`      | `192.168.1.126` | Backend hostname                             |
+| `LLM_PORT`           | `Get-LLMEndpoint`      | `11434`         | Ollama server port (ollama backend only)     |
+| `LLM_NUM_CTX`        | `Invoke-LocalLLM`      | `0`             | Context window (ollama backend only)         |
 | `ARCHITECTURE_DIR`   | `Resolve-ArchFile`     | (none)          | Path to architecture docs directory          |
 | `SERENA_CONTEXT_DIR` | `Get-SerenaContextDir` | (none)          | Path to Serena LSP context files             |
 
@@ -493,8 +506,8 @@ scripts must populate it before calling any function that uses `Cfg`:
 $script:cfg = Read-EnvFile (Join-Path $PSScriptRoot '..\Common\.env')
 ```
 
-The two API modes (native Ollama vs OpenAI-compat) exist because earlier
-versions of the pipeline only used the OpenAI-compatible endpoint. The
-native `/api/chat` mode was added to support `num_ctx` control and
-thinking-model features. Setting `LLM_NUM_CTX` to a positive value in
-`.env` switches to native mode globally.
+`LLM_BACKEND` selects the wire protocol. The default `vllm` backend talks to the
+LLMConfig OpenAI `/v1` gateway, which auto-loads the requested served-name model
+onto the GPU on first request. The `ollama` backend talks to a raw Ollama server;
+with `LLM_NUM_CTX > 0` it uses native `/api/chat` for `num_ctx` control and
+thinking-model features, otherwise Ollama's OpenAI-compatible `/v1` path.

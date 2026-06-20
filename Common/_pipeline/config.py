@@ -63,37 +63,62 @@ def toolkit_root() -> Path:
     return TOOLKIT_COMMON.parent
 
 
-DEFAULT_OLLAMA_ENDPOINT = "http://192.168.1.126:11434"
+DEFAULT_HOST = "192.168.1.126"
+GATEWAY_PORT = "11430"   # LLMConfig OpenAI /v1 gateway (vllm backend)
+OLLAMA_PORT = "11434"    # native Ollama server (ollama backend)
+VALID_BACKENDS = ("vllm", "ollama")
 
 
-def resolve_ollama_endpoint(
+def resolve_backend(env: dict[str, str], explicit: str | None = None) -> str:
+    """Return the local LLM backend: 'vllm' (default) or 'ollama'.
+
+    Precedence: explicit arg -> os.environ LLM_BACKEND -> .env LLM_BACKEND -> 'vllm'.
+    """
+    raw = explicit or os.environ.get("LLM_BACKEND") or env.get("LLM_BACKEND") or "vllm"
+    backend = raw.strip().lower()
+    if backend not in VALID_BACKENDS:
+        raise ValueError(f"LLM_BACKEND must be one of {VALID_BACKENDS}, got {raw!r}")
+    return backend
+
+
+def resolve_endpoint(
     env: dict[str, str] | None = None,
+    *,
+    backend: str = "vllm",
     explicit: str | None = None,
     read_env_vars: bool = True,
 ) -> str:
-    """Return the Ollama API base URL. Precedence:
+    """Return the base URL for the local LLM backend.
+
+    vllm   -> the LLMConfig OpenAI /v1 gateway (default port 11430).
+    ollama -> the native Ollama server (default port 11434).
+
+    Precedence:
         1. *explicit* arg (CLI --local-endpoint or similar)
-        2. os.environ OLLAMA_API_BASE
+        2. os.environ OLLAMA_API_BASE  (ollama backend only)
         3. os.environ LLM_ENDPOINT
         4. .env LLM_ENDPOINT
-        5. .env LLM_HOST + LLM_PORT
-        6. DEFAULT_OLLAMA_ENDPOINT
+        5. http://<LLM_HOST or default>:<gateway|ollama port>
+
+    LLM_PORT applies to the ollama backend only; the vllm gateway always uses
+    11430 unless an explicit LLM_ENDPOINT overrides it (the gateway and the raw
+    Ollama server share a host but listen on different ports).
     """
     if explicit:
         return explicit.rstrip("/")
     if env is None:
         env = load_env()
     if read_env_vars:
-        if os.environ.get("OLLAMA_API_BASE"):
+        if backend == "ollama" and os.environ.get("OLLAMA_API_BASE"):
             return os.environ["OLLAMA_API_BASE"].rstrip("/")
         if os.environ.get("LLM_ENDPOINT"):
             return os.environ["LLM_ENDPOINT"].rstrip("/")
     if env.get("LLM_ENDPOINT"):
         return env["LLM_ENDPOINT"].rstrip("/")
-    if env.get("LLM_HOST"):
-        port = env.get("LLM_PORT", "11434")
-        return f"http://{env['LLM_HOST']}:{port}"
-    return DEFAULT_OLLAMA_ENDPOINT
+    host = env.get("LLM_HOST", DEFAULT_HOST)
+    if backend == "vllm":
+        return f"http://{host}:{GATEWAY_PORT}"
+    return f"http://{host}:{env.get('LLM_PORT', OLLAMA_PORT)}"
 
 
 def resolve_model(env: dict[str, str], role_key: str, fallback: str) -> str:

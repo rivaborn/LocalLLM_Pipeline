@@ -23,14 +23,14 @@ The `run_aider.py` file at the top level is a thin shim (34 lines). It adjusts `
 
 - **Python 3.10+** with the project's virtual environment activated.
 - **aider** installed via `pip install aider-chat`. The runner prefers the `aider` executable when on PATH (faster startup) but falls back to `python -m aider` when it isn't, so a bare `pip install aider-chat` works even if the Scripts directory isn't on PATH. See `_aider/runner.py::_aider_invocation`.
-- **Ollama** server running and accessible at the configured endpoint.
+- **LLMConfig gateway** (vllm backend, default) or an **Ollama** server (ollama backend) reachable at the configured endpoint.
 - **universal-ctags** (optional but recommended) -- enables symbol-inventory injection. Install via `choco install universal-ctags` (Windows) or `apt install universal-ctags` (Linux).
 - **pyright** (optional) -- enables LSP-based symbol resolution for installed packages. Install via `pip install pyright`.
 
 ### Configuration
 
-- `Common/.env` must exist with at minimum `LLM_HOST` + `LLM_PORT` (or `LLM_ENDPOINT`) and `LLM_AIDER_MODEL` set.
-- `~/.aider.model.settings.yml` (optional but recommended) — caps `num_predict` per model so runaway generations fail fast at the Ollama API level instead of running until the litellm timeout. Read directly by aider; the runner does not touch it. See [Runaway-generation defenses](#runaway-generation-defenses) below. **Not** `.aider.model.metadata.json` — that's a different file with different semantics.
+- `Common/.env` must exist with at minimum `LLM_BACKEND` (`vllm`/`ollama`), `LLM_HOST` (or `LLM_ENDPOINT`), and `LLM_AIDER_MODEL` set. On the default `vllm` backend the model id is a vLLM served-name (e.g. `qwen3-coder-30b`); on `ollama` it is a tag (e.g. `qwen3-coder:30b`).
+- `~/.aider.model.settings.yml` (ollama backend only; optional but recommended) — caps `num_predict` per model so runaway generations fail fast at the Ollama API level. Read directly by aider; the runner does not touch it. On the `vllm` backend aider uses the `openai/` provider and vLLM bounds output at serve time, so this file does not apply. See [Runaway-generation defenses](#runaway-generation-defenses) below. **Not** `.aider.model.metadata.json` — that's a different file with different semantics.
 
 ### Prior Pipeline Steps
 
@@ -51,7 +51,7 @@ Run from the **target project's root directory** (the repo you want aider to edi
 | `file`                | positional, str | `None`                          | Path to the Markdown step file. When omitted, searches `LocalLLMCodePrompts/aidercommands.md`, then `./aidercommands.md`, then the script's own directory.                                                             |
 | `--from-step N`       | int             | `1`                             | Start execution from step N. Steps before N are skipped. Useful for resuming after a failure.                                                                                                                          |
 | `--only-step N`       | int             | `None`                          | Run only the single step numbered N. All other steps are skipped.                                                                                                                                                      |
-| `--model MODEL`       | str             | `ollama_chat/<LLM_AIDER_MODEL>` | Aider model string, passed verbatim to `aider --model`. Overrides the `.env`-configured model entirely.                                                                                                                |
+| `--model MODEL`       | str             | backend-derived (see below)     | Aider model string, passed verbatim to `aider --model`. Default: `openai/<LLM_AIDER_MODEL>` on the vllm backend, `ollama_chat/<LLM_AIDER_MODEL>` on ollama. Overrides the `.env`-configured model entirely.             |
 | `--dry-run`           | flag            | `False`                         | Parse and preview all steps (titles, commands, first 100 chars of prompts) without invoking aider.                                                                                                                     |
 | `--no-symbols`        | flag            | `False`                         | Disable ctags symbol-inventory injection into prompts.                                                                                                                                                                 |
 | `--no-planned`        | flag            | `False`                         | Disable forward-looking step-plan injection into prompts.                                                                                                                                                              |
@@ -113,20 +113,22 @@ The tool itself does not produce any log files. All status output goes to stdout
 
 | Key               | Source               | Description                                                                                       |
 | ----------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
-| `LLM_AIDER_MODEL` | `Common/.env`        | Ollama model tag for aider (e.g. `qwen3-coder:30b`). Default if missing: `qwen3.5:27b`.           |
-| `LLM_HOST`        | `Common/.env`        | Ollama server hostname. Combined with `LLM_PORT` to form the endpoint.                            |
-| `LLM_PORT`        | `Common/.env`        | Ollama server port (default `11434`).                                                             |
-| `LLM_ENDPOINT`    | `Common/.env`        | Full Ollama endpoint URL override. Takes precedence over `LLM_HOST`+`LLM_PORT`.                   |
-| `OLLAMA_API_BASE` | env / set at runtime | The resolved endpoint is written to this env var before launching aider, which reads it natively. |
+| `LLM_BACKEND`     | `Common/.env`        | `vllm` (default) -> `openai/` provider at the gateway; `ollama` -> `ollama_chat/` provider.       |
+| `LLM_AIDER_MODEL` | `Common/.env`        | Aider model id: served-name (vllm) or tag (ollama). Default if missing: `qwen3-coder-30b`.        |
+| `LLM_HOST`        | `Common/.env`        | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`.                                            |
+| `LLM_PORT`        | `Common/.env`        | Ollama server port (ollama backend only; default `11434`).                                        |
+| `LLM_ENDPOINT`    | `Common/.env`        | Full backend base URL override. Takes precedence over `LLM_HOST`+`LLM_PORT`.                      |
+| `OPENAI_API_BASE` | set at runtime       | vllm backend: gateway `/v1` written here (+ dummy `OPENAI_API_KEY`) before launching aider.       |
+| `OLLAMA_API_BASE` | set at runtime       | ollama backend: the resolved endpoint written here before launching aider.                        |
 
 ### Endpoint Resolution Precedence
 
+Resolved by `config.resolve_endpoint(env, backend=...)`:
+
 1. CLI `--model` flag (used verbatim as the aider model string)
-2. `OLLAMA_API_BASE` environment variable
-3. `LLM_ENDPOINT` environment variable
-4. `LLM_ENDPOINT` from `.env`
-5. `LLM_HOST` + `LLM_PORT` from `.env`
-6. Hardcoded default: `http://192.168.1.126:11434`
+2. `LLM_ENDPOINT` (os.environ, then `.env`)
+3. `OLLAMA_API_BASE` (ollama backend only)
+4. `LLM_HOST` + (vllm -> `:11430`; ollama -> `LLM_PORT`/`11434`)
 
 ## Key Behaviors
 
@@ -200,7 +202,7 @@ Local coder models occasionally enter repetition loops on test-generation prompt
 1. **Aider HTTP timeout — 1800 s.** `_aider/runner.py::build_aider_cmd` injects `--timeout 1800` into every aider invocation alongside `--no-git` and `--edit-format whole`. Litellm's default of 600 s is too tight for legitimate long generations on a 30B model at ~50 tok/s; 1800 s gives 3× headroom while still failing eventually if the model hangs.
 2. **Server-side `num_predict` cap — 12000 tokens.** Aider reads `~/.aider.model.settings.yml` directly (no orchestrator involvement) and applies any `extra_params.num_predict` it finds for the active model. With a cap of 12000 tokens (~360 lines of code), Ollama stops emitting tokens at the ceiling regardless of timeout, so a runaway loop fails fast (~4 min at 50 tok/s) with a partial file instead of running for the full 30-minute timeout.
 
-The two are complementary: the timeout protects *legitimate* long generations from premature kill; the `num_predict` cap protects against *illegitimate* runaway loops. Recommended `~/.aider.model.settings.yml` content for the four common Ollama models:
+The two are complementary: the timeout protects *legitimate* long generations from premature kill; the `num_predict` cap protects against *illegitimate* runaway loops. This applies to the **`ollama` backend** only — on `vllm`, aider uses the `openai/` provider and vLLM bounds output at serve time, so the settings file below does not apply. Recommended `~/.aider.model.settings.yml` content for the common Ollama models:
 
 ```yaml
 - name: ollama_chat/qwen3-coder:30b

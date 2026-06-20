@@ -90,6 +90,7 @@ def _propose_for_file(
     gap_snippet: str,
     data_flow: str,
     env: dict[str, str],
+    backend: str,
     model: str,
     max_tokens: int,
     num_ctx: int,
@@ -112,10 +113,12 @@ def _propose_for_file(
     )
 
     ts = datetime.datetime.now().strftime("%H:%M:%S")
-    cprint(f"      [local: {model} ctx={num_ctx}] - ({ts})", Color.BLUE)
+    label = f"{model} ctx={num_ctx}" if backend == "ollama" else model
+    cprint(f"      [{backend}: {label}] - ({ts})", Color.BLUE)
     result = invoke_local_llm(
         prompt,
         env=env,
+        backend=backend,
         model=model,
         max_tokens=max_tokens,
         num_ctx=num_ctx,
@@ -207,7 +210,8 @@ def step5_fix_bugs(
         cprint(f"  Resuming from file {resume_sub + 1} ({resume_sub} of {total} done)",
                Color.YELLOW)
 
-    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder:30b")
+    backend = cfg.resolve_backend(env)
+    model = cfg.resolve_model(env, "LLM_MODEL", "qwen3-coder-30b")
     num_ctx = int(env.get("LLM_NUM_CTX", "32768"))
     timeout = int(env.get("LLM_TIMEOUT", "600"))
     max_tokens = int(env.get("LLM_FIX_MAX_TOKENS", "8192"))
@@ -254,7 +258,7 @@ def step5_fix_bugs(
         try:
             _propose_for_file(
                 src_rel, src_full, bug_report, iface_snippet, gap_snippet,
-                data_flow, env, model, max_tokens, num_ctx, timeout, proposals_log,
+                data_flow, env, backend, model, max_tokens, num_ctx, timeout, proposals_log,
             )
         except (LLMError, RuntimeError) as exc:
             cprint(f"      ERROR: {exc}", Color.RED)

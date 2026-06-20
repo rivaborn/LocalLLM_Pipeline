@@ -94,7 +94,7 @@ One-row-per-stage summary across all three modes. Click through to each mode sec
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Python 3.10+                                                              | Type-hint syntax used throughout                                        |
 | PowerShell (Windows PowerShell 5.1 or pwsh)                               | Worker scripts in analysis/debug modes are `.ps1`                       |
-| An Ollama server reachable at `LLM_ENDPOINT` or `LLM_HOST:LLM_PORT`       | All three modes call Ollama at some point                               |
+| The LLMConfig gateway (vllm) or an Ollama server reachable via `LLM_ENDPOINT` / `LLM_HOST` | All three modes call the local backend at some point   |
 | `claude` CLI on PATH                                                      | Needed for coding-mode Claude stages (Stage 1 + Stage 3c review)        |
 | `aider` CLI on PATH                                                       | Needed for Stage 4 (`run_aider.py`) — not by `ArchPipeline` directly    |
 
@@ -223,7 +223,7 @@ python C:\Coding\LocalLLM_Pipeline\Common\ArchPipeline.py debug --target-dir src
 
 ## Mode: `coding`
 
-Multi-stage planning pipeline that turns an `InitialPrompt.md` into an `aidercommands.md` ready to feed into `run_aider.py`. Routes each stage to either Claude Code or the local Ollama server based on mode and per-stage defaults. An opt-in Stage 3c runs a Claude audit + in-place fix of `aidercommands.md` before Stage 4 executes.
+Multi-stage planning pipeline that turns an `InitialPrompt.md` into an `aidercommands.md` ready to feed into `run_aider.py`. Routes each stage to either Claude Code or the local backend (vLLM gateway / Ollama) based on mode and per-stage defaults. An opt-in Stage 3c runs a Claude audit + in-place fix of `aidercommands.md` before Stage 4 executes.
 
 ### Flags
 
@@ -251,16 +251,16 @@ Multi-stage planning pipeline that turns an `InitialPrompt.md` into an `aidercom
 | ------- | -------------------------------------------------------------------------------------------- | ---------------- | --------------------------------- | -------------------- | -------------------------- |
 | 0       | Summarize existing `Implemented Plans/*.md` into `Codebase Summary.md`                       | Claude           | sonnet                            | off                  | —                          |
 | 1       | Read `InitialPrompt.md`, produce `Implementation Planning Prompt.md` + `PromptUpdates.md`    | Claude           | sonnet                            | off                  | —                          |
-| 2a      | Produce `.section_plan.md` — a `SECTION N \| Title \| Desc` list                             | local            | `LLM_PLANNING_MODEL`              | on                   | `qwen3-coder:30b`          |
-| 2b      | Per-section → append each section to `Architecture Plan.md`                                  | local            | `LLM_PLANNING_MODEL`              | on                   | `qwen3-coder:30b`          |
+| 2a      | Produce `.section_plan.md` — a `SECTION N \| Title \| Desc` list                             | local            | coder (`LLM_AIDER_MODEL`)         | on                   | `qwen3-coder-30b`          |
+| 2b      | Per-section → append each section to `Architecture Plan.md`                                  | local            | coder (`LLM_AIDER_MODEL`)         | on                   | `qwen3-coder-30b`          |
 | 2c      | (opt-in) Audit `Architecture Plan.md` + apply safe fixes; block Stage 3 on remaining issues  | Claude           | sonnet                            | on                   | —                          |
-| 3a      | Produce `.step_plan.md` — a `STEP N \| Title \| files` list                                  | local            | `qwen3-coder:30b` (per-stage)     | on                   | `qwen3-coder:30b`          |
-| 3b      | Per-step → append each step (command + prompt) to `aidercommands.md`                         | local            | `qwen3-coder:30b` (per-stage)     | off                  | `qwen3-coder:30b`          |
+| 3a      | Produce `.step_plan.md` — a `STEP N \| Title \| files` list                                  | local            | coder (`LLM_AIDER_MODEL`)         | on                   | `qwen3-coder-30b`          |
+| 3b      | Per-step → append each step (command + prompt) to `aidercommands.md`                         | local            | coder (`LLM_AIDER_MODEL`)         | off                  | `qwen3-coder-30b`          |
 | 3c      | (opt-in) Audit `aidercommands.md` + apply safe fixes; block Stage 4 on remaining issues      | Claude           | sonnet                            | on                   | —                          |
 | 4       | Run aider per step via `run_aider.py`                                                        | subprocess       | —                                 | —                    | —                          |
 | 5       | Fix imports via `fix_imports.py`                                                             | subprocess       | —                                 | —                    | —                          |
 
-The per-stage `local_model` override (applied to stages 3a/3b) automatically disables `think` because `qwen3-coder:30b` is not a reasoning model; sending `think:true` wastes the `num_predict` budget on empty reasoning. See `router.py::invoke_stage()`.
+The coder stages (2a/2b/3a/3b) use the coder model (the `LLM_AIDER_MODEL` chain, default `qwen3-coder-30b`); planning stages 0/1 use `LLM_PLANNING_MODEL`. On the `ollama` backend the coder model auto-disables `think` (it is not a reasoning model); on the default `vllm` backend `think` is inert anyway (the aliases set no reasoning-parser). See `router.py::invoke_stage()`.
 
 ### Engine routing
 
@@ -389,28 +389,29 @@ Single source of truth for endpoints, model tags, context sizes, and subsection 
 
 | Key              | Default           | Used by                                                                |
 | ---------------- | ----------------- | ---------------------------------------------------------------------- |
-| `LLM_ENDPOINT`   | unset             | If set, overrides `LLM_HOST`/`LLM_PORT`. Form: `http://HOST:PORT`.     |
-| `LLM_HOST`       | `192.168.1.126`   | Combined with `LLM_PORT` into a URL.                                   |
-| `LLM_PORT`       | `11434`           | Combined with `LLM_HOST`.                                              |
+| `LLM_BACKEND`    | `vllm`            | `vllm` -> LLMConfig `/v1` gateway (`:11430`); `ollama` -> native Ollama. |
+| `LLM_ENDPOINT`   | unset             | If set, overrides host/port for either backend.                       |
+| `LLM_HOST`       | `192.168.1.126`   | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`.                 |
+| `LLM_PORT`       | `11434`           | Ollama port (ollama backend only).                                    |
 
 ### Models
 
 | Key                       | Default             | Used by                                                                   |
 | ------------------------- | ------------------- | ------------------------------------------------------------------------- |
-| `LLM_DEFAULT_MODEL`       | `qwen3-coder:30b`   | Universal fallback — every role key below chains to it when blank/unset.  |
-| `LLM_PLANNING_MODEL`      | `gemma4:26b`        | coding stages 2a, 2b, 3a, 3b (thinking model)                             |
-| `LLM_AIDER_MODEL`         | blank (→ DEFAULT)   | `run_aider.py` (Stage 4) and `fix_imports.py` (Stage 5)                   |
+| `LLM_DEFAULT_MODEL`       | `qwen3-coder-30b`   | Universal fallback — every role key below chains to it when blank/unset.  |
+| `LLM_PLANNING_MODEL`      | `qwen3.5-27b`       | coding planning stages 0, 1 (when run locally)                            |
+| `LLM_AIDER_MODEL`         | blank (→ DEFAULT)   | coding coder stages 2a/2b/3a/3b, aider (Stage 4), fix_imports (Stage 5)   |
 | `LLM_MODEL`               | blank (→ DEFAULT)   | debug mode Step 5; analysis workers                                       |
 
-Coding stages 3a and 3b use a hardcoded per-stage override of `qwen3-coder:30b` regardless of `LLM_PLANNING_MODEL`. See `STAGE_DEFAULTS` in [router.py](../_pipeline/modes/coding/router.py).
+Coding coder stages (2a/2b/3a/3b) resolve the coder model from the `LLM_AIDER_MODEL` chain (default `qwen3-coder-30b`), independent of `LLM_PLANNING_MODEL`. Use vLLM served-names (`-`) on the `vllm` backend and Ollama tags (`:`) on `ollama`. See `STAGE_DEFAULTS` in [router.py](../_pipeline/modes/coding/router.py).
 
 ### Context windows and generation budgets
 
 | Key                         | Default   | Purpose                                                                                          |
 | --------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `LLM_NUM_CTX`               | `32768`   | Default context for analysis/debug calls.                                                        |
-| `LLM_PLANNING_NUM_CTX`      | `65536`   | Coding stages 2–3 context.                                                                       |
-| `LLM_PLANNING_MAX_TOKENS`   | `49152`   | `num_predict` for coding stages. Must be large enough for thinking + content combined.           |
+| `LLM_NUM_CTX`               | `32768`   | Default context for analysis/debug calls (ollama backend only; ignored on vllm).                |
+| `LLM_PLANNING_NUM_CTX`      | `65536`   | Coding planning context (ollama backend only; vllm fixes context per alias at serve time).      |
+| `LLM_PLANNING_MAX_TOKENS`   | `16384`   | Output budget for coding stages. On vllm, keep input + output under the alias ceiling (65536).   |
 | `LLM_FIX_MAX_TOKENS`        | `16384`   | Debug Step 5 `num_predict`.                                                                      |
 
 ### Timeouts
@@ -424,7 +425,7 @@ Coding stages 3a and 3b use a hardcoded per-stage override of `qwen3-coder:30b` 
 
 | Key                   | Default   | Purpose                                                                                                                  |
 | --------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `LLM_THINK`           | `true`    | Sends `think:true` on `/api/chat` for coding stages 2a/2b (only when the model equals `LLM_PLANNING_MODEL`).             |
+| `LLM_THINK`           | `true`    | Ollama backend only: sends `think:true` on `/api/chat` for planning stages. Inert on the vllm backend.                   |
 | `LLM_SAVE_THINKING`   | `true`    | Writes `<output>.thinking.md` sidecars with reasoning tokens.                                                            |
 
 ### Debug ↔ Analysis integration
@@ -529,7 +530,7 @@ C:\Coding\LocalLLM_Pipeline\Common\
     config.py                           # .env parser, subsection parser
     ui.py                               # ANSI colors, Ctrl+Q, logging, banner()
     subprocess_runner.py                # streaming Popen wrapper, StepFailed/UserCancelled
-    ollama.py                           # invoke_local_llm() — /api/chat client
+    ollama.py                           # invoke_local_llm() — vLLM gateway /v1 + Ollama /api/chat client
     claude.py                           # invoke_claude() — CLI wrapper + account switching
     progress.py                         # ProgressFile class
     prompts\                            # see above

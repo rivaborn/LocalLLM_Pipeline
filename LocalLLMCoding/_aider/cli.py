@@ -21,16 +21,17 @@ except Exception:  # noqa: BLE001
 
 TOOLKIT_ROOT: Path = cfg.toolkit_root()
 _SCRIPT_DIR = TOOLKIT_ROOT / "LocalLLMCoding"
-_DEFAULT_LOCAL_MODEL = "qwen3-coder:30b"
+_DEFAULT_LOCAL_MODEL = "qwen3-coder-30b"
 
 
-def resolve_local_config() -> tuple[str, str]:
-    """Return (endpoint, model) from Common/.env via shared config.
+def resolve_local_config() -> tuple[str, str, str]:
+    """Return (backend, endpoint, model) from Common/.env via shared config.
     Model resolution chains LLM_AIDER_MODEL -> LLM_DEFAULT_MODEL -> fallback."""
     env = cfg.load_env()
-    endpoint = cfg.resolve_ollama_endpoint(env)
+    backend = cfg.resolve_backend(env)
+    endpoint = cfg.resolve_endpoint(env, backend=backend)
     model = cfg.resolve_model(env, "LLM_AIDER_MODEL", _DEFAULT_LOCAL_MODEL)
-    return endpoint, model
+    return backend, endpoint, model
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -43,7 +44,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Run only step N")
     parser.add_argument("--model", default=None,
                         help="Aider model override (passed to aider verbatim). "
-                             "Default: ollama_chat/<LLM_AIDER_MODEL from Common/.env>.")
+                             "Default: openai/<LLM_AIDER_MODEL> on the vllm backend, "
+                             "ollama_chat/<LLM_AIDER_MODEL> on ollama (from Common/.env).")
     parser.add_argument("--dry-run", action="store_true",
                         help="Parse and preview steps without running aider")
     parser.add_argument("--no-symbols", action="store_true",
@@ -115,11 +117,21 @@ def _start_pyright(enabled: bool) -> object | None:
 def main() -> None:
     args = _build_parser().parse_args()
 
-    endpoint, local_model = resolve_local_config()
-    os.environ["OLLAMA_API_BASE"] = endpoint
-    if args.model is None:
-        args.model = f"ollama_chat/{local_model}"
-    print(f"[local] OLLAMA_API_BASE={endpoint}")
+    backend, endpoint, local_model = resolve_local_config()
+    if backend == "vllm":
+        # litellm's openai/ provider talks to the LLMConfig gateway, which
+        # auto-loads the served-name model on the inference path.
+        api_base = endpoint.rstrip("/") + "/v1"
+        os.environ["OPENAI_API_BASE"] = api_base
+        os.environ.setdefault("OPENAI_API_KEY", "sk-local")  # gateway is LAN-only / no auth
+        if args.model is None:
+            args.model = f"openai/{local_model}"
+        print(f"[vllm] OPENAI_API_BASE={api_base}")
+    else:
+        os.environ["OLLAMA_API_BASE"] = endpoint
+        if args.model is None:
+            args.model = f"ollama_chat/{local_model}"
+        print(f"[ollama] OLLAMA_API_BASE={endpoint}")
     print(f"[local] model={args.model}")
 
     md_path = _resolve_md_path(args.file)
