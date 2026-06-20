@@ -110,7 +110,7 @@ The script runs from the project root. It resolves the command file relative to 
 If Ollama runs on a different machine, set the environment variable before running:
 
 ```powershell
-$env:OLLAMA_API_BASE = "http://192.168.1.126:11434"
+$env:OLLAMA_API_BASE = "http://192.168.1.40:11434"
 python .\LocalLLMCoding\run_aider.py --model ollama/qwen2.5-coder:32b-12k
 ```
 

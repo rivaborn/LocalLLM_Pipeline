@@ -17,7 +17,7 @@ from Arch_Analysis_Pipeline import (
 )
 
 SAMPLE_ENV = """\
-LLM_HOST=192.168.1.126
+LLM_HOST=192.168.1.40
 LLM_PORT=11434
 PRESET=generals
 
@@ -58,13 +58,13 @@ class TestParseSubsections:
 
     def test_config_excluded(self, tmp_path):
         env_file = tmp_path / ".env"
-        env_file.write_text(f"LLM_HOST=192.168.1.126\n{BEGIN_MARKER}\nPath\\To\\Subsection\n{END_MARKER}")
+        env_file.write_text(f"LLM_HOST=192.168.1.40\n{BEGIN_MARKER}\nPath\\To\\Subsection\n{END_MARKER}")
         subsections = parse_subsections(env_file)
         assert subsections == ["Path\\To\\Subsection"]
 
     def test_no_markers_returns_empty(self, tmp_path):
         env_file = tmp_path / ".env"
-        env_file.write_text("LLM_HOST=192.168.1.126")
+        env_file.write_text("LLM_HOST=192.168.1.40")
         subsections = parse_subsections(env_file)
         assert subsections == []
 

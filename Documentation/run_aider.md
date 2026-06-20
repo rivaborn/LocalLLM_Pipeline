@@ -45,11 +45,11 @@ folder.
 contains:
 
 ```
-LLM_HOST=192.168.1.126
+LLM_HOST=192.168.1.40
 LLM_PORT=11434
 ```
 
-The script will print `Ollama API base: http://192.168.1.126:11434` on startup.
+The script will print `Ollama API base: http://192.168.1.40:11434` on startup.
 No manual environment variable needed.
 
 You can also override this with `--ollama-url` or by setting `OLLAMA_API_BASE`
@@ -57,10 +57,10 @@ directly:
 
 ```powershell
 # Override via flag
-python .\LocalLLMCoding\run_aider.py --ollama-url http://192.168.1.126:11434
+python .\LocalLLMCoding\run_aider.py --ollama-url http://192.168.1.40:11434
 
 # Override via environment variable
-$env:OLLAMA_API_BASE = "http://192.168.1.126:11434"
+$env:OLLAMA_API_BASE = "http://192.168.1.40:11434"
 python .\LocalLLMCoding\run_aider.py
 ```
 

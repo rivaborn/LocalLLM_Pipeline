@@ -101,7 +101,7 @@ Claude CLI: Claude1
 Claude model: per-stage defaults (Sonnet: 0,1,3b  Opus: 2a,2b,3a)
 Ultrathink: per-stage defaults (ON: 2a,2b,3a  OFF: 0,1,3b)
 Mode: default -- Stage 1 = Claude; Stages 0, 2a, 2b, 3a, 3b = local
-  Local endpoint: http://192.168.1.126:11434
+  Local endpoint: http://192.168.1.40:11434
   Local model:    gemma4:26b (num_ctx=24576)
 ```
 

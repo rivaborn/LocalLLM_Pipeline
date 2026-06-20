@@ -215,7 +215,7 @@ Just test all imports and list failures; skip the LLM step. Runs in seconds vs m
 Started:  2026-04-18 14:30:00
 Package:  C:\Coding\nmonClaude\src\nmon
 Model:    qwen3-coder-30b
-Endpoint: http://192.168.1.126:11434
+Endpoint: http://192.168.1.40:11434
 
 ## 3 module(s) failed.
 

@@ -4,7 +4,7 @@
 
 Architecture documentation toolkit for codebases of any language with a preset (Python, C/C++, C#, Rust, etc.). Generates per-file and subsystem-level architecture docs using a local Ollama LLM server, with optional LSP-powered semantic analysis via clangd.
 
-**LLM Server:** Ollama at `LLM_HOST:LLM_PORT` (default `192.168.1.126:11434`), shared with the Debug and Coding pipelines.
+**LLM Server:** Ollama at `LLM_HOST:LLM_PORT` (default `192.168.1.40:11434`), shared with the Debug and Coding pipelines.
 **Model:** `qwen3-coder:30b` at per-request `num_ctx=49152` (configurable via `LLM_MODEL` + `LLM_ANALYSIS_NUM_CTX` in `LocalLLM_Pipeline/Common/.env`).
 
 ## Directory Layout
@@ -40,7 +40,7 @@ The `.env` file and `llm_common.ps1` live in `..\LocalLLM_Pipeline\Common\` and 
 
 ## Key Configuration (`LocalLLM_Pipeline/Common/.env`)
 
-- `LLM_ENDPOINT` (or `LLM_HOST` + `LLM_PORT`) -- Ollama server address (default `http://192.168.1.126:11434`)
+- `LLM_ENDPOINT` (or `LLM_HOST` + `LLM_PORT`) -- Ollama server address (default `http://192.168.1.40:11434`)
 - `LLM_MODEL` -- model name (default `qwen3-coder:30b`)
 - `LLM_NUM_CTX` -- per-request context window (default `32768`). When > 0, `Invoke-LocalLLM` routes through Ollama's native `/api/chat`.
 - `LLM_ANALYSIS_NUM_CTX` -- Analysis-specific window (default `49152`). The three LLM-calling Analysis scripts promote this value into `LLM_NUM_CTX` at load time so Invoke-LocalLLM picks it up without callsite changes.

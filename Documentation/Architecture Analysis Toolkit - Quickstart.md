@@ -11,7 +11,7 @@ Generate architecture documentation for a codebase using a local Ollama LLM + op
 ### 1. Configure `LocalLLM_Pipeline/Common/.env`
 
 ```env
-LLM_ENDPOINT=http://192.168.1.126:11434
+LLM_ENDPOINT=http://192.168.1.40:11434
 LLM_MODEL=qwen3-coder:30b
 LLM_NUM_CTX=32768
 LLM_ANALYSIS_NUM_CTX=49152

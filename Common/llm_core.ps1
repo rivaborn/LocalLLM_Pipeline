@@ -34,7 +34,7 @@ function Get-LLMEndpoint {
     if ($env:LLM_ENDPOINT) { return $env:LLM_ENDPOINT.TrimEnd('/') }
     $ep = Cfg 'LLM_ENDPOINT' ''
     if ($ep -ne '') { return $ep.TrimEnd('/') }
-    $host_ = Cfg 'LLM_HOST' '192.168.1.126'
+    $host_ = Cfg 'LLM_HOST' '192.168.1.40'
     if ($Backend -eq 'vllm') { return "http://${host_}:11430" }
     $port = Cfg 'LLM_PORT' '11434'
     return "http://${host_}:${port}"

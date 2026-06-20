@@ -40,7 +40,7 @@ The local model, endpoint, and per-request context window all live in
 `LocalLLM_Pipeline/Common/.env`:
 
 ```ini
-LLM_ENDPOINT=http://192.168.1.126:11434   # or LLM_HOST + LLM_PORT
+LLM_ENDPOINT=http://192.168.1.40:11434   # or LLM_HOST + LLM_PORT
 LLM_PLANNING_MODEL=gemma4:26b             # used by every local stage (0, 2a/2b, 3a/3b)
 LLM_PLANNING_NUM_CTX=24576
 ```
@@ -217,7 +217,7 @@ The `.progress` file is automatically deleted when all stages complete successfu
 | `-NoUltrathink`   | `switch`   | `$false`             | Force extended thinking off for all Claude stages. |
 | `-Local`          | `switch`   | `$false`             | Route **every** stage to the local LLM (no Claude at all, including Stage 1). Mutually exclusive with `-AllClaude`. See [Engine routing modes](#engine-routing-modes). |
 | `-AllClaude`      | `switch`   | `$false`             | Route **every** stage to Claude (reverts to pre-default behaviour, useful when the local server is unreachable). Mutually exclusive with `-Local`. |
-| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the Ollama endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.126:11434`. |
+| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the Ollama endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.40:11434`. |
 | `-LocalModel`     | `string`   | (from `.env`)        | Override the local planning model. Defaults to `LLM_PLANNING_MODEL` in `Common/.env`. |
 | `-SkipStage`      | `int[]`    | (none)               | Skip one or more stages. Accepts a list: `-SkipStage 1,2` skips stages 1 and 2. Stage 0 cannot be skipped (it runs automatically when prior plans exist). |
 | `-FromStage`      | `int`      | `1`                  | Start from a specific stage, skipping all earlier stages. Valid values: 1, 2, 3. Stage 0 always runs if applicable. |
@@ -402,7 +402,7 @@ Endpoint precedence (first match wins):
 2. `$env:LLM_ENDPOINT` in the shell
 3. `LLM_ENDPOINT` in `Common/.env`
 4. `LLM_HOST` + `LLM_PORT` in `Common/.env`
-5. Hardcoded default `http://192.168.1.126:11434`
+5. Hardcoded default `http://192.168.1.40:11434`
 
 Model precedence: `-LocalModel` flag → `LLM_PLANNING_MODEL` in `Common/.env`.
 
@@ -412,7 +412,7 @@ Shows the active mode plus resolved endpoint/model when the local LLM is used:
 
 ```
 Mode: default -- Stage 1 = Claude; Stages 0, 2a, 2b, 3a, 3b = local
-  Local endpoint: http://192.168.1.126:11434
+  Local endpoint: http://192.168.1.40:11434
   Local model:    gemma4:26b (num_ctx=24576)
 ```
 

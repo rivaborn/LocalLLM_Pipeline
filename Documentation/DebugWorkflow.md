@@ -36,7 +36,7 @@ and reachable before any script is invoked.
 ollama pull qwen3-coder:30b        # or qwen2.5-coder:14b on smaller GPUs
 
 # Verify the server is up
-curl http://192.168.1.126:11434/api/tags
+curl http://192.168.1.40:11434/api/tags
 ```
 
 See **[Choosing a model](#choosing-a-model)** below for sizing and VRAM
@@ -50,7 +50,7 @@ All scripts read `LocalLLM_Pipeline/Common/.env`. Critical keys:
 | Key                  | Current value                     | Purpose                                           |
 |----------------------|-----------------------------------|---------------------------------------------------|
 | `LLM_ENDPOINT`       | (unset) / derived from HOST+PORT  | Full Ollama URL; when set, wins over HOST+PORT    |
-| `LLM_HOST`           | `192.168.1.126`                   | Ollama server host (fallback if `LLM_ENDPOINT` unset) |
+| `LLM_HOST`           | `192.168.1.40`                   | Ollama server host (fallback if `LLM_ENDPOINT` unset) |
 | `LLM_PORT`           | `11434`                           | Ollama server port                                |
 | `LLM_MODEL`          | `qwen3-coder:30b`                 | Analysis-script model                             |
 | `LLM_NUM_CTX`        | `32768`                           | Per-request context window (native `/api/chat`)   |
@@ -1244,7 +1244,7 @@ All keys are in `LocalLLM_Pipeline/Common/.env`. Keys not present fall back to t
 | Key                   | Default             | Used by                                                                                                                                                   |
 |-----------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `LLM_ENDPOINT`        | (unset)             | All scripts. When set, wins over `LLM_HOST` + `LLM_PORT`.                                                                                                 |
-| `LLM_HOST`            | `192.168.1.126`     | All scripts (fallback when `LLM_ENDPOINT` unset)                                                                                                          |
+| `LLM_HOST`            | `192.168.1.40`     | All scripts (fallback when `LLM_ENDPOINT` unset)                                                                                                          |
 | `LLM_PORT`            | `11434`             | All scripts                                                                                                                                               |
 | `LLM_DEFAULT_MODEL`   | `qwen3-coder:30b`   | Universal fallback. Every role-specific key below chains to this when blank/unset (via `cfg.resolve_model` / `Get-LLMModel`).                             |
 | `LLM_MODEL`           | blank (→ DEFAULT)   | All debug + analysis scripts                                                                                                                              |

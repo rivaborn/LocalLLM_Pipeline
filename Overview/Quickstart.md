@@ -46,7 +46,7 @@ One file drives every pipeline. Key knobs:
 
 | Key | Default | Used by |
 |---|---|---|
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.126:11434` | All LLM calls |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.40:11434` | All LLM calls |
 | `LLM_DEFAULT_MODEL` | `qwen3-coder:30b` | Universal fallback — every role key below falls back to this when blank/unset |
 | `LLM_MODEL` | blank (→ DEFAULT) | Analysis + Debug |
 | `LLM_PLANNING_MODEL` | `gemma4:26b` | Coding stages 0/1/2a/2b/3a/3b when `--local` |
@@ -439,7 +439,7 @@ python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py [file] [options]
 | `--local-model <tag>` | (from `.env` `LLM_AIDER_MODEL`) | Override local model (implies `--local`). Wrapped as `ollama_chat/<tag>`. |
 | `--dry-run` | off | Preview steps without calling aider. |
 
-**Endpoint precedence** (first match wins): `--local-endpoint` → `OLLAMA_API_BASE` → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.126:11434`.
+**Endpoint precedence** (first match wins): `--local-endpoint` → `OLLAMA_API_BASE` → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.40:11434`.
 
 **Typical runs:**
 ```powershell

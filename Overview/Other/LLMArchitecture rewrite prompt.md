@@ -2,7 +2,7 @@
 
 ## Goal
 
-Rewrite the archgen documentation pipeline to use a local Ollama server (`http://192.168.1.126:11434`) with `qwen2.5-coder:14b` instead of Claude CLI. The local LLM has significantly less context window (~8K-32K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
+Rewrite the archgen documentation pipeline to use a local Ollama server (`http://192.168.1.40:11434`) with `qwen2.5-coder:14b` instead of Claude CLI. The local LLM has significantly less context window (~8K-32K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
 
 ## Hardware & Model Constraints
 
@@ -14,7 +14,7 @@ Rewrite the archgen documentation pipeline to use a local Ollama server (`http:/
 | Throughput     | ~1 request at a time on GPU (no parallelism benefit beyond 1-2 jobs)       |
 | Capability     | Good at code understanding, weaker at long-form synthesis than Claude      |
 | API            | Ollama REST API (`/api/generate` or OpenAI-compatible `/v1/chat/completions`) |
-| Server         | `http://192.168.1.126:11434`                                               |
+| Server         | `http://192.168.1.40:11434`                                               |
 
 ## Key Design Decisions
 
@@ -33,7 +33,7 @@ $body = @{
     temperature = 0.1
 } | ConvertTo-Json -Depth 5
 
-$resp = Invoke-RestMethod -Uri "http://192.168.1.126:11434/v1/chat/completions" `
+$resp = Invoke-RestMethod -Uri "http://192.168.1.40:11434/v1/chat/completions" `
     -Method Post -ContentType "application/json" -Body $body
 $output = $resp.choices[0].message.content
 ```
@@ -104,7 +104,7 @@ Claude pipeline used `Start-Job` with 8 parallel workers hitting the cloud API. 
 
 ```env
 # Local LLM settings
-LLM_ENDPOINT=http://192.168.1.126:11434
+LLM_ENDPOINT=http://192.168.1.40:11434
 LLM_MODEL=qwen2.5-coder:14b
 LLM_TEMPERATURE=0.1
 LLM_MAX_TOKENS=800
@@ -370,7 +370,7 @@ This repo is the Command & Conquer Remastered Collection source drop (EA/Westwoo
 ### Current .env for this codebase:
 
 ```env
-LLM_HOST=192.168.1.126
+LLM_HOST=192.168.1.40
 LLM_PORT=11434
 LLM_MODEL=devstral-small-2
 LLM_TEMPERATURE=0.1

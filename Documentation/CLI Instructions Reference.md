@@ -243,7 +243,7 @@ The `.env` file lives in `LocalLLMAnalysis/` alongside the scripts (not at the r
 | Variable                | Default                         | Description                                                                                   |
 |-------------------------|---------------------------------|-----------------------------------------------------------------------------------------------|
 | `LLM_ENDPOINT`          | (derived from HOST+PORT)        | Full Ollama URL. When set, wins over `LLM_HOST`+`LLM_PORT`.                                   |
-| `LLM_HOST`              | `192.168.1.126`                 | Ollama server IP/hostname (fallback)                                                          |
+| `LLM_HOST`              | `192.168.1.40`                 | Ollama server IP/hostname (fallback)                                                          |
 | `LLM_PORT`              | `11434`                         | Ollama server port                                                                            |
 | `LLM_DEFAULT_MODEL`     | `qwen3-coder:30b`               | Universal fallback. Every role-specific key (`LLM_MODEL`, `LLM_AIDER_MODEL`, `LLM_PLANNING_MODEL`) chains to this when blank/unset. |
 | `LLM_MODEL`             | blank (→ `LLM_DEFAULT_MODEL`)   | Analysis + Debug scripts. Resolved via `cfg.resolve_model` / `Get-LLMModel`.                  |

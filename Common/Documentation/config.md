@@ -19,7 +19,7 @@ Python counterpart to `Read-EnvFile`, `Cfg`, `Get-LLMBackend`, and
 | `END_MARKER`              | `"#Subsections end"`                     | End of the subsections block in `.env`   |
 | `TOOLKIT_COMMON`          | `Path(__file__).resolve().parent.parent` | Absolute path to `Common/`               |
 | `ENV_PATH`                | `TOOLKIT_COMMON / ".env"`                | Default `.env` file path                 |
-| `DEFAULT_HOST`            | `"192.168.1.126"`                        | Fallback host (both backends)            |
+| `DEFAULT_HOST`            | `"192.168.1.40"`                        | Fallback host (both backends)            |
 | `GATEWAY_PORT`            | `"11430"`                                | LLMConfig /v1 gateway port (vllm)        |
 | `OLLAMA_PORT`             | `"11434"`                                | Native Ollama port (ollama)              |
 | `VALID_BACKENDS`          | `("vllm", "ollama")`                     | Accepted `LLM_BACKEND` values            |
@@ -180,10 +180,10 @@ from _pipeline.config import load_env, resolve_backend, resolve_endpoint
 
 env = load_env()
 backend = resolve_backend(env)                       # "vllm"
-endpoint = resolve_endpoint(env, backend=backend)    # "http://192.168.1.126:11430"
+endpoint = resolve_endpoint(env, backend=backend)    # "http://192.168.1.40:11430"
 
 # Ollama fallback:
-resolve_endpoint(env, backend="ollama")              # "http://192.168.1.126:11434"
+resolve_endpoint(env, backend="ollama")              # "http://192.168.1.40:11434"
 ```
 
 ---

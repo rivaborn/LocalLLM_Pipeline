@@ -63,7 +63,7 @@ def toolkit_root() -> Path:
     return TOOLKIT_COMMON.parent
 
 
-DEFAULT_HOST = "192.168.1.126"
+DEFAULT_HOST = "192.168.1.40"
 GATEWAY_PORT = "11430"   # LLMConfig OpenAI /v1 gateway (vllm backend)
 OLLAMA_PORT = "11434"    # native Ollama server (ollama backend)
 VALID_BACKENDS = ("vllm", "ollama")

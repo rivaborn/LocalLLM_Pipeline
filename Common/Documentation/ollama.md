@@ -157,7 +157,7 @@ removed). Pass `backend=` / `endpoint=` to override the env-driven defaults.
 | -------------- | --------------- | -------------------------------------------------- |
 | `LLM_BACKEND`  | `vllm`          | `vllm` (gateway /v1) or `ollama` (native)          |
 | `LLM_ENDPOINT` | (none)          | Full backend base URL (overrides host/port)        |
-| `LLM_HOST`     | `192.168.1.126` | Backend hostname                                   |
+| `LLM_HOST`     | `192.168.1.40` | Backend hostname                                   |
 | `LLM_PORT`     | `11434`         | Ollama server port (ollama backend only)           |
 | `LLM_NUM_CTX`  | `0`             | Context window (ollama backend only; vllm ignores) |
 

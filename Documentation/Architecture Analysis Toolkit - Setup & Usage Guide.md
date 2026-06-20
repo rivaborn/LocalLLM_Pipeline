@@ -95,7 +95,7 @@ Add-Content .gitignore "`narchitecture/`ncompile_commands.json"
 Edit the shared `.env` at `LocalLLM_Pipeline/Common/.env`. Every pipeline (Analysis, Debug, Coding) reads from the same file.
 
 ```env
-LLM_ENDPOINT=http://192.168.1.126:11434
+LLM_ENDPOINT=http://192.168.1.40:11434
 LLM_MODEL=qwen3-coder:30b
 LLM_NUM_CTX=32768
 LLM_ANALYSIS_NUM_CTX=49152
@@ -269,7 +269,7 @@ All scripts are incremental. Interrupt with Ctrl+C and re-run to continue. SHA1 
 ### Ollama server unreachable
 
 ```powershell
-curl http://192.168.1.126:11434/api/tags
+curl http://192.168.1.40:11434/api/tags
 ```
 Check `LLM_HOST` and `LLM_PORT` in `.env`.
 

@@ -65,8 +65,8 @@ Resolves the backend base URL (no trailing slash):
 **Example:**
 
 ```powershell
-Get-LLMEndpoint                    # -> "http://192.168.1.126:11430" (vllm default)
-Get-LLMEndpoint -Backend ollama    # -> "http://192.168.1.126:11434"
+Get-LLMEndpoint                    # -> "http://192.168.1.40:11430" (vllm default)
+Get-LLMEndpoint -Backend ollama    # -> "http://192.168.1.40:11434"
 ```
 
 ---
@@ -180,7 +180,7 @@ Parses a `.env` file into a hashtable. Handles:
 
 ```powershell
 $cfg = Read-EnvFile (Join-Path $PSScriptRoot '.env')
-$cfg['LLM_HOST']   # -> '192.168.1.126'
+$cfg['LLM_HOST']   # -> '192.168.1.40'
 ```
 
 ---
@@ -480,7 +480,7 @@ These keys are read via `Cfg` or `Read-EnvFile` across the three files:
 | -------------------- | ---------------------- | --------------- | -------------------------------------------- |
 | `LLM_BACKEND`        | `Get-LLMBackend`       | `vllm`          | `vllm` (gateway /v1) or `ollama` (native)    |
 | `LLM_ENDPOINT`       | `Get-LLMEndpoint`      | (none)          | Full backend base URL (overrides host/port)  |
-| `LLM_HOST`           | `Get-LLMEndpoint`      | `192.168.1.126` | Backend hostname                             |
+| `LLM_HOST`           | `Get-LLMEndpoint`      | `192.168.1.40` | Backend hostname                             |
 | `LLM_PORT`           | `Get-LLMEndpoint`      | `11434`         | Ollama server port (ollama backend only)     |
 | `LLM_NUM_CTX`        | `Invoke-LocalLLM`      | `0`             | Context window (ollama backend only)         |
 | `ARCHITECTURE_DIR`   | `Resolve-ArchFile`     | (none)          | Path to architecture docs directory          |

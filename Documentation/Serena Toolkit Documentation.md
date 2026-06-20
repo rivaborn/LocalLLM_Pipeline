@@ -38,7 +38,7 @@ Designed for consumer GPU hardware (24 GB+ VRAM) with coder-tuned models like `q
 |------------------|---------------------------------------------------------------------------------------|
 | OS               | Windows 11                                                                            |
 | GPU              | RTX 3090 or better (24 GB VRAM; Analysis at `num_ctx=49152` uses ~6-8 GB KV cache)    |
-| LLM Server       | Ollama (`LLM_ENDPOINT`, default `http://192.168.1.126:11434`)                         |
+| LLM Server       | Ollama (`LLM_ENDPOINT`, default `http://192.168.1.40:11434`)                         |
 | Model            | `qwen3-coder:30b` (configurable via `LLM_MODEL`)                                      |
 | Context window   | 49152 tokens per Analysis request (via `LLM_ANALYSIS_NUM_CTX`, promoted into `LLM_NUM_CTX` at script startup) |
 | Target codebase  | Any language with a preset (Python, C/C++, C#, Rust, etc.)                            |
@@ -205,7 +205,7 @@ For the C&C Remastered Collection source release, the script finds two `.vcxproj
 ### `LocalLLM_Pipeline/Common/.env` (shared with Debug and Coding pipelines)
 
 ```env
-LLM_ENDPOINT=http://192.168.1.126:11434
+LLM_ENDPOINT=http://192.168.1.40:11434
 LLM_MODEL=qwen3-coder:30b
 LLM_NUM_CTX=32768
 LLM_ANALYSIS_NUM_CTX=49152

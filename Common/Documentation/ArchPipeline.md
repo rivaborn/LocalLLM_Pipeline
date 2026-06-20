@@ -391,7 +391,7 @@ Single source of truth for endpoints, model tags, context sizes, and subsection 
 | ---------------- | ----------------- | ---------------------------------------------------------------------- |
 | `LLM_BACKEND`    | `vllm`            | `vllm` -> LLMConfig `/v1` gateway (`:11430`); `ollama` -> native Ollama. |
 | `LLM_ENDPOINT`   | unset             | If set, overrides host/port for either backend.                       |
-| `LLM_HOST`       | `192.168.1.126`   | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`.                 |
+| `LLM_HOST`       | `192.168.1.40`   | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`.                 |
 | `LLM_PORT`       | `11434`           | Ollama port (ollama backend only).                                    |
 
 ### Models
