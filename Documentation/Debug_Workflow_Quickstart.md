@@ -3,63 +3,77 @@
 Condensed reference for the nmon2 LLM-assisted debugging pipeline. See `DebugWorkflow.md` for full details.
 
 All scripts run from the **repo root**, read `LocalLLM_Pipeline/Common/.env`, and call
-the local Ollama server via the shared `Invoke-LocalLLM` helper in
-`LocalLLM_Pipeline/Common/llm_common.ps1`.
+the local LLM backend via the shared `Invoke-LocalLLM` helper in
+`LocalLLM_Pipeline/Common/llm_common.ps1`. The backend is selected by `LLM_BACKEND`:
+`vllm` (default) routes to the LLMConfig OpenAI `/v1` gateway, or `ollama` uses a
+native Ollama server.
 
 ---
 
 ## Model Selection
 
-The default is `qwen3-coder:30b` with a per-request `num_ctx=32768` passed via
-the native Ollama `/api/chat` endpoint. One model, one tag, one config -- no
-custom `Modelfile` variants needed.
+The default backend is `vllm`: the coder model `qwen3-coder-30b` (a vLLM
+served-name) served through the LLMConfig `/v1` gateway, which auto-loads the
+model onto the GPU on first request. On vllm the context window is fixed per
+alias at serve time, so `LLM_NUM_CTX`/`num_ctx` are ignored — keep the output
+budget under the alias ceiling. On the `ollama` backend the model is the tag
+`qwen3-coder:30b` and `num_ctx` applies per request (e.g. `32768`).
 
 ```ini
 # LocalLLM_Pipeline/Common/.env (snippet)
-LLM_DEFAULT_MODEL=qwen3-coder:30b   # universal fallback; LLM_MODEL etc. chain to this
-LLM_NUM_CTX=32768
+LLM_BACKEND=vllm                    # vllm (default, LLMConfig /v1 gateway) or ollama
+LLM_DEFAULT_MODEL=qwen3-coder-30b   # universal fallback; LLM_MODEL etc. chain to this
+                                    # (vLLM served-name; on ollama use tag qwen3-coder:30b)
+LLM_NUM_CTX=32768                   # ollama backend only; ignored on vllm
 LLM_TIMEOUT=300
 ```
 
-One-time pull on the Ollama server:
+On the `ollama` backend, one-time pull on the Ollama server:
 
 ```powershell
 ollama pull qwen3-coder:30b
 ```
 
-Verify it fits in VRAM:
+Verify it fits in VRAM (ollama backend):
 
 ```powershell
 ollama ps    # PROCESSOR column should say "100% GPU"
 ```
 
 If `PROCESSOR` shows any CPU fraction, drop `LLM_NUM_CTX` (e.g. to 16384 or
-12288) or switch to a smaller model -- see below.
+12288) or switch to a smaller model -- see below. (On vllm, VRAM and context
+are determined by how the alias was served, not by these knobs.)
 
-### VRAM notes
+### VRAM notes (ollama backend)
 
-KV cache scales roughly linearly with `num_ctx`. On a 24 GB card at
-`num_ctx=32768`, expect 17-20 GB of weights plus 5-8 GB of KV cache. If this
-overflows, the simplest fixes are (1) lower `LLM_NUM_CTX`, or (2) switch to a
-smaller model:
+On the `ollama` backend, KV cache scales roughly linearly with `num_ctx`. On a
+24 GB card at `num_ctx=32768`, expect 17-20 GB of weights plus 5-8 GB of KV
+cache. If this overflows, the simplest fixes are (1) lower `LLM_NUM_CTX`, or
+(2) switch to a smaller model:
 
 ```ini
-# Smaller-GPU config (12 GB card)
+# Smaller-GPU config (12 GB card, ollama backend)
 LLM_DEFAULT_MODEL=qwen2.5-coder:14b
 LLM_NUM_CTX=32768
 LLM_TIMEOUT=180
 ```
 
+(On the default `vllm` backend, VRAM is fixed by how the alias was served, so
+these knobs do not apply.)
+
 The 14b model finds ~80% of what the 30b finds, but it's a real reviewer (not
 an agentic one) and converges well on the iterative bug-fix loop.
 
-### How per-request `num_ctx` works
+### How per-request `num_ctx` works (ollama backend only)
 
-When `LLM_NUM_CTX > 0`, `Invoke-LocalLLM` POSTs to `/api/chat` with
-`options.num_ctx` set. When 0 or unset, it falls back to the legacy
+On the `ollama` backend, when `LLM_NUM_CTX > 0`, `Invoke-LocalLLM` POSTs to
+`/api/chat` with `options.num_ctx` set. When 0 or unset, it falls back to the
 `/v1/chat/completions` path (no per-request override, model uses its default
-window). Scripts don't need to know which path they're using -- they just
-call `Invoke-LocalLLM` and the helper picks the right endpoint.
+window). On the default `vllm` backend every request goes to the LLMConfig
+`/v1` gateway and context is fixed per alias at serve time (`num_ctx` is
+ignored). Scripts don't need to know which path they're using -- they just
+call `Invoke-LocalLLM` and the helper picks the right endpoint for the active
+backend.
 
 ### Running the scripts
 
@@ -72,10 +86,12 @@ call `Invoke-LocalLLM` and the helper picks the right endpoint.
 ```
 
 All five pick up their model via `Get-LLMModel -RoleKey 'LLM_MODEL'` (chains
-`LLM_MODEL` → `LLM_DEFAULT_MODEL` → fallback) and `LLM_NUM_CTX` from
-`Common/.env`. Per-request `num_ctx` covers the high-context synth passes
-in the three "heavy" scripts (`bughunt_iterative`, `interfaces`, `testgap`)
-— no separate high-ctx model variant is needed.
+`LLM_MODEL` → `LLM_DEFAULT_MODEL` → fallback) and, on the `ollama` backend,
+`LLM_NUM_CTX` from `Common/.env`. There, per-request `num_ctx` covers the
+high-context synth passes in the three "heavy" scripts (`bughunt_iterative`,
+`interfaces`, `testgap`) — no separate high-ctx model variant is needed. On the
+default `vllm` backend the alias is served with a large fixed context, so the
+heavy passes are covered without any per-request override.
 
 **Don't use `devstral-small-2`**: agentic model, not a reviewer. It
 over-rewrites, hallucinates findings, and triggers the `BLOAT` / `DIVERGING`
@@ -105,10 +121,12 @@ exist -- run `Arch_Analysis_Pipeline.py` first to generate them, then update
   — run `-Clean` after enabling `SERENA_CONTEXT_DIR` so existing files get
   re-extracted with LSP context.
 - **Tokens.** Injections add 2-10K tokens per call. If prompts hit the
-  window ceiling, bump `LLM_NUM_CTX` or slim the injected file.
-- **VRAM.** Each +8K of `num_ctx` costs ~1 GB of KV cache on a 24 GB card.
-  Confirm with `ollama ps` that `PROCESSOR` stays at `100% GPU` — anything
-  less means partial offload and 3-4× slower inference.
+  window ceiling, slim the injected file — or, on the `ollama` backend, bump
+  `LLM_NUM_CTX` (on `vllm` the per-alias ceiling is fixed at serve time).
+- **VRAM (ollama backend).** Each +8K of `num_ctx` costs ~1 GB of KV cache on a
+  24 GB card. Confirm with `ollama ps` that `PROCESSOR` stays at `100% GPU` —
+  anything less means partial offload and 3-4× slower inference. (On `vllm`,
+  VRAM is fixed by how the alias was served.)
 
 ---
 

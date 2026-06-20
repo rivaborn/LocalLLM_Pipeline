@@ -5,7 +5,7 @@ All toolkit files live in `..\LocalLLM_Pipeline\LocalLLMAnalysis\`. Scripts are 
 ## Pipeline Scripts
 
 ### llm_common.ps1 (at `LocalLLM_Pipeline/Common/llm_common.ps1`) -- Shared Helper Module
-Dot-sourced by all `*_local.ps1` scripts in Analysis, Debug, and Coding pipelines. Provides `Invoke-LocalLLM` (Ollama client with retry; routes via native `/api/chat` when `LLM_NUM_CTX > 0`), `Get-LLMEndpoint` (builds URL from `LLM_ENDPOINT` or `LLM_HOST`/`LLM_PORT`), `Resolve-ArchFile` + `Get-SerenaContextDir` (for optional Debug←Analysis integration), and shared utilities: `Read-EnvFile`, `Get-SHA1`, `Get-Preset`, `Get-FenceLang`, `Test-TrivialFile`, `Write-TrivialStub`, `Get-OutputBudget`, `Truncate-Source`, `Load-CompressedLSP`, `Show-SimpleProgress`, `Test-CancelKey`.
+Dot-sourced by all `*_local.ps1` scripts in Analysis, Debug, and Coding pipelines. Provides `Invoke-LocalLLM` (backend-aware client with retry: on the default vllm backend it calls the LLMConfig OpenAI `/v1` gateway; on the ollama backend it routes via native `/api/chat` when `LLM_NUM_CTX > 0`), `Get-LLMBackend` (reads `LLM_BACKEND` -- `vllm` default or `ollama`), `Get-LLMEndpoint` (builds the backend base URL from `LLM_ENDPOINT` or `LLM_HOST`/`LLM_PORT`), `Resolve-ArchFile` + `Get-SerenaContextDir` (for optional Debug←Analysis integration), and shared utilities: `Read-EnvFile`, `Get-SHA1`, `Get-Preset`, `Get-FenceLang`, `Test-TrivialFile`, `Write-TrivialStub`, `Get-OutputBudget`, `Truncate-Source`, `Load-CompressedLSP`, `Show-SimpleProgress`, `Test-CancelKey`.
 
 ### archgen_local.ps1 -- Pass 1: Per-File Documentation
 Generates one `.md` doc per source file via local LLM. Synchronous. Truncates source to `MAX_FILE_LINES`, loads compressed LSP symbols when available, adaptive output budget (300-800 tokens). SHA1 hash DB for resumability, trivial file skipping, progress display with ETA.
@@ -48,7 +48,7 @@ Cross-cutting enrichment targeting ~400 token output.
 ## Configuration
 
 ### `.env` (at `LocalLLM_Pipeline/Common/.env`, shared with Debug and Coding pipelines)
-LLM settings: `LLM_ENDPOINT` (or `LLM_HOST`+`LLM_PORT`), `LLM_MODEL`, `LLM_NUM_CTX`, `LLM_ANALYSIS_NUM_CTX`, `LLM_PLANNING_MODEL`/`_NUM_CTX`, `LLM_AIDER_MODEL`/`_NUM_CTX`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT`. Pipeline settings: `PRESET`, `CODEBASE_DESC`, `MAX_FILE_LINES`, `SKIP_TRIVIAL`, `INCLUDE_EXT_REGEX`, `EXCLUDE_DIRS_REGEX`. Debug←Analysis integration: `ARCHITECTURE_DIR`, `SERENA_CONTEXT_DIR`. Also contains a `#Subsections begin` / `#Subsections end` block for `Arch_Analysis_Pipeline.py`.
+LLM settings: `LLM_BACKEND` (`vllm` default / `ollama`), `LLM_ENDPOINT` (or `LLM_HOST`+`LLM_PORT`), `LLM_MODEL`, `LLM_NUM_CTX`, `LLM_ANALYSIS_NUM_CTX`, `LLM_PLANNING_MODEL`/`_NUM_CTX`, `LLM_AIDER_MODEL`/`_NUM_CTX`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT` (`LLM_NUM_CTX`/`_ANALYSIS_NUM_CTX`/`_PLANNING_NUM_CTX` apply to the ollama backend only). Pipeline settings: `PRESET`, `CODEBASE_DESC`, `MAX_FILE_LINES`, `SKIP_TRIVIAL`, `INCLUDE_EXT_REGEX`, `EXCLUDE_DIRS_REGEX`. Debug←Analysis integration: `ARCHITECTURE_DIR`, `SERENA_CONTEXT_DIR`. Also contains a `#Subsections begin` / `#Subsections end` block for `Arch_Analysis_Pipeline.py`.
 
 ### .clangd (at repo root, optional)
 Controls clangd behavior for LSP extraction. Disables diagnostics, enables background indexing.

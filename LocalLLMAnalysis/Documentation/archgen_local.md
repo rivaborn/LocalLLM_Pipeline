@@ -4,7 +4,7 @@
 
 `archgen_local.ps1` is the first and most foundational step in the analysis pipeline. It scans a
 codebase for source files matching configurable extension/directory patterns, reads each file, and
-sends it (along with an optional LSP symbol context from Serena) to a local Ollama LLM. The LLM
+sends it (along with an optional LSP symbol context from Serena) to the local LLM. The LLM
 produces a structured Markdown architecture document for every source file, describing its purpose,
 key functions, data structures, global state, dependencies, and control flow.
 
@@ -20,7 +20,7 @@ LLM call, saving time and GPU resources.
 | PowerShell 5.1+ or pwsh 7+    | Script uses `Set-StrictMode -Version Latest`                                                       |
 | `llm_common.ps1`              | Shared module in `../Common/`; provides `Invoke-LocalLLM`, `Get-Preset`, `Cfg`, hash helpers, etc. |
 | `../Common/.env`              | Configuration file with LLM endpoint, model, preset, and project settings                          |
-| Ollama running locally        | Default endpoint from `.env` (typically `http://localhost:11434`)                                  |
+| Local LLM backend reachable   | Default: vLLM via the LLMConfig `/v1` gateway (`http://192.168.1.40:11430`). `LLM_BACKEND=ollama` selects native Ollama (`:11434`). |
 | `archgen_local_prompt.txt`    | Prompt schema file in the same directory as the script                                             |
 | (Optional) `.serena_context/` | Compressed LSP symbol files from `serena_extract.ps1` for richer context                           |
 
@@ -76,23 +76,23 @@ which runs `archgen_local.ps1 -Preset generals` via PowerShell subprocess.
 
 ## Environment Variables / .env Keys
 
-| Key                    | Default                  | Description                                                        |
-| ---------------------- | ------------------------ | ------------------------------------------------------------------ |
-| `PRESET`               | `""`                     | Named preset (overridden by `-Preset` CLI flag)                    |
-| `INCLUDE_EXT_REGEX`    | Preset-dependent         | Regex for file extensions to include                               |
-| `EXCLUDE_DIRS_REGEX`   | Preset-dependent         | Regex for directories/paths to exclude                             |
-| `EXTRA_EXCLUDE_REGEX`  | `""`                     | Additional exclude regex                                           |
-| `CODEBASE_DESC`        | Preset-dependent         | Human-readable codebase description for LLM context                |
-| `DEFAULT_FENCE`        | Preset-dependent         | Default code fence language (e.g. `cpp`)                           |
-| `MAX_FILE_LINES`       | `800`                    | Truncate source files beyond this line count before sending to LLM |
-| `SKIP_TRIVIAL`         | `1`                      | Whether to skip trivial files (`1` = yes)                          |
-| `MIN_TRIVIAL_LINES`    | `20`                     | Files below this line count are considered trivial                 |
-| `LLM_MODEL`            | `qwen2.5-coder:14b`      | Ollama model name                                                  |
-| `LLM_TEMPERATURE`      | `0.1`                    | LLM sampling temperature                                           |
-| `LLM_MAX_TOKENS`       | `800`                    | Maximum output tokens                                              |
-| `LLM_TIMEOUT`          | `120`                    | HTTP request timeout in seconds                                    |
-| `LLM_ANALYSIS_NUM_CTX` | (none)                   | If set, overrides `LLM_NUM_CTX` for analysis scripts               |
-| `LLM_ENDPOINT`         | (from `Get-LLMEndpoint`) | Ollama API URL                                                     |
+| Key                    | Default                  | Description                                                                            |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------- |
+| `PRESET`               | `""`                     | Named preset (overridden by `-Preset` CLI flag)                                        |
+| `INCLUDE_EXT_REGEX`    | Preset-dependent         | Regex for file extensions to include                                                   |
+| `EXCLUDE_DIRS_REGEX`   | Preset-dependent         | Regex for directories/paths to exclude                                                 |
+| `EXTRA_EXCLUDE_REGEX`  | `""`                     | Additional exclude regex                                                               |
+| `CODEBASE_DESC`        | Preset-dependent         | Human-readable codebase description for LLM context                                    |
+| `DEFAULT_FENCE`        | Preset-dependent         | Default code fence language (e.g. `cpp`)                                               |
+| `MAX_FILE_LINES`       | `800`                    | Truncate source files beyond this line count before sending to LLM                     |
+| `SKIP_TRIVIAL`         | `1`                      | Whether to skip trivial files (`1` = yes)                                              |
+| `MIN_TRIVIAL_LINES`    | `20`                     | Files below this line count are considered trivial                                     |
+| `LLM_MODEL`            | `qwen3-coder-30b`        | Model id. vLLM served-name on the default backend (`qwen3-coder:30b` tag on ollama).   |
+| `LLM_TEMPERATURE`      | `0.1`                    | LLM sampling temperature                                                               |
+| `LLM_MAX_TOKENS`       | `800`                    | Maximum output tokens                                                                  |
+| `LLM_TIMEOUT`          | `120`                    | HTTP request timeout in seconds                                                        |
+| `LLM_ANALYSIS_NUM_CTX` | (none)                   | Ollama backend only: overrides `LLM_NUM_CTX`. Ignored on vllm (context fixed per alias). |
+| `LLM_ENDPOINT`         | (from `Get-LLMEndpoint`) | Backend base URL. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.   |
 
 ## Exit Codes
 

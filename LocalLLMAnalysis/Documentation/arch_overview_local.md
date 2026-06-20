@@ -21,7 +21,7 @@ concatenating the subsystem overviews.
 | PowerShell 5.1+ or pwsh 7+                  | Uses `Set-StrictMode -Version Latest`                                 |
 | `llm_common.ps1`                            | Shared module in `../Common/`                                         |
 | `../Common/.env`                            | Configuration file                                                    |
-| Ollama running locally                      | LLM endpoint must be reachable                                        |
+| Local LLM backend reachable                 | Default: vLLM via the LLMConfig `/v1` gateway. Backend follows `LLM_BACKEND` (`vllm` default, or `ollama`); endpoint resolved by `Get-LLMEndpoint`. |
 | Per-file docs                               | Output of `archgen_local.ps1` must exist in `<repo>/architecture/`    |
 | (Optional) `arch_overview_local_prompt.txt` | Prompt schema in script directory; used as the base prompt if present |
 
@@ -73,15 +73,15 @@ python Common/ArchPipeline.py analysis
 
 ## Environment Variables / .env Keys
 
-| Key                    | Default                         | Description                                         |
-| ---------------------- | ------------------------------- | --------------------------------------------------- |
-| `CODEBASE_DESC`        | `"game engine / game codebase"` | Codebase description for LLM context                |
-| `CHUNK_THRESHOLD`      | `400`                           | Summary line count above which chunked mode is used |
-| `LLM_MODEL`            | `qwen2.5-coder:14b`             | Ollama model                                        |
-| `LLM_TEMPERATURE`      | `0.1`                           | Sampling temperature                                |
-| `LLM_TIMEOUT`          | `120`                           | HTTP timeout in seconds                             |
-| `LLM_ANALYSIS_NUM_CTX` | (none)                          | Overrides `LLM_NUM_CTX` if set                      |
-| `LLM_ENDPOINT`         | (from helper)                   | Ollama API URL                                      |
+| Key                    | Default                         | Description                                                                |
+| ---------------------- | ------------------------------- | ------------------------------------------------------------------------- |
+| `CODEBASE_DESC`        | `"game engine / game codebase"` | Codebase description for LLM context                                       |
+| `CHUNK_THRESHOLD`      | `400`                           | Summary line count above which chunked mode is used                       |
+| `LLM_MODEL`            | `qwen3-coder-30b`               | Model id. vLLM served-name on the default backend (`qwen3-coder:30b` tag on ollama). |
+| `LLM_TEMPERATURE`      | `0.1`                           | Sampling temperature                                                      |
+| `LLM_TIMEOUT`          | `120`                           | HTTP timeout in seconds                                                   |
+| `LLM_ANALYSIS_NUM_CTX` | (none)                          | Ollama backend only: overrides `LLM_NUM_CTX`. Ignored on vllm (context fixed per alias). |
+| `LLM_ENDPOINT`         | (from helper)                   | Backend base URL. Default vllm: `http://192.168.1.40:11430` gateway; ollama: `:11434`. |
 
 ## Exit Codes
 

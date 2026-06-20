@@ -40,9 +40,11 @@ The local model, endpoint, and per-request context window all live in
 `LocalLLM_Pipeline/Common/.env`:
 
 ```ini
-LLM_ENDPOINT=http://192.168.1.40:11434   # or LLM_HOST + LLM_PORT
-LLM_PLANNING_MODEL=gemma4:26b             # used by every local stage (0, 2a/2b, 3a/3b)
-LLM_PLANNING_NUM_CTX=24576
+LLM_BACKEND=vllm                          # vllm (default, LLMConfig /v1 gateway) or ollama
+LLM_ENDPOINT=http://192.168.1.40:11430    # vllm gateway; for ollama use :11434 (or LLM_HOST + LLM_PORT)
+LLM_PLANNING_MODEL=qwen3.5-27b            # vLLM served-name; planning stages 0/1 (ollama tag: qwen3.5:27b)
+LLM_PLANNING_NUM_CTX=24576                # ollama backend only; ignored on vllm (context fixed per alias)
+LLM_PLANNING_MAX_TOKENS=16384             # output budget; keep input + output under the vllm alias ceiling
 ```
 
 See [Engine routing modes](#engine-routing-modes) below for full details.
@@ -217,7 +219,7 @@ The `.progress` file is automatically deleted when all stages complete successfu
 | `-NoUltrathink`   | `switch`   | `$false`             | Force extended thinking off for all Claude stages. |
 | `-Local`          | `switch`   | `$false`             | Route **every** stage to the local LLM (no Claude at all, including Stage 1). Mutually exclusive with `-AllClaude`. See [Engine routing modes](#engine-routing-modes). |
 | `-AllClaude`      | `switch`   | `$false`             | Route **every** stage to Claude (reverts to pre-default behaviour, useful when the local server is unreachable). Mutually exclusive with `-Local`. |
-| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the Ollama endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.40:11434`. |
+| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the local backend endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.40:11430` (the vllm gateway; the ollama backend uses `:11434`). |
 | `-LocalModel`     | `string`   | (from `.env`)        | Override the local planning model. Defaults to `LLM_PLANNING_MODEL` in `Common/.env`. |
 | `-SkipStage`      | `int[]`    | (none)               | Skip one or more stages. Accepts a list: `-SkipStage 1,2` skips stages 1 and 2. Stage 0 cannot be skipped (it runs automatically when prior plans exist). |
 | `-FromStage`      | `int`      | `1`                  | Start from a specific stage, skipping all earlier stages. Valid values: 1, 2, 3. Stage 0 always runs if applicable. |
@@ -391,10 +393,13 @@ The two flags are mutually exclusive. Omitting both gives the default split.
 
 ### Local LLM implementation
 
-The local LLM call goes through `Invoke-LocalLLM` in `Common/llm_common.ps1`. It posts
-to the Ollama native `/api/chat` endpoint with `options.num_ctx = LLM_PLANNING_NUM_CTX`
-so the model gets the full context window on every request (no `Modelfile`
-pre-registration required).
+The local LLM call goes through `Invoke-LocalLLM` in `Common/llm_common.ps1`. On the
+default `vllm` backend it posts to the LLMConfig OpenAI `/v1` gateway, which auto-loads
+the requested served-name model onto the GPU on first request; the context window is
+fixed per alias at serve time, so `LLM_PLANNING_NUM_CTX` is ignored. On the `ollama`
+backend it instead posts to the native `/api/chat` endpoint with
+`options.num_ctx = LLM_PLANNING_NUM_CTX` so the model gets the full context window on
+every request (no `Modelfile` pre-registration required).
 
 Endpoint precedence (first match wins):
 
@@ -402,7 +407,7 @@ Endpoint precedence (first match wins):
 2. `$env:LLM_ENDPOINT` in the shell
 3. `LLM_ENDPOINT` in `Common/.env`
 4. `LLM_HOST` + `LLM_PORT` in `Common/.env`
-5. Hardcoded default `http://192.168.1.40:11434`
+5. Hardcoded default `http://192.168.1.40:11430` (vllm gateway; ollama backend uses `:11434`)
 
 Model precedence: `-LocalModel` flag → `LLM_PLANNING_MODEL` in `Common/.env`.
 
@@ -412,9 +417,12 @@ Shows the active mode plus resolved endpoint/model when the local LLM is used:
 
 ```
 Mode: default -- Stage 1 = Claude; Stages 0, 2a, 2b, 3a, 3b = local
-  Local endpoint: http://192.168.1.40:11434
-  Local model:    gemma4:26b (num_ctx=24576)
+  Local endpoint: http://192.168.1.40:11430
+  Local model:    qwen3.5-27b
 ```
+
+(On the `ollama` backend the endpoint is `:11434`, the model is the tag
+`qwen3.5:27b`, and the banner also reports `num_ctx`.)
 
 Ultrathink is automatically suppressed on local stages — the prefix is a Claude
 extended-thinking trigger that local models don't recognise.
@@ -424,11 +432,13 @@ extended-thinking trigger that local models don't recognise.
 In the default and `-Local` modes, Stage 0 (Codebase Summary) runs against the local
 planning model. Stage 0 concatenates every `Architecture Plan *.md` and
 `Bug Fix Changes *.md` under `Implemented Plans/`, so its input grows with each
-iteration. A typical mid-project prompt is already ~20K tokens; with
-`LLM_PLANNING_NUM_CTX=24576` that leaves little headroom for the output.
+iteration. A typical mid-project prompt is already ~20K tokens, so the context budget
+matters: on the default `vllm` backend the window is fixed per alias at serve time
+(both pipeline aliases serve at 65536); on the `ollama` backend it is set per request
+via `LLM_PLANNING_NUM_CTX` (e.g. `24576`, which leaves little headroom for output).
 
 If Stage 0 starts truncating input silently on large histories, either:
-- Bump `LLM_PLANNING_NUM_CTX` in `Common/.env` (watch VRAM on `ollama ps`).
+- On the `ollama` backend, bump `LLM_PLANNING_NUM_CTX` in `Common/.env` (watch VRAM on `ollama ps`). On `vllm`, the per-alias ceiling is fixed at serve time — keep output under it via `LLM_PLANNING_MAX_TOKENS`.
 - Switch to `-AllClaude` for the summary-heavy run (Claude Sonnet handles large input comfortably).
 - Temporarily remove or archive stale plans from `Implemented Plans/`.
 
@@ -535,11 +545,11 @@ state of the codebase before planning new work.
 # -Local: Claude for stages 0/1, local LLM for 2a/2b/3a/3b
 ..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local
 
-# -Local with an explicit endpoint override (one-off redirect)
+# -Local with an explicit endpoint override (one-off redirect to a local ollama instance)
 ..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local -LocalEndpoint http://localhost:11434
 
-# -Local with a different planning model
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local -LocalModel qwen3:32b
+# -Local with a different planning model (served-name on vllm; e.g. qwen3-32b)
+..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local -LocalModel qwen3-32b
 
 # Re-run after interruption -- auto-resumes from where it stopped
 ..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1
@@ -579,5 +589,8 @@ python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
 - At least one Claude account configured (Claude1 or Claude2 via `CLAUDE_CONFIG_DIR`)
 - An `InitialPrompt.md` file in the target directory describing the work to be done
-- **For `-Local` mode only:** an Ollama server reachable at the configured endpoint
-  with the planning model pulled (e.g. `ollama pull gemma4:26b`)
+- **For `-Local` mode only:** the local backend reachable at the configured endpoint —
+  by default the vLLM LLMConfig `/v1` gateway (`http://192.168.1.40:11430`), which
+  auto-loads the requested served-name model (e.g. `qwen3.5-27b`) on first request; or,
+  when `LLM_BACKEND=ollama`, an Ollama server with the planning model pulled
+  (e.g. `ollama pull qwen3.5:27b`)

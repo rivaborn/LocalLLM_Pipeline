@@ -34,7 +34,7 @@ C:\Coding\
 |---|---|---|
 | Analysis | target project root (e.g. `C:\Coding\nmon`) | Scans `src/` via `Path.cwd()` |
 | Debug | target project root (e.g. `C:\Coding\nmon`) | `git rev-parse --show-toplevel` from cwd |
-| Coding | where you want `Implemented Plans/` + `LocalLLMCodePrompts/` to live (e.g. `C:\Coding\nmonLocalLLM`) | `$ProjectRoot = (Get-Location).Path` |
+| Coding | where you want `Implemented Plans/` + `LocalLLMCodePrompts/` to live (e.g. `C:\Coding\nmonLocalLLM`) | target-dir / repo-root auto-derive from cwd |
 
 Every toolkit path is then `..\LocalLLM_Pipeline\LocalLLM<X>\<script>`.
 
@@ -46,15 +46,16 @@ One file drives every pipeline. Key knobs:
 
 | Key | Default | Used by |
 |---|---|---|
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.40:11434` | All LLM calls |
-| `LLM_DEFAULT_MODEL` | `qwen3-coder:30b` | Universal fallback — every role key below falls back to this when blank/unset |
+| `LLM_BACKEND` | `vllm` | `vllm` → LLMConfig `/v1` gateway (`:11430`); `ollama` → native Ollama (`:11434`) |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.40:11430` (gateway) | All LLM calls. On `ollama`, the host uses `LLM_PORT` (default `11434`). |
+| `LLM_DEFAULT_MODEL` | `qwen3-coder-30b` | Universal fallback — every role key below falls back to this when blank/unset |
 | `LLM_MODEL` | blank (→ DEFAULT) | Analysis + Debug |
-| `LLM_PLANNING_MODEL` | `gemma4:26b` | Coding stages 0/1/2a/2b/3a/3b when `--local` |
-| `LLM_AIDER_MODEL` | blank (→ DEFAULT) | Coding stages 4 (`run_aider.py`) + 5 (`fix_imports.py`) |
-| `LLM_NUM_CTX` | `32768` | Debug (Analysis overrides to 49152) |
-| `LLM_ANALYSIS_NUM_CTX` | `49152` | Promoted into `LLM_NUM_CTX` by Analysis scripts |
-| `LLM_PLANNING_NUM_CTX` | `98304` | Planning stages (thinking + output) |
-| `LLM_AIDER_NUM_CTX` | `40960` | Aider context window |
+| `LLM_PLANNING_MODEL` | `qwen3.5-27b` | Coding planning stages 0/1 (when run locally) |
+| `LLM_AIDER_MODEL` | blank (→ DEFAULT) | Coding coder stages 2a/2b/3a/3b + 4 (`run_aider.py`) + 5 (`fix_imports.py`) |
+| `LLM_NUM_CTX` | `32768` | Debug, **ollama backend only** (Analysis overrides to 49152; ignored on vllm) |
+| `LLM_ANALYSIS_NUM_CTX` | `49152` | Promoted into `LLM_NUM_CTX` by Analysis scripts (ollama backend only) |
+| `LLM_PLANNING_NUM_CTX` | `65536` | Planning stages, **ollama backend only** (vllm fixes context per alias at serve time) |
+| `LLM_PLANNING_MAX_TOKENS` | `16384` | Coding-stage output budget (on vllm keep input+output under the alias ceiling) |
 | `LLM_TEMPERATURE` | `0.1` | All |
 | `LLM_TIMEOUT` | `300` seconds | All |
 | `PRESET` | `python` | File inclusion regex |
@@ -318,36 +319,41 @@ Implemented Plans/Bug Fix Changes <N>.md   (after Arch_Debug_Pipeline step 6)
 
 ## 5. Coding Pipeline
 
-Uses Claude to produce an architecture plan + aider commands, then runs aider against a local LLM to implement the plan. Run from your **project-data folder** (e.g. `cd C:\Coding\nmonLocalLLM`) — `Implemented Plans/` and `LocalLLMCodePrompts/` are resolved relative to cwd.
+Uses Claude to produce an architecture plan + aider commands, then runs aider against the local LLM backend (default vLLM via the LLMConfig `/v1` gateway; Ollama selectable via `LLM_BACKEND=ollama`) to implement the plan. Run from your **project-data folder** (e.g. `cd C:\Coding\nmonLocalLLM`) — `Implemented Plans/` and `LocalLLMCodePrompts/` are resolved relative to cwd.
 
-### 5.1 Planning — `Arch_Coding_Pipeline.ps1`
+### 5.1 Planning — `ArchPipeline.py coding`
 
-Four-stage pipeline. **By default Claude is used only for Stage 1 (prompt refinement)**; every other stage (0, 2a, 2b, 3a, 3b) runs on the local Ollama LLM. Override with `-Local` (100% local, skip Claude entirely) or `-AllClaude` (100% Claude, useful when the local server is unavailable).
+Four-stage pipeline. **By default Claude is used only for Stage 1 (prompt refinement)**; every other stage (0, 2a, 2b, 3a, 3b) runs on the local LLM backend (default vLLM via the gateway). Override with `--local` (100% local, skip Claude entirely) or `--all-claude` (100% Claude, useful when the local server is unavailable).
 
 ```powershell
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 [options]
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding [options]
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `-TargetDir <path>` | `LocalLLMCodePrompts` (under cwd) | Folder containing `InitialPrompt.md` and where outputs are written. |
-| `-Claude <account>` | `Claude1` | Claude account. |
-| `-Model <name>` | per-stage defaults | Override Claude model for every Claude stage (`sonnet`/`opus`/`haiku` or full ID). Does not affect local stages. |
-| `-Ultrathink` | off | Force ultrathink on for all Claude stages. |
-| `-NoUltrathink` | off | Force off for all Claude stages. |
-| `-Local` | off | Route **every** stage to the local Ollama LLM (no Claude at all). Mutually exclusive with `-AllClaude`. |
-| `-AllClaude` | off | Route **every** stage to Claude. Mutually exclusive with `-Local`. |
-| `-LocalEndpoint <url>` | (from `.env`) | Override Ollama URL for local stages. |
-| `-LocalModel <tag>` | (from `.env` `LLM_PLANNING_MODEL`) | Override the local planning model. |
-| `-SkipStage <1,2,3>` | — | Skip one or more stages. |
-| `-FromStage <1-3>` | `1` | Start from a specific stage; skips earlier. |
-| `-Restart` | off | Ignore saved `.progress`; start from Stage 1 (or `-FromStage`). |
-| `-Force` | off | Overwrite outputs without confirmation. |
-| `-DryRun` | off | Preview without calling any LLM. |
+(The old `Arch_Coding_Pipeline.ps1` entry point now lives under `legacy/` and is unmaintained — use the unified `ArchPipeline.py coding` orchestrator.)
+
+| Option                   | Default                            | Description                                                                                                                                  |
+|--------------------------|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `--initial-prompt <path>`| `./InitialPrompt.md`               | Path to `InitialPrompt.md`. Its parent becomes `--target-dir`; `--repo-root` defaults to one level above that.                                |
+| `--target-dir <path>`    | parent of `--initial-prompt`       | Output directory where `Architecture Plan.md` / `aidercommands.md` are written.                                                               |
+| `--repo-root <dir>`      | parent of `--target-dir`           | Codebase repo root (where `Implemented Plans/` lives).                                                                                        |
+| `--claude <account>`     | `Claude1`                          | Claude account (`Claude1`/`Claude2`).                                                                                                         |
+| `--model <name>`         | per-stage defaults                 | Override Claude model for every Claude stage (`sonnet`/`opus`/`haiku` or full ID). Does not affect local stages.                              |
+| `--ultrathink`           | off                                | Force ultrathink on for all Claude stages.                                                                                                    |
+| `--no-ultrathink`        | off                                | Force off for all Claude stages.                                                                                                              |
+| `--local`                | off                                | Route **every** stage to the local LLM backend (default vLLM gateway; Ollama if `LLM_BACKEND=ollama`), no Claude at all. Mutually exclusive with `--all-claude`. |
+| `--all-claude`           | off                                | Route **every** stage to Claude. Mutually exclusive with `--local`.                                                                          |
+| `--local-endpoint <url>` | (from `.env`)                      | Override the local backend base URL for local stages (gateway on vllm; Ollama URL on ollama).                                                |
+| `--local-model <tag>`    | (from `.env` `LLM_PLANNING_MODEL`) | Override the local planning model.                                                                                                            |
+| `--skip-stage <N ...>`   | —                                  | Skip one or more stages.                                                                                                                      |
+| `--from-stage <N>`       | `1`                                | Start from a specific stage; skips earlier.                                                                                                   |
+| `--restart`              | off                                | Ignore saved `.progress`; start from Stage 1 (or `--from-stage`).                                                                            |
+| `--force`                | off                                | Overwrite outputs without confirmation.                                                                                                       |
+| `--dry-run`              | off                                | Preview without calling any LLM.                                                                                                              |
+| `--review`               | off                                | Run a Claude review + auto-fix at two checkpoints (after Stage 2 and after Stage 3); blocks the next stage on remaining blocking findings.    |
 
 **Engine routing by mode:**
 
-| Stage | default | `-Local` | `-AllClaude` |
+| Stage | default | `--local` | `--all-claude` |
 |---|:-:|:-:|:-:|
 | 0 Codebase Summary | local | local | Claude |
 | **1 Improve Prompt** | **Claude** | local | Claude |
@@ -372,36 +378,37 @@ Four-stage pipeline. **By default Claude is used only for Stage 1 (prompt refine
 cd C:\Coding\nmonLocalLLM     # where Implemented Plans/ + LocalLLMCodePrompts/ live
 
 # Default: Claude for Stage 1 only; local LLM for everything else
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding
 
 # Fully local (e.g. Claude rate-limited or offline)
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --local
 
 # Fully Claude (e.g. Ollama server down, or intentional cloud-only run)
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -AllClaude
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --all-claude
 
-# Local override: point Stage 1's local fallback at a different endpoint/model (only when -Local is active)
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local -LocalEndpoint http://localhost:11434 -LocalModel qwen3:32b
+# Local override: point Stage 1's local fallback at a different endpoint/model (only when --local is active)
+# (ollama-backend example: a localhost Ollama instance + a :tag model id)
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --local --local-endpoint http://localhost:11434 --local-model qwen3-coder:30b
 
 # Different prompts folder
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -TargetDir .\LocalLLMCodePrompts_V2
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --target-dir .\LocalLLMCodePrompts_V2
 
 # Resume after interruption (automatic) — mode-mismatch guard refuses mixing modes across the same run
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding
 
 # Ignore saved progress and start fresh
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Restart
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --restart
 
 # Regenerate only aider commands from existing Architecture Plan.md
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -FromStage 3 -Restart
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --from-stage 3 --restart
 
-# Second Claude account; force Sonnet for every Claude stage (only affects -AllClaude or default Stage 1)
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Claude Claude2 -Model sonnet
+# Second Claude account; force Sonnet for every Claude stage (only affects --all-claude or default Stage 1)
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --claude Claude2 --model sonnet
 
 # Preview (see engine routing in the banner)
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -DryRun
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local -DryRun
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -AllClaude -DryRun
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --dry-run
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --local --dry-run
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --all-claude --dry-run
 ```
 
 **Stage outputs:**
@@ -428,38 +435,43 @@ Parses `aidercommands.md` and invokes aider once per step.
 python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py [file] [options]
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `file` (positional) | `aidercommands.md` in `<TargetDir>` or script dir | Markdown file to read. |
-| `--from-step N` | `1` | Skip steps before N; resume here. |
-| `--only-step N` | — | Run exactly one step. |
-| `--model <name>` | (from `--local`) | Explicit aider model string, e.g. `ollama_chat/qwen3-coder:30b` or `gpt-4o`. Wins over `--local-model`. |
-| `--local` | off | Route aider to the local Ollama server. Reads `Common/.env`, sets `OLLAMA_API_BASE`, builds `--model ollama_chat/<LLM_AIDER_MODEL>`. |
-| `--local-endpoint <url>` | (from `.env`) | Override Ollama URL (implies `--local`). |
-| `--local-model <tag>` | (from `.env` `LLM_AIDER_MODEL`) | Override local model (implies `--local`). Wrapped as `ollama_chat/<tag>`. |
-| `--dry-run` | off | Preview steps without calling aider. |
+| Option                | Default                                           | Description                                                                                                                                                  |
+|-----------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `file` (positional)   | `aidercommands.md` in `<TargetDir>` or script dir | Markdown file to read.                                                                                                                                      |
+| `--from-step N`       | `1`                                               | Skip steps before N; resume here.                                                                                                                           |
+| `--only-step N`       | —                                                 | Run exactly one step.                                                                                                                                       |
+| `--model <name>`      | (from `.env`)                                     | Explicit aider model string. Default `openai/qwen3-coder-30b` on the `vllm` backend, `ollama_chat/qwen3-coder:30b` on `ollama`.                              |
+| `--dry-run`           | off                                               | Preview steps without calling aider.                                                                                                                        |
+| `--no-symbols`        | off                                               | Disable ctags symbol-inventory injection into prompts.                                                                                                      |
+| `--no-planned`        | off                                               | Disable forward-looking step-plan injection into prompts.                                                                                                   |
+| `--no-strict-outputs` | off                                               | Don't fail a step when its declared output files are missing/empty after aider exits 0.                                                                     |
+| `--empty-retries N`   | `2`                                               | Retry up to N times if aider exits 0 but the declared output files are empty (3 total attempts). `0` disables.                                               |
+| `--pyright`           | off                                               | Start a pyright-langserver and resolve CamelCase symbol names against installed packages + workspace (helps with PyQt6 etc. that ctags cannot index).       |
+| `--no-sanity-check`   | off                                               | Disable pre-step inspection of target files for corruption (size, repetition, language drift). Default: enabled (flagged files are quarantined).            |
 
-**Endpoint precedence** (first match wins): `--local-endpoint` → `OLLAMA_API_BASE` → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.40:11434`.
+The backend is auto-resolved from `Common/.env` (`LLM_BACKEND=vllm` by default); there is no `--local` flag. On `vllm` it sets `OPENAI_API_BASE=<gateway>/v1` + `--model openai/<LLM_AIDER_MODEL>`; on `ollama` it sets `OLLAMA_API_BASE` + `--model ollama_chat/<LLM_AIDER_MODEL>`. To force a backend (or endpoint/model), edit `Common/.env` rather than passing a flag.
+
+**Endpoint precedence** (first match wins): `OLLAMA_API_BASE` (ollama backend) → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.40:11430` (gateway; `:11434` on the ollama backend).
 
 **Typical runs:**
 ```powershell
-# Recommended: --local reads Common/.env and wires OLLAMA_API_BASE automatically
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
+# Recommended: backend auto-resolves from Common/.env (OPENAI_API_BASE on vllm, OLLAMA_API_BASE on ollama)
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py
 
 # Resume after failure at step 8
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --from-step 8 --local
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --from-step 8
 
 # Re-run just step 12 (e.g. regenerate a buggy file)
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --only-step 12 --local
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --only-step 12
 
 # Preview
 python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --dry-run
 
 # Different aidercommands file
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py .\LocalLLMCodePrompts_V2\aidercommands.md --local
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py .\LocalLLMCodePrompts_V2\aidercommands.md
 
-# Use a different local model for one run
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local --local-model qwen3-coder:30b
+# Use a different model for one run (served-name on vllm; a :tag on ollama; or a cloud model)
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --model openai/qwen3-coder-30b
 
 # Use a cloud model via aider directly
 python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --model gpt-4o
@@ -477,10 +489,10 @@ cd C:\Coding\nmonLocalLLM
 
 # 2. Turn it into an architecture plan + aider commands
 #    Default: Claude refines the prompt (Stage 1); local LLM handles the rest
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding
 
-# 3. Execute the plan via aider + local Ollama
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
+# 3. Execute the plan via aider + the local LLM backend (default vLLM gateway)
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py
 #  Output: source files materialise in the cwd
 ```
 
@@ -491,18 +503,18 @@ cd C:\Coding\nmonLocalLLM
 #  Edit LocalLLMCodePrompts\InitialPrompt.md (Stage 0 will summarize prior Implemented Plans automatically)
 
 # 2. Replan — Claude refines the new feature prompt, local LLM does the rest
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding
 
 # 3. Execute
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py
 ```
 
 ### 6.2b Same iteration but Claude is rate-limited
 ```powershell
 # Fall back to fully local; prompt refinement quality may drop but nothing blocks
 cd C:\Coding\nmonLocalLLM
-..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local
-python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
+python ..\LocalLLM_Pipeline\Common\ArchPipeline.py coding --local
+python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py
 ```
 
 ### 6.3 Full debug sweep on an existing project
@@ -547,10 +559,10 @@ cd C:\Coding\nmon
 
 ## 7. Common Workflow Tips
 
-- **Resumability is built in.** Every orchestrator persists progress and resumes on re-run. Use `-Restart` (PowerShell) / `--from-step N` (Python) to override.
+- **Resumability is built in.** Every orchestrator persists progress and resumes on re-run. Use `-Restart` (the PowerShell Debug pipeline), `--restart` / `--from-stage N` (`ArchPipeline.py coding`), or `--from-step N` (`run_aider.py` / `Arch_Analysis_Pipeline.py`) to override.
 - **SHA1 caching.** Analysis and Debug scripts skip unchanged files. Use `-Clean` (wipes cache + output) or `-Force` (wipes cache only) to invalidate.
 - **Claude accounts.** `-Claude Claude1` / `-Claude Claude2` picks which `CLAUDE_CONFIG_DIR` to use (profile-based). Useful for separate billing or rate-limit mitigation.
-- **-Local mode requirements.** Ollama server reachable, `LLM_AIDER_MODEL` / `LLM_PLANNING_MODEL` pulled on the server. Verify with `ollama ps` that `PROCESSOR` says `100% GPU`.
+- **Local backend requirements.** The local backend must be reachable: on the default `vllm` backend the LLMConfig `/v1` gateway at `:11430` (it auto-loads the served-name model on first request); on the `ollama` backend the native server at `:11434` with `LLM_AIDER_MODEL` / `LLM_PLANNING_MODEL` pulled (verify with `ollama ps` that `PROCESSOR` says `100% GPU`). For `ArchPipeline.py coding`, `--local` routes every stage there; `run_aider.py` always uses the backend resolved from `Common/.env`.
 - **Windows-only.** The PowerShell scripts use Windows path separators and `msvcrt`/NVAPI patterns in examples. Python scripts (`Arch_Analysis_Pipeline.py`, `run_aider.py`) work cross-platform but most workflows assume Windows.
 
 ---
@@ -567,5 +579,5 @@ Key deep-dives:
 - `LocalLLMAnalysis\Documentation\Architecture Analysis Toolkit - Setup & Usage Guide.md` — full Analysis setup
 - `LocalLLMAnalysis\Documentation\CLI Instructions Reference.md` — exhaustive Analysis CLI reference
 - `LocalLLMDebug\Documentation\DebugWorkflow.md` — end-to-end Debug reference with integration caveats
-- `LocalLLMCoding\Documentation\Generate Aider Commands.md` — Coding pipeline deep-dive including `-Local` mode and engine routing
+- `LocalLLMCoding\Documentation\Generate Aider Commands.md` — Coding pipeline deep-dive including `--local` mode and engine routing
 - `LocalLLMCoding\Documentation\run_aider.md` — model selection, resume semantics, troubleshooting

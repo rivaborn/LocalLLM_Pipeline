@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`testgap_local.ps1` performs a comprehensive test gap analysis on a codebase using a local LLM (via Ollama). It identifies source files with no corresponding test file, analyses the quality and completeness of existing test coverage, and produces a prioritised gap report. The script operates as a three-pass pipeline:
+`testgap_local.ps1` performs a comprehensive test gap analysis on a codebase using the local LLM (vLLM via the LLMConfig gateway by default; selectable to the `ollama` backend via `LLM_BACKEND`). It identifies source files with no corresponding test file, analyses the quality and completeness of existing test coverage, and produces a prioritised gap report. The script operates as a three-pass pipeline:
 
 - **Pass 0 (static mapping):** Maps every source file to its test file(s) using naming conventions. Files with no matching test are flagged immediately as `[NO TEST FILE]`.
 - **Pass 1 (per-file LLM analysis):** For each source file, sends the source code, its test file (if any), shared fixtures (`conftest.py`), and optionally integration tests to the LLM. The model identifies specific coverage gaps, missing edge cases, undertested error paths, and weak assertions.
@@ -11,7 +11,7 @@
 ## Prerequisites
 
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
-- **Ollama** running locally with a code-capable model loaded
+- **A local LLM backend** reachable with a code-capable model (vLLM `/v1` gateway by default; `LLM_BACKEND=ollama` for native Ollama)
 - **`llm_common.ps1`** -- shared module at `Common/llm_common.ps1`
 - **`.env` file** -- at `Common/.env` (or custom path via `-EnvFile`)
 - **Prompt files** in the `LocalLLMDebug/` directory:
@@ -103,9 +103,9 @@ If the synthesis call fails, the script writes a fallback document containing al
 | `CODEBASE_DESC`                         | from preset             | Human-readable codebase description for LLM system prompts.                                                             |
 | `DEFAULT_FENCE`                         | from preset             | Code fence language identifier.                                                                                         |
 | `MAX_FILE_LINES`                        | `800`                   | Files longer than this are truncated before sending to the LLM.                                                         |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Ollama API endpoint.                                                                                                    |
-| `LLM_MODEL`                             | blank (→ `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`) | Model name. Resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` covers the ~10k synth-pass window.              |
-| `LLM_DEFAULT_MODEL`                     | `qwen3-coder:30b`       | Universal fallback used when `LLM_MODEL` is blank/unset.                                                                |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.              |
+| `LLM_MODEL`                             | blank (→ DEFAULT)       | Model id, resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` (~10k synth window) applies on ollama only; vllm uses per-alias context. |
+| `LLM_DEFAULT_MODEL`                     | `qwen3-coder-30b`       | Universal fallback when `LLM_MODEL` is blank/unset. vLLM served-name (`qwen3-coder:30b` tag on the ollama backend).     |
 | `LLM_TEMPERATURE`                       | `0.1`                   | LLM sampling temperature.                                                                                               |
 | `LLM_TIMEOUT`                           | `120`                   | Base per-request timeout in seconds. The synthesis call uses `3x` this value.                                           |
 | `TESTGAP_FILE_TOKENS`                   | `700`                   | Max output tokens per file analysis call (Pass 1).                                                                      |

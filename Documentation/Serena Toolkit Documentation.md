@@ -1,6 +1,6 @@
 # Architecture Analysis Toolkit -- Technical Reference
 
-Complete technical reference for the architecture documentation pipeline using a local Ollama LLM server with optional clangd LSP. The toolkit lives at `..\LocalLLM_Pipeline\LocalLLMAnalysis\` (sibling of your target project); scripts are run from your target project's root.
+Complete technical reference for the architecture documentation pipeline using a local LLM server with optional clangd LSP. The backend is selected by `LLM_BACKEND` in `Common/.env`: `vllm` (default) routes through the LLMConfig OpenAI `/v1` gateway, or `ollama` uses a native Ollama server. The toolkit lives at `..\LocalLLM_Pipeline\LocalLLMAnalysis\` (sibling of your target project); scripts are run from your target project's root.
 
 ---
 
@@ -24,11 +24,11 @@ Complete technical reference for the architecture documentation pipeline using a
 
 Multi-pass architecture documentation pipeline for C++ game engine codebases, combining:
 
-- **Local LLM** (Ollama) for per-file and subsystem-level analysis
+- **Local LLM** (vLLM via the LLMConfig gateway by default, or the ollama backend) for per-file and subsystem-level analysis
 - **clangd** (optional) for ground-truth symbol definitions and cross-file references
 - **Text processing** for cross-references, call graphs, and targeted context
 
-Designed for consumer GPU hardware (24 GB+ VRAM) with coder-tuned models like `qwen3-coder:30b` at a per-request `num_ctx` of 49152 tokens (configurable via `LLM_ANALYSIS_NUM_CTX`).
+Designed for consumer GPU hardware (24 GB+ VRAM) with coder-tuned models like the default `qwen3-coder-30b` (vLLM served-name; the gateway auto-loads it onto the GPU on first request). On the default vllm backend the context window is fixed per alias at serve time, so `LLM_ANALYSIS_NUM_CTX`/`num_ctx` are ignored; they apply only on the ollama backend (where the tag is `qwen3-coder:30b`).
 
 ---
 
@@ -37,10 +37,10 @@ Designed for consumer GPU hardware (24 GB+ VRAM) with coder-tuned models like `q
 | Item             | Detail                                                                                |
 |------------------|---------------------------------------------------------------------------------------|
 | OS               | Windows 11                                                                            |
-| GPU              | RTX 3090 or better (24 GB VRAM; Analysis at `num_ctx=49152` uses ~6-8 GB KV cache)    |
-| LLM Server       | Ollama (`LLM_ENDPOINT`, default `http://192.168.1.40:11434`)                         |
-| Model            | `qwen3-coder:30b` (configurable via `LLM_MODEL`)                                      |
-| Context window   | 49152 tokens per Analysis request (via `LLM_ANALYSIS_NUM_CTX`, promoted into `LLM_NUM_CTX` at script startup) |
+| GPU              | RTX 3090 or better (24 GB VRAM)                                                       |
+| LLM Server       | vLLM via the LLMConfig `/v1` gateway (default, `http://192.168.1.40:11430`); or the ollama backend (`http://192.168.1.40:11434`). Selected by `LLM_BACKEND`; endpoint via `LLM_ENDPOINT` / `LLM_HOST`. |
+| Model            | `qwen3-coder-30b` (vLLM served-name; configurable via `LLM_MODEL`). On the ollama backend use the tag `qwen3-coder:30b`. |
+| Context window   | Fixed per alias at serve time on the default vllm backend (`LLM_ANALYSIS_NUM_CTX`/`num_ctx` ignored). On the ollama backend, 49152 tokens per Analysis request (via `LLM_ANALYSIS_NUM_CTX`, promoted into `LLM_NUM_CTX` at script startup). |
 | Target codebase  | Any language with a preset (Python, C/C++, C#, Rust, etc.)                            |
 | Toolkit location | `LocalLLM_Pipeline/LocalLLMAnalysis/` subdirectory                                         |
 | Config           | `LocalLLM_Pipeline/Common/.env` (shared with Debug and Coding pipelines)                   |
@@ -69,9 +69,9 @@ All LLM scripts run synchronously (single-threaded, GPU bound).
 
 ### API
 
-`Invoke-LocalLLM` in `llm_common.ps1` calls Ollama's OpenAI-compatible endpoint at `POST {endpoint}/v1/chat/completions`. Retry logic (3 attempts, 5s delay), empty response validation, UTF-8 encoding.
+`Invoke-LocalLLM` in `llm_common.ps1` calls the OpenAI-compatible endpoint at `POST {endpoint}/v1/chat/completions`. On the default vllm backend this is the LLMConfig `/v1` gateway (which auto-loads the requested served-name model on first request); on the ollama backend it is Ollama's OpenAI-compatible endpoint. Retry logic (3 attempts, 5s delay), empty response validation, UTF-8 encoding.
 
-`Get-LLMEndpoint` builds the URL from `LLM_HOST` + `LLM_PORT` in `.env`.
+`Get-LLMBackend` selects the backend from `LLM_BACKEND`, and `Get-LLMEndpoint` builds the URL (vllm gateway `:11430`, or ollama `LLM_HOST` + `LLM_PORT`) from `.env`.
 
 ### Architecture
 
@@ -205,10 +205,11 @@ For the C&C Remastered Collection source release, the script finds two `.vcxproj
 ### `LocalLLM_Pipeline/Common/.env` (shared with Debug and Coding pipelines)
 
 ```env
-LLM_ENDPOINT=http://192.168.1.40:11434
-LLM_MODEL=qwen3-coder:30b
-LLM_NUM_CTX=32768
-LLM_ANALYSIS_NUM_CTX=49152
+LLM_BACKEND=vllm                          # vllm (default, LLMConfig /v1 gateway) or ollama
+LLM_ENDPOINT=http://192.168.1.40:11430    # vllm gateway; for ollama use :11434
+LLM_MODEL=qwen3-coder-30b                 # vLLM served-name; on ollama use qwen3-coder:30b
+LLM_NUM_CTX=32768                         # ollama backend only; ignored on vllm
+LLM_ANALYSIS_NUM_CTX=49152               # ollama backend only; ignored on vllm
 LLM_TEMPERATURE=0.1
 LLM_MAX_TOKENS=800
 LLM_TIMEOUT=300
@@ -255,7 +256,7 @@ Diagnostics:
 
 ### Local LLM
 
-1. **14B models produce good per-file docs with aggressive context management.** Cap source at 800 lines, simplified prompts, compressed LSP. Measured ~0.11 files/sec on an RTX 3090 with `qwen2.5-coder:14b`. The current default `qwen3-coder:30b` at `num_ctx=49152` is slower per call but handles larger context injections without truncation.
+1. **14B models produce good per-file docs with aggressive context management.** Cap source at 800 lines, simplified prompts, compressed LSP. Measured ~0.11 files/sec on an RTX 3090 with a 14B coder model (historically `qwen2.5-coder:14b` on the ollama backend). The current default `qwen3-coder-30b` (vLLM served-name, served at a large fixed context per alias) is slower per call but handles larger context injections without truncation.
 
 2. **Single-threaded is correct for local GPU inference.** One RTX 3090 = one inference at a time. Removing parallelism simplifies code with no throughput penalty.
 

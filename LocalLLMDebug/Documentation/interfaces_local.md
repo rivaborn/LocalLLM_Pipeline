@@ -2,14 +2,14 @@
 
 ## Purpose
 
-`interfaces_local.ps1` extracts and synthesises interface contract documentation for every public class and function in a codebase using a local LLM (via Ollama). It operates as a two-pass pipeline. In Pass 1, each source file is individually analysed to extract precise contracts -- preconditions, postconditions, exceptions raised, silent failure modes, thread safety notes, and resource lifecycle information. In Pass 2, all per-module contracts are combined into a single synthesis call that produces a consolidated reference document with a quick-reference table, cross-module obligations, and a silent-failure inventory.
+`interfaces_local.ps1` extracts and synthesises interface contract documentation for every public class and function in a codebase using the local LLM (vLLM via the LLMConfig gateway by default; selectable to the `ollama` backend via `LLM_BACKEND`). It operates as a two-pass pipeline. In Pass 1, each source file is individually analysed to extract precise contracts -- preconditions, postconditions, exceptions raised, silent failure modes, thread safety notes, and resource lifecycle information. In Pass 2, all per-module contracts are combined into a single synthesis call that produces a consolidated reference document with a quick-reference table, cross-module obligations, and a silent-failure inventory.
 
 The output serves as a machine-readable and human-readable contract reference that developers and AI coding agents can use to understand module boundaries, spot violations at call sites, and identify hidden failure modes that are not surfaced by the source code alone.
 
 ## Prerequisites
 
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
-- **Ollama** running locally with a code-capable model loaded
+- **A local LLM backend** reachable with a code-capable model (vLLM `/v1` gateway by default; `LLM_BACKEND=ollama` for native Ollama)
 - **`llm_common.ps1`** -- shared module at `Common/llm_common.ps1`
 - **`.env` file** -- at `Common/.env` (or custom path via `-EnvFile`)
 - **Prompt files** in the `LocalLLMDebug/` directory:
@@ -89,9 +89,9 @@ If the synthesis call fails, the script writes a fallback document containing al
 | `CODEBASE_DESC`                         | from preset             | Human-readable codebase description for LLM system prompts.                                                                                                         |
 | `DEFAULT_FENCE`                         | from preset             | Code fence language identifier.                                                                                                                                     |
 | `MAX_FILE_LINES`                        | `800`                   | Files longer than this are truncated before sending to the LLM.                                                                                                     |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Ollama API endpoint.                                                                                                                                                |
-| `LLM_MODEL`                             | blank (→ `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`) | Model name. Resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` covers the ~10k synth-pass window.         |
-| `LLM_DEFAULT_MODEL`                     | `qwen3-coder:30b`       | Universal fallback used when `LLM_MODEL` is blank/unset.                                                                                                            |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Backend base URL, resolved by `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.                                                  |
+| `LLM_MODEL`                             | blank (→ DEFAULT)       | Model id, resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` (~10k synth window) applies on the ollama backend only; vllm uses per-alias context. |
+| `LLM_DEFAULT_MODEL`                     | `qwen3-coder-30b`       | Universal fallback when `LLM_MODEL` is blank/unset. vLLM served-name (`qwen3-coder:30b` tag on the ollama backend).                                                  |
 | `LLM_TEMPERATURE`                       | `0.1`                   | LLM sampling temperature.                                                                                                                                           |
 | `LLM_TIMEOUT`                           | `120`                   | Base per-request timeout in seconds. The synthesis call uses `3x` this value.                                                                                       |
 | `INTERFACES_EXTRACT_TOKENS`             | `700`                   | Max output tokens per extraction call (Pass 1).                                                                                                                     |

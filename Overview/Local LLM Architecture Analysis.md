@@ -1,6 +1,6 @@
 # Architecture Analysis Pipeline
 
-The `LocalLLMAnalysis/` directory contains a multi-pass documentation pipeline that generates architecture documentation for game engine codebases. It uses a local Ollama LLM server for analysis and optionally clangd for semantic symbol extraction. All scripts run from the repository root.
+The `LocalLLMAnalysis/` directory contains a multi-pass documentation pipeline that generates architecture documentation for game engine codebases. It uses a local LLM for analysis -- by default vLLM behind the LLMConfig OpenAI `/v1` gateway (`LLM_BACKEND=vllm`), with native Ollama selectable via `LLM_BACKEND=ollama` -- and optionally clangd for semantic symbol extraction. All scripts run from the repository root.
 
 ---
 
@@ -125,8 +125,9 @@ All configuration lives in `LocalLLMAnalysis/.env`. Key settings:
 
 | Setting              | Purpose                                             |
 |----------------------|-----------------------------------------------------|
-| `LLM_HOST` / `PORT`  | Ollama server address                               |
-| `LLM_MODEL`          | Model name (e.g. `qwen2.5-coder:14b`)              |
+| `LLM_BACKEND`        | `vllm` (default, LLMConfig `/v1` gateway) or `ollama` |
+| `LLM_HOST` / `PORT`  | Backend host (gateway `:11430`; Ollama `:11434`)    |
+| `LLM_MODEL`          | Model id (vllm served-name e.g. `qwen3-coder-30b`; ollama tag e.g. `qwen3-coder:30b`) |
 | `PRESET`             | Codebase type (`cnc`, `quake`, `unreal`, `godot`, etc.) |
 | `MAX_FILE_LINES`     | Source truncation limit (default 800)               |
 | `SKIP_TRIVIAL`       | Skip generated/trivial files (default on)           |
@@ -156,6 +157,6 @@ architecture/
 ## Key Design Decisions
 
 - **Single-threaded LLM calls.** The local GPU handles one inference at a time, so parallelism is at the script level (text-processing steps run fast between LLM steps), not within LLM calls.
-- **Aggressive context management.** Source is truncated, LSP data is compressed, output budgets are adaptive, and overview synthesis uses extracted headings only -- all to fit within the local LLM's ~32K token context window.
+- **Aggressive context management.** Source is truncated, LSP data is compressed, output budgets are adaptive, and overview synthesis uses extracted headings only -- all to fit within the local LLM's context window (on vLLM the window is fixed per served-name alias at serve time; on the `ollama` backend `LLM_NUM_CTX` applies per request).
 - **Full resumability.** Every LLM-calling script uses SHA1 hashing to skip files that haven't changed. Interrupt with Ctrl+C and re-run to continue where you left off.
-- **No LLM lock-in.** The pipeline talks to any Ollama-hosted model via the OpenAI-compatible API. Swap models by changing `LLM_MODEL` in `.env`.
+- **No LLM lock-in.** The pipeline talks to the LLMConfig `/v1` gateway (vllm) or any Ollama-hosted model (ollama backend) via the OpenAI-compatible API. Swap models by changing `LLM_MODEL` in `.env`.

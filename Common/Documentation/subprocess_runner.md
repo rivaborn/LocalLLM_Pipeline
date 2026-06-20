@@ -145,11 +145,11 @@ from _pipeline.subprocess_runner import powershell_cmd, run_command
 cmd = powershell_cmd(
     Path("C:/Coding/LocalLLM_Pipeline/LocalLLMAnalysis/Analyze-Step1.ps1"),
     "-TargetDir", "C:/Code/MyProject",
-    "-Model", "qwen2.5-coder:14b",
+    "-Model", "qwen3-coder-30b",
 )
 # -> ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
 #     "-File", "C:\\Coding\\...\\Analyze-Step1.ps1",
-#     "-TargetDir", "C:\\Code\\MyProject", "-Model", "qwen2.5-coder:14b"]
+#     "-TargetDir", "C:\\Code\\MyProject", "-Model", "qwen3-coder-30b"]
 
 run_command(cmd, cwd=Path("C:/Code/MyProject"), logger=logger)
 ```

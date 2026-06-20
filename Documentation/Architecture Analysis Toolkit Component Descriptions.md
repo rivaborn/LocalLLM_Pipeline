@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-Architecture documentation toolkit for codebases of any language with a preset (Python, C/C++, C#, Rust, etc.). Generates per-file and subsystem-level architecture docs using a local Ollama LLM server, with optional LSP-powered semantic analysis via clangd.
+Architecture documentation toolkit for codebases of any language with a preset (Python, C/C++, C#, Rust, etc.). Generates per-file and subsystem-level architecture docs using a local LLM backend, with optional LSP-powered semantic analysis via clangd.
 
-**LLM Server:** Ollama at `LLM_HOST:LLM_PORT` (default `192.168.1.40:11434`), shared with the Debug and Coding pipelines.
-**Model:** `qwen3-coder:30b` at per-request `num_ctx=49152` (configurable via `LLM_MODEL` + `LLM_ANALYSIS_NUM_CTX` in `LocalLLM_Pipeline/Common/.env`).
+**LLM backend:** Selected by `LLM_BACKEND` in `LocalLLM_Pipeline/Common/.env` and shared with the Debug and Coding pipelines. Default `vllm` -> the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.40:11430/v1` (auto-loads the requested model on first request); `ollama` -> native Ollama at `http://192.168.1.40:11434`.
+**Model:** the served-name `qwen3-coder-30b` on the default vllm backend (or the tag `qwen3-coder:30b` on the ollama backend), via `LLM_MODEL` -> `LLM_DEFAULT_MODEL`. On vllm the context is fixed per alias at serve time (65536); on the ollama backend it runs at per-request `num_ctx=49152` (configurable via `LLM_ANALYSIS_NUM_CTX`).
 
 ## Directory Layout
 
@@ -40,10 +40,11 @@ The `.env` file and `llm_common.ps1` live in `..\LocalLLM_Pipeline\Common\` and 
 
 ## Key Configuration (`LocalLLM_Pipeline/Common/.env`)
 
-- `LLM_ENDPOINT` (or `LLM_HOST` + `LLM_PORT`) -- Ollama server address (default `http://192.168.1.40:11434`)
-- `LLM_MODEL` -- model name (default `qwen3-coder:30b`)
-- `LLM_NUM_CTX` -- per-request context window (default `32768`). When > 0, `Invoke-LocalLLM` routes through Ollama's native `/api/chat`.
-- `LLM_ANALYSIS_NUM_CTX` -- Analysis-specific window (default `49152`). The three LLM-calling Analysis scripts promote this value into `LLM_NUM_CTX` at load time so Invoke-LocalLLM picks it up without callsite changes.
+- `LLM_BACKEND` -- `vllm` (default, LLMConfig `/v1` gateway) or `ollama` (native `/api/chat`)
+- `LLM_ENDPOINT` (or `LLM_HOST` + `LLM_PORT`) -- backend base URL. Default host `192.168.1.40`; vllm uses gateway port `11430`, ollama uses `LLM_PORT` (`11434`).
+- `LLM_MODEL` -- model name (default via `LLM_DEFAULT_MODEL`): served-name `qwen3-coder-30b` on vllm, tag `qwen3-coder:30b` on ollama
+- `LLM_NUM_CTX` -- per-request context window (default `32768`), **ollama backend only**. When > 0, `Invoke-LocalLLM` routes through Ollama's native `/api/chat`. Ignored on vllm, which fixes context per alias at serve time.
+- `LLM_ANALYSIS_NUM_CTX` -- Analysis-specific window (default `49152`), **ollama backend only**. The three LLM-calling Analysis scripts promote this value into `LLM_NUM_CTX` at load time so Invoke-LocalLLM picks it up without callsite changes. Inert on vllm.
 - `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT` -- inference parameters
 - `PRESET` -- `python`, `generals`/`cnc`/`sage`, `quake`, `unreal`, `godot`, `unity`, `source`, `rust`
 - `INCLUDE_EXT_REGEX` / `EXCLUDE_DIRS_REGEX` -- preset overrides

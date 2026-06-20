@@ -26,38 +26,44 @@ of the codebase before starting a debugging session.
 
 ## 1. Prerequisites
 
-### Ollama server
+### Local LLM backend
 
-All scripts call the local LLM via the Ollama OpenAI-compatible API. The server must be running
-and reachable before any script is invoked.
+All scripts call the local LLM via an OpenAI-compatible API. The backend is
+selected by `LLM_BACKEND` in `Common/.env`: `vllm` (default) routes to the
+LLMConfig `/v1` gateway, or `ollama` uses a native Ollama server. The backend
+must be running and reachable before any script is invoked.
 
 ```
-# Pull the model (first time only)
-ollama pull qwen3-coder:30b        # or qwen2.5-coder:14b on smaller GPUs
+# Default (vllm): verify the LLMConfig gateway is up.
+# It auto-loads the requested served-name model (e.g. qwen3-coder-30b) on first request.
+curl http://192.168.1.40:11430/v1/models
 
-# Verify the server is up
+# ollama backend: pull the model (first time only), then verify the server.
+ollama pull qwen3-coder:30b        # or qwen2.5-coder:14b on smaller GPUs
 curl http://192.168.1.40:11434/api/tags
 ```
 
 See **[Choosing a model](#choosing-a-model)** below for sizing and VRAM
-considerations. A per-request `num_ctx=32768` is passed via the native Ollama
-`/api/chat` endpoint, so no custom `Modelfile` is needed.
+considerations. On the default `vllm` backend the context window is fixed per
+alias at serve time. On the `ollama` backend a per-request `num_ctx=32768` is
+passed via the native `/api/chat` endpoint, so no custom `Modelfile` is needed.
 
 ### Configuration
 
 All scripts read `LocalLLM_Pipeline/Common/.env`. Critical keys:
 
-| Key                  | Current value                     | Purpose                                           |
-|----------------------|-----------------------------------|---------------------------------------------------|
-| `LLM_ENDPOINT`       | (unset) / derived from HOST+PORT  | Full Ollama URL; when set, wins over HOST+PORT    |
-| `LLM_HOST`           | `192.168.1.40`                   | Ollama server host (fallback if `LLM_ENDPOINT` unset) |
-| `LLM_PORT`           | `11434`                           | Ollama server port                                |
-| `LLM_MODEL`          | `qwen3-coder:30b`                 | Analysis-script model                             |
-| `LLM_NUM_CTX`        | `32768`                           | Per-request context window (native `/api/chat`)   |
-| `LLM_TIMEOUT`        | `300`                             | Per-request timeout (seconds)                     |
-| `PRESET`             | `python`                          | File pattern preset (defined in `llm_common.ps1`) |
-| `INCLUDE_EXT_REGEX`  | `\.(py\|toml)$`                   | Files to include                                  |
-| `EXCLUDE_DIRS_REGEX` | `(\.git\|__pycache__\|\.venv\|…)` | Directories to skip                               |
+| Key                  | Current value                       | Purpose                                                              |
+|----------------------|-------------------------------------|---------------------------------------------------------------------|
+| `LLM_BACKEND`        | `vllm`                              | `vllm` (default, LLMConfig `/v1` gateway) or `ollama`               |
+| `LLM_ENDPOINT`       | (unset) / derived from HOST+PORT    | Full backend URL; when set, wins over HOST+PORT                     |
+| `LLM_HOST`           | `192.168.1.40`                     | Backend host. vllm -> `:11430`; ollama -> `:LLM_PORT`              |
+| `LLM_PORT`           | `11434`                             | Ollama server port (ollama backend only)                           |
+| `LLM_MODEL`          | `qwen3-coder-30b`                   | Analysis-script model (vLLM served-name; ollama tag `qwen3-coder:30b`) |
+| `LLM_NUM_CTX`        | `32768`                             | Per-request context window via native `/api/chat` (ollama only; ignored on vllm) |
+| `LLM_TIMEOUT`        | `300`                               | Per-request timeout (seconds)                                       |
+| `PRESET`             | `python`                            | File pattern preset (defined in `llm_common.ps1`)                  |
+| `INCLUDE_EXT_REGEX`  | `\.(py\|toml)$`                     | Files to include                                                   |
+| `EXCLUDE_DIRS_REGEX` | `(\.git\|__pycache__\|\.venv\|…)`   | Directories to skip                                               |
 
 `Common/.env` also defines `LLM_PLANNING_MODEL` / `LLM_PLANNING_NUM_CTX` (used
 by `Arch_Coding_Pipeline.ps1 -Local`) and `LLM_AIDER_MODEL` /
@@ -99,18 +105,21 @@ injecting `architecture.md` gives it a pre-synthesized scaffold to anchor to.
   `dataflow_local.ps1` has a similar per-file cache for the extract pass, but
   the synth pass (which consumes `architecture.md`) is not cached, so the
   integration takes effect immediately there.
-- **Token budget.** At `LLM_NUM_CTX=32768` the xref and architecture
-  injections add 2-10K tokens on top of the existing 7-10K per-file prompts.
-  Large codebases may approach the window ceiling. If you see truncation
-  warnings, either bump `LLM_NUM_CTX` (see VRAM caveat below) or slim the
-  injected artifact (trim `xref_index.md` to the subsystem you're reviewing).
-- **KV cache / VRAM.** Raising `LLM_NUM_CTX` is not free. At `qwen3-coder:30b`
-  (q4_K_M, ~20 GB weights), KV cache on a 24 GB card costs roughly +1 GB per
-  8K of `num_ctx`. The jump from 32768 → 49152 (Analysis default) adds ~2 GB;
-  going further to 65536 will likely force partial CPU offload and slow
-  inference 3-4×. Verify with `ollama ps` — `PROCESSOR` must read `100% GPU`
-  for full-speed inference. If you see anything else, drop `num_ctx` back
-  down or switch to a smaller model.
+- **Token budget.** The xref and architecture injections add 2-10K tokens on
+  top of the existing 7-10K per-file prompts. Large codebases may approach the
+  window ceiling. If you see truncation warnings, slim the injected artifact
+  (trim `xref_index.md` to the subsystem you're reviewing) — or, on the
+  `ollama` backend at `LLM_NUM_CTX=32768`, bump `LLM_NUM_CTX` (see VRAM caveat
+  below). On the default `vllm` backend the context is fixed per alias at serve
+  time, so trimming the injection is the only lever.
+- **KV cache / VRAM (ollama backend).** Raising `LLM_NUM_CTX` is not free. At
+  the `qwen3-coder:30b` tag (q4_K_M, ~20 GB weights), KV cache on a 24 GB card
+  costs roughly +1 GB per 8K of `num_ctx`. The jump from 32768 → 49152
+  (Analysis default) adds ~2 GB; going further to 65536 will likely force
+  partial CPU offload and slow inference 3-4×. Verify with `ollama ps` —
+  `PROCESSOR` must read `100% GPU` for full-speed inference. If you see anything
+  else, drop `num_ctx` back down or switch to a smaller model. (On `vllm`, VRAM
+  is fixed by how the alias was served.)
 
 ### Working directory
 
@@ -127,25 +136,31 @@ cd LocalLLMDebug
 
 ### Choosing a model
 
-The analysis scripts default to **`qwen3-coder:30b`** with a per-request
-`num_ctx=32768`. This pair is set in `LocalLLM_Pipeline/Common/.env`:
+The analysis scripts default to the coder model **`qwen3-coder-30b`** on the
+default `vllm` backend (a vLLM served-name; the gateway auto-loads it onto the
+GPU on first request). On the `ollama` backend the equivalent is the tag
+`qwen3-coder:30b` with a per-request `num_ctx=32768`. This is set in
+`LocalLLM_Pipeline/Common/.env`:
 
 ```ini
-LLM_MODEL=qwen3-coder:30b
-LLM_NUM_CTX=32768
+LLM_BACKEND=vllm            # vllm (default) or ollama
+LLM_MODEL=qwen3-coder-30b   # vLLM served-name; on ollama use tag qwen3-coder:30b
+LLM_NUM_CTX=32768           # ollama backend only; ignored on vllm
 ```
 
-`Invoke-LocalLLM` detects `LLM_NUM_CTX > 0` and routes requests through the
-native Ollama `/api/chat` endpoint with `options.num_ctx` set per request, so
-every call gets the full window without any pre-registered `Modelfile` variant.
+On the default `vllm` backend the context window is fixed per alias at serve
+time, so `LLM_NUM_CTX` is ignored. On the `ollama` backend, `Invoke-LocalLLM`
+detects `LLM_NUM_CTX > 0` and routes requests through the native `/api/chat`
+endpoint with `options.num_ctx` set per request, so every call gets the full
+window without any pre-registered `Modelfile` variant.
 
-#### Per-request `num_ctx` vs custom Modelfile
+#### Per-request `num_ctx` vs custom Modelfile (ollama backend)
 
-The older approach was to pre-register custom models like
-`qwen2.5-coder:32b-8k` / `:32b-12k` via `Modelfile` (`PARAMETER num_ctx 8192`)
-so each script could pick the right pre-baked window. That is obsolete. The
-current scripts pass `num_ctx` per request, so a single base model tag covers
-every script. You only need:
+This applies only to the `ollama` backend. The older approach was to
+pre-register custom models like `qwen2.5-coder:32b-8k` / `:32b-12k` via
+`Modelfile` (`PARAMETER num_ctx 8192`) so each script could pick the right
+pre-baked window. That is obsolete. The current scripts pass `num_ctx` per
+request, so a single base model tag covers every script. You only need:
 
 ```powershell
 ollama pull qwen3-coder:30b
@@ -154,13 +169,13 @@ ollama pull qwen3-coder:30b
 If your server already has older `32b-8k` / `32b-12k` tags from previous
 documentation, they still work — just set `LLM_MODEL` to whichever tag you
 want and leave `LLM_NUM_CTX` unset (or set it to 0) to fall back to the
-legacy `/v1/chat/completions` path with no per-request override.
+`/v1/chat/completions` path with no per-request override.
 
-#### VRAM considerations
+#### VRAM considerations (ollama backend)
 
-KV cache scales roughly linearly with context length. On a 24 GB card at
-`num_ctx=32768`, expect ~5-8 GB of KV cache on top of 17-20 GB of weights.
-Verify with:
+On the `ollama` backend, KV cache scales roughly linearly with context length.
+On a 24 GB card at `num_ctx=32768`, expect ~5-8 GB of KV cache on top of
+17-20 GB of weights. Verify with:
 
 ```powershell
 ollama ps    # PROCESSOR column should say "100% GPU"
@@ -171,11 +186,14 @@ partially offloaded and inference slows 3-4×. Either drop `LLM_NUM_CTX` (e.g.
 16384 or 12288) or switch to a smaller model:
 
 ```ini
-# Smaller GPU config (<24 GB)
+# Smaller GPU config (<24 GB, ollama backend)
 LLM_MODEL=qwen2.5-coder:14b
 LLM_NUM_CTX=32768            # 14b is small enough that 32k fits
 LLM_TIMEOUT=180
 ```
+
+(On the default `vllm` backend, VRAM and context are determined by how the
+alias was served, not by these knobs.)
 
 The 14b model finds roughly 80% of what the 30b finds in practice; it's a real
 reviewer, not an agentic model, and it converges cleanly on the iterative
@@ -210,11 +228,14 @@ Approximate tokens per call for an 800-line source file (`MAX_FILE_LINES=800`):
 | `testgap_local.ps1` (per-file)               | ~7500     | 700        | ~8200        |
 | `testgap_local.ps1` (synthesis)              | ~10500    | 1800       | ~12300       |
 
-All comfortably under `num_ctx=32768`. `bughunt_iterative_local.ps1`,
-`interfaces_local.ps1`, and `testgap_local.ps1` resolve their model
-through `Get-LLMModel -RoleKey 'LLM_MODEL'` (chains `LLM_MODEL` →
-`LLM_DEFAULT_MODEL` → fallback); per-request `num_ctx` covers the
-high-context synth passes so no separate `LLM_MODEL_HIGH_CTX` is needed.
+All comfortably under a 32768-token window — within the vllm aliases' fixed
+context and within `num_ctx=32768` on the ollama backend.
+`bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and `testgap_local.ps1`
+resolve their model through `Get-LLMModel -RoleKey 'LLM_MODEL'` (chains
+`LLM_MODEL` → `LLM_DEFAULT_MODEL` → fallback). On the default `vllm` backend the
+alias's fixed context covers the high-context synth passes; on `ollama`
+per-request `num_ctx` does. Either way, no separate `LLM_MODEL_HIGH_CTX` is
+needed.
 
 ---
 
@@ -1243,12 +1264,13 @@ All keys are in `LocalLLM_Pipeline/Common/.env`. Keys not present fall back to t
 
 | Key                   | Default             | Used by                                                                                                                                                   |
 |-----------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `LLM_BACKEND`         | `vllm`              | All scripts. `vllm` -> LLMConfig `/v1` gateway (`:11430`); `ollama` -> native Ollama (`:11434`).                                                          |
 | `LLM_ENDPOINT`        | (unset)             | All scripts. When set, wins over `LLM_HOST` + `LLM_PORT`.                                                                                                 |
-| `LLM_HOST`            | `192.168.1.40`     | All scripts (fallback when `LLM_ENDPOINT` unset)                                                                                                          |
-| `LLM_PORT`            | `11434`             | All scripts                                                                                                                                               |
-| `LLM_DEFAULT_MODEL`   | `qwen3-coder:30b`   | Universal fallback. Every role-specific key below chains to this when blank/unset (via `cfg.resolve_model` / `Get-LLMModel`).                             |
+| `LLM_HOST`            | `192.168.1.40`     | All scripts (fallback when `LLM_ENDPOINT` unset). vllm -> `:11430`; ollama -> `:LLM_PORT`.                                                                |
+| `LLM_PORT`            | `11434`             | All scripts (ollama backend only)                                                                                                                         |
+| `LLM_DEFAULT_MODEL`   | `qwen3-coder-30b`   | Universal fallback. Every role-specific key below chains to this when blank/unset (via `cfg.resolve_model` / `Get-LLMModel`). vLLM served-name; ollama tag `qwen3-coder:30b`. |
 | `LLM_MODEL`           | blank (→ DEFAULT)   | All debug + analysis scripts                                                                                                                              |
-| `LLM_NUM_CTX`         | `32768`             | All scripts via `Invoke-LocalLLM`. When > 0, routes requests through native `/api/chat` with `options.num_ctx`. When 0 or unset, uses legacy OpenAI-compat path. |
+| `LLM_NUM_CTX`         | `32768`             | ollama backend only. `Invoke-LocalLLM` routes through native `/api/chat` with `options.num_ctx` when > 0; when 0/unset uses the `/v1` path. Ignored on vllm (context fixed per alias). |
 | `LLM_TEMPERATURE`     | `0.1`               | All scripts                                                                                                                                               |
 | `LLM_TIMEOUT`         | `120` / `300`       | All scripts (`bughunt_iterative_local.ps1` defaults to 300 for long fix calls)                                                                            |
 | `PRESET`              | `''`                | All scripts (selects file patterns)                                                                                                                       |
@@ -1282,7 +1304,7 @@ All keys are in `LocalLLM_Pipeline/Common/.env`. Keys not present fall back to t
 | `BUGHUNT_DIVERGE_AFTER`   | `2`     | Abort as `DIVERGING` after N consecutive non-improving iterations        |
 
 The effective bloat limit is `max(orig × BUGHUNT_BLOAT_RATIO, orig + BUGHUNT_BLOAT_MIN_SLACK)`
-lines. Defaults are tuned against `qwen2.5-coder:32b`, where legitimate fixes hover at 25–35%
+lines. Defaults are tuned against a 32B coder model (historically the `qwen2.5-coder:32b` ollama tag), where legitimate fixes hover at 25–35%
 growth and hallucinated bulk is 100%+ — `1.5` (50%) sits comfortably between. Tighten to
 `1.25` if you're running a weaker model that hallucinates aggressively, or relax to `2.0`
 if you're running a stronger reviewer that legitimately restructures more. Set

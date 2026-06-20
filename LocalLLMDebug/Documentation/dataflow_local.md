@@ -2,14 +2,14 @@
 
 ## Purpose
 
-`dataflow_local.ps1` generates a debugging-focused data flow trace document for a codebase using a local LLM (via Ollama). It operates as a two-pass pipeline. In Pass 1, each source file is individually sent to the LLM, which extracts the file's "pipeline interface" -- the types it defines, what data it produces and consumes, threading notes, and its error surface. In Pass 2, all per-file extractions are combined into a single synthesis prompt, and the LLM produces an end-to-end data flow trace document with handoff points between modules.
+`dataflow_local.ps1` generates a debugging-focused data flow trace document for a codebase using the local LLM (vLLM via the LLMConfig gateway by default; selectable to the `ollama` backend via `LLM_BACKEND`). It operates as a two-pass pipeline. In Pass 1, each source file is individually sent to the LLM, which extracts the file's "pipeline interface" -- the types it defines, what data it produces and consumes, threading notes, and its error surface. In Pass 2, all per-file extractions are combined into a single synthesis prompt, and the LLM produces an end-to-end data flow trace document with handoff points between modules.
 
 The resulting `DATA_FLOW.md` document is designed to be consumed by developers or AI coding agents when debugging cross-module issues, as it maps exactly how data moves through the system, where type transformations happen, and where error propagation can break.
 
 ## Prerequisites
 
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
-- **Ollama** running locally with a code-capable model loaded
+- **A local LLM backend** reachable with a code-capable model (vLLM `/v1` gateway by default; `LLM_BACKEND=ollama` for native Ollama)
 - **`llm_common.ps1`** -- shared module at `Common/llm_common.ps1`
 - **`.env` file** -- at `Common/.env` (or custom path via `-EnvFile`)
 - **Prompt files** in the `LocalLLMDebug/` directory:
@@ -88,8 +88,8 @@ If the synthesis call fails, the script writes a fallback document containing al
 | `CODEBASE_DESC`                         | from preset         | Human-readable codebase description for LLM system prompts.                                            |
 | `DEFAULT_FENCE`                         | from preset         | Code fence language identifier.                                                                        |
 | `MAX_FILE_LINES`                        | `800`               | Files longer than this are truncated before sending to the LLM.                                        |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Ollama API endpoint.                                                                                   |
-| `LLM_MODEL`                             | `qwen2.5-coder:14b` | Model name for both extraction and synthesis calls.                                                    |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`. |
+| `LLM_MODEL`                             | `qwen3-coder-30b`   | Model id for extraction + synthesis. vLLM served-name on default (`qwen3-coder:30b` tag on ollama).    |
 | `LLM_TEMPERATURE`                       | `0.1`               | LLM sampling temperature.                                                                              |
 | `LLM_TIMEOUT`                           | `120`               | Base per-request timeout in seconds. The synthesis call uses `3x` this value.                          |
 | `DATAFLOW_EXTRACT_TOKENS`               | `400`               | Max output tokens per extraction call (Pass 1). Kept low since extractions are compact summaries.      |

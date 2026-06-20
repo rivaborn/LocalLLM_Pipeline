@@ -89,9 +89,10 @@ $maxFileLines = [int](Cfg 'MAX_FILE_LINES' '800')
 
 $llmEndpoint      = Get-LLMEndpoint
 # Model resolution via Get-LLMModel:
-#   LLM_MODEL -> LLM_DEFAULT_MODEL -> 'qwen3-coder:30b' fallback.
-# (The former LLM_MODEL_HIGH_CTX preference is retired; per-request num_ctx
-# handles the 12k fix-call window.)
+#   LLM_MODEL -> LLM_DEFAULT_MODEL -> 'qwen3-coder-30b' fallback.
+# (The former LLM_MODEL_HIGH_CTX preference is retired; on the ollama backend
+# per-request num_ctx handles the 12k fix-call window; on the default vllm
+# backend context is fixed per alias at serve time.)
 $llmModel         = Get-LLMModel -RoleKey 'LLM_MODEL'
 $llmTemperature   = [double](Cfg 'LLM_TEMPERATURE'   '0.1')
 $llmTimeout       = [int](Cfg 'LLM_TIMEOUT'          '300')   # 4000-token fix calls on a 32B model regularly exceed 120s

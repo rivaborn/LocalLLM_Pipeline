@@ -2,14 +2,14 @@
 
 ## Purpose
 
-`bughunt_iterative_local.ps1` is the most advanced debug script in the LocalLLM_Pipeline toolkit. It performs iterative, multi-pass bug hunting and auto-fixing on every source file in a codebase using a local LLM (via Ollama). For each source file, it runs up to three independent analysis passes -- general bug detection, data flow analysis, and interface contract violation detection -- then feeds the combined findings into a single fix call. The analyse-fix cycle repeats up to `MaxIterations` times per file, stopping early when the file is clean, the LLM gets stuck, the fix diverges, or the fix bloats the file beyond a configurable ratio.
+`bughunt_iterative_local.ps1` is the most advanced debug script in the LocalLLM_Pipeline toolkit. It performs iterative, multi-pass bug hunting and auto-fixing on every source file in a codebase using the local LLM (vLLM via the LLMConfig gateway by default; the `ollama` backend is selectable via `LLM_BACKEND`). For each source file, it runs up to three independent analysis passes -- general bug detection, data flow analysis, and interface contract violation detection -- then feeds the combined findings into a single fix call. The analyse-fix cycle repeats up to `MaxIterations` times per file, stopping early when the file is clean, the LLM gets stuck, the fix diverges, or the fix bloats the file beyond a configurable ratio.
 
 In addition to source files, the script discovers matching test files and runs a separate iterative loop targeting test quality bugs (trivially-passing tests, mock divergence, weak assertions, missing high-risk coverage). Both source and test loops track a "best version seen" and automatically revert to it when the LLM fails to converge, ensuring the output is always the least-buggy version observed across all iterations.
 
 ## Prerequisites
 
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
-- **Ollama** running locally with a code-capable model loaded (e.g. `qwen2.5-coder:14b` or `qwen2.5-coder:32b`)
+- **A local LLM backend** reachable with a code-capable model. Default: vLLM via the LLMConfig `/v1` gateway (served-name `qwen3-coder-30b`). Selecting `LLM_BACKEND=ollama` uses a native Ollama server instead (tag `qwen3-coder:30b`).
 - **Python** on PATH (required only for `.py` files -- used for `py_compile` syntax checking of fixes)
 - **`llm_common.ps1`** -- shared module at `Common/llm_common.ps1` (loaded via dot-sourcing)
 - **`.env` file** -- at `Common/.env` (or custom path via `-EnvFile`)
@@ -85,25 +85,25 @@ In addition to source files, the script discovers matching test files and runs a
 
 ## Environment Variables / .env Keys
 
-| Key                                     | Default                 | Description                                                                                                 |
-| --------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `PRESET`                                | `""`                    | Named preset for include/exclude patterns and codebase description.                                         |
-| `INCLUDE_EXT_REGEX`                     | from preset             | Regex matching file extensions to include.                                                                  |
-| `EXCLUDE_DIRS_REGEX`                    | from preset             | Regex matching directory paths to exclude.                                                                  |
-| `EXTRA_EXCLUDE_REGEX`                   | `""`                    | Additional exclusion regex.                                                                                 |
-| `CODEBASE_DESC`                         | from preset             | Human-readable codebase description injected into LLM system prompts.                                       |
-| `DEFAULT_FENCE`                         | from preset             | Default code fence language for LLM prompts (e.g. `python`, `c`).                                           |
-| `MAX_FILE_LINES`                        | `800`                   | Maximum lines to send to the LLM per file (longer files are truncated).                                     |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Ollama API endpoint. Resolved by `Get-LLMEndpoint` in `llm_common.ps1`.                                     |
-| `LLM_MODEL`                             | blank (→ `LLM_DEFAULT_MODEL` → `qwen3-coder:30b`) | Model name. Resolved by `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` covers the 12k fix-call window. |
-| `LLM_DEFAULT_MODEL`                     | `qwen3-coder:30b`       | Universal fallback used when `LLM_MODEL` is blank/unset.                                                    |
-| `LLM_TEMPERATURE`                       | `0.1`                   | LLM sampling temperature.                                                                                   |
-| `LLM_TIMEOUT`                           | `300`                   | Per-request timeout in seconds. Set high because 4000-token fix calls on a 32B model regularly exceed 120s. |
-| `BUGHUNT_ANALYSE_TOKENS`                | `900`                   | Max output tokens for each analysis call.                                                                   |
-| `BUGHUNT_FIX_TOKENS`                    | `4000`                  | Max output tokens for each fix call.                                                                        |
-| `BUGHUNT_BLOAT_RATIO`                   | `1.5`                   | Maximum allowed file growth ratio vs. original. Fixes exceeding this are rejected.                          |
-| `BUGHUNT_BLOAT_MIN_SLACK`               | `15`                    | Absolute minimum line growth allowance so tiny files are not over-constrained.                              |
-| `BUGHUNT_DIVERGE_AFTER`                 | `2`                     | Number of consecutive non-improving iterations before aborting and reverting to best.                       |
+| Key                                     | Default               | Description                                                                                                          |
+| --------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `PRESET`                                | `""`                  | Named preset for include/exclude patterns and codebase description.                                                 |
+| `INCLUDE_EXT_REGEX`                     | from preset           | Regex matching file extensions to include.                                                                          |
+| `EXCLUDE_DIRS_REGEX`                    | from preset           | Regex matching directory paths to exclude.                                                                          |
+| `EXTRA_EXCLUDE_REGEX`                   | `""`                  | Additional exclusion regex.                                                                                         |
+| `CODEBASE_DESC`                         | from preset           | Human-readable codebase description injected into LLM system prompts.                                               |
+| `DEFAULT_FENCE`                         | from preset           | Default code fence language for LLM prompts (e.g. `python`, `c`).                                                   |
+| `MAX_FILE_LINES`                        | `800`                 | Maximum lines to send to the LLM per file (longer files are truncated).                                             |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                     | Backend base URL, resolved by `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`. |
+| `LLM_MODEL`                             | blank (→ DEFAULT)     | Model id, resolved by `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` (12k fix window) applies on ollama only; vllm uses the per-alias context. |
+| `LLM_DEFAULT_MODEL`                     | `qwen3-coder-30b`     | Universal fallback when `LLM_MODEL` is blank/unset. vLLM served-name (`qwen3-coder:30b` tag on the ollama backend).  |
+| `LLM_TEMPERATURE`                       | `0.1`                 | LLM sampling temperature.                                                                                           |
+| `LLM_TIMEOUT`                           | `300`                 | Per-request timeout in seconds. Set high because 4000-token fix calls on a 32B model regularly exceed 120s.         |
+| `BUGHUNT_ANALYSE_TOKENS`                | `900`                 | Max output tokens for each analysis call.                                                                           |
+| `BUGHUNT_FIX_TOKENS`                    | `4000`                | Max output tokens for each fix call.                                                                                |
+| `BUGHUNT_BLOAT_RATIO`                   | `1.5`                 | Maximum allowed file growth ratio vs. original. Fixes exceeding this are rejected.                                  |
+| `BUGHUNT_BLOAT_MIN_SLACK`               | `15`                  | Absolute minimum line growth allowance so tiny files are not over-constrained.                                      |
+| `BUGHUNT_DIVERGE_AFTER`                 | `2`                   | Number of consecutive non-improving iterations before aborting and reverting to best.                               |
 
 ## Stop Conditions and Exit Codes
 

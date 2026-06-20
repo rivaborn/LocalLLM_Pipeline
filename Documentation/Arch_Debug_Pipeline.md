@@ -8,17 +8,22 @@ bugs. It archives a summary of changes to `Implemented Plans/` with timestamps, 
 into the iterative development workflow used by `Arch_Coding_Pipeline.ps1`.
 
 The pipeline bridges two systems:
-- **Steps 1-4**: Run on the local LLM server (Ollama) via the LocalLLMDebug analysis
-  scripts. These are cheap, fast, and produce structured reports.
+- **Steps 1-4**: Run on the local LLM backend via the LocalLLMDebug analysis
+  scripts. By default this is vLLM via the LLMConfig OpenAI `/v1` gateway, which
+  auto-loads the requested served-name model on first request; the `ollama`
+  backend is selectable. These steps are cheap, fast, and produce structured reports.
 - **Step 5**: Uses Claude Code to read the reports and apply fixes to the actual source
   code. This is where the real reasoning and code editing happens.
 - **Step 6**: Archives the changes for future context.
 
 The analysis scripts and this orchestrator share configuration via
 `LocalLLM_Pipeline/Common/.env`. The shared LLM helper (`Invoke-LocalLLM`) lives in
-`LocalLLM_Pipeline/Common/llm_common.ps1`. Default analysis model is `qwen3-coder:30b`
-with a per-request `num_ctx=32768`, passed via the native Ollama `/api/chat`
-endpoint (no custom `Modelfile` required).
+`LocalLLM_Pipeline/Common/llm_common.ps1`. `LLM_BACKEND` selects the backend
+(`vllm`, default; or `ollama`). On the default vllm backend the analysis model is the
+served-name `qwen3-coder-30b` served at a fixed 65536-token context, reached over the
+`/v1` gateway. On the `ollama` backend the model is the tag `qwen3-coder:30b` with a
+per-request `num_ctx=32768` passed via the native Ollama `/api/chat` endpoint (no custom
+`Modelfile` required).
 
 ### Optional: consume LocalLLMAnalysis outputs
 
@@ -45,14 +50,18 @@ Set `SERENA_CONTEXT_DIR` to where `serena_extract.ps1` wrote its context files
   enabled `SERENA_CONTEXT_DIR` will keep being reused until the source file
   changes. Run `interfaces_local.ps1 -Clean` once to force fresh extraction
   with LSP context injected.
-- **Token budget.** At `LLM_NUM_CTX=32768` the xref/architecture injections
-  typically add 2-10K tokens per call on top of existing prompts. Large
-  codebases may approach the window ceiling — see DebugWorkflow.md for
-  mitigation.
-- **VRAM / KV cache.** Bumping `LLM_NUM_CTX` is not free. On `qwen3-coder:30b`,
-  KV cache costs roughly +1 GB per 8K of context on a 24 GB card. If you need
-  more headroom, check `ollama ps` after the change — `PROCESSOR` must read
-  `100% GPU`, otherwise inference slows 3-4× from partial CPU offload.
+- **Token budget.** The xref/architecture injections typically add 2-10K tokens
+  per call on top of existing prompts. Large codebases may approach the window
+  ceiling — see DebugWorkflow.md for mitigation. On the default vllm backend the
+  context is fixed per alias at serve time (65536 for the pipeline aliases) and
+  `LLM_NUM_CTX` is ignored; on the `ollama` backend the injections push against
+  `LLM_NUM_CTX=32768`.
+- **VRAM / KV cache (ollama backend).** Bumping `LLM_NUM_CTX` is not free. On the
+  `qwen3-coder:30b` tag, KV cache costs roughly +1 GB per 8K of context on a 24 GB
+  card. If you need more headroom, check `ollama ps` after the change — `PROCESSOR`
+  must read `100% GPU`, otherwise inference slows 3-4× from partial CPU offload. On
+  the default vllm backend the gateway manages the GPU and context is fixed per
+  alias, so this knob does not apply.
 
 ## Pipeline Steps
 
@@ -169,12 +178,16 @@ be fast if the source code hasn't changed.
 
 ### Steps 1-4: Local LLM
 
-Steps 1-4 run on the local LLM server via Ollama. The model is controlled by
-`LLM_MODEL` in `LocalLLM_Pipeline/Common/.env` (default: `qwen3-coder:30b`). The
-context window is controlled by `LLM_NUM_CTX` (default: `32768`); when set, the
-analysis scripts route requests through Ollama's native `/api/chat` endpoint
-with `options.num_ctx` so the model gets the full window per call. The `-Model`
-parameter on this orchestrator has no effect on these steps.
+Steps 1-4 run on the local LLM backend selected by `LLM_BACKEND` in
+`LocalLLM_Pipeline/Common/.env` (`vllm`, default; or `ollama`). The model is
+controlled by `LLM_MODEL` (falling back to `LLM_DEFAULT_MODEL`) — the served-name
+`qwen3-coder-30b` on the default vllm backend, or the tag `qwen3-coder:30b` on the
+ollama backend. On vllm, requests hit the LLMConfig `/v1` gateway and the context is
+fixed per alias at serve time (65536), so `LLM_NUM_CTX` is ignored. On the ollama
+backend the context window is controlled by `LLM_NUM_CTX` (default: `32768`); when set,
+the analysis scripts route requests through Ollama's native `/api/chat` endpoint with
+`options.num_ctx` so the model gets the full window per call. The `-Model` parameter on
+this orchestrator has no effect on these steps.
 
 ### Step 5: Smart per-file selection
 
@@ -306,7 +319,9 @@ initial architecture, then bug fixes, then new features.
 ## Prerequisites
 
 - **Claude Code CLI** (`claude`) installed and available in PATH
-- **Ollama server** running and accessible (for steps 1-4)
+- **Local LLM backend** reachable for steps 1-4: by default the LLMConfig vLLM
+  gateway at `http://192.168.1.40:11430/v1`; or an Ollama server at
+  `http://192.168.1.40:11434` when `LLM_BACKEND=ollama`
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
 - At least one Claude account configured (Claude1 or Claude2)
 - The LocalLLMDebug analysis scripts and their prompt templates

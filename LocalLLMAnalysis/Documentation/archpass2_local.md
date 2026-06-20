@@ -14,17 +14,17 @@ Pass 1, it is fully incremental via SHA-1 hash tracking.
 
 ## Prerequisites
 
-| Requirement                               | Details                                          |
-| ----------------------------------------- | ------------------------------------------------ |
-| PowerShell 5.1+ or pwsh 7+                | Uses `Set-StrictMode -Version Latest`            |
-| `llm_common.ps1`                          | Shared module in `../Common/`                    |
-| `../Common/.env`                          | Configuration file                               |
-| Ollama running locally                    | LLM endpoint must be reachable                   |
-| `architecture/architecture.md`            | Output of `arch_overview_local.ps1`              |
-| `architecture/xref_index.md`              | Output of `archxref.ps1`                         |
-| Per-file Pass 1 docs                      | Output of `archgen_local.ps1` in `architecture/` |
-| (Optional) `architecture/.pass2_context/` | Targeted context from `archpass2_context.ps1`    |
-| (Optional) `archpass2_local_prompt.txt`   | Prompt schema in script directory                |
+| Requirement                               | Details                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| PowerShell 5.1+ or pwsh 7+                | Uses `Set-StrictMode -Version Latest`                               |
+| `llm_common.ps1`                          | Shared module in `../Common/`                                       |
+| `../Common/.env`                          | Configuration file                                                  |
+| Local LLM backend reachable               | vLLM `/v1` gateway by default; `LLM_BACKEND=ollama` for native Ollama |
+| `architecture/architecture.md`            | Output of `arch_overview_local.ps1`                                 |
+| `architecture/xref_index.md`              | Output of `archxref.ps1`                                            |
+| Per-file Pass 1 docs                      | Output of `archgen_local.ps1` in `architecture/`                   |
+| (Optional) `architecture/.pass2_context/` | Targeted context from `archpass2_context.ps1`                      |
+| (Optional) `archpass2_local_prompt.txt`   | Prompt schema in script directory                                  |
 
 ## Usage
 
@@ -90,18 +90,18 @@ python Common/ArchPipeline.py analysis
 
 ## Environment Variables / .env Keys
 
-| Key                    | Default             | Description                    |
-| ---------------------- | ------------------- | ------------------------------ |
-| `PRESET`               | `""`                | Named preset                   |
-| `INCLUDE_EXT_REGEX`    | Preset-dependent    | File extension include pattern |
-| `EXCLUDE_DIRS_REGEX`   | Preset-dependent    | Directory exclude pattern      |
-| `EXTRA_EXCLUDE_REGEX`  | `""`                | Additional exclude pattern     |
-| `CODEBASE_DESC`        | Preset-dependent    | Codebase description           |
-| `DEFAULT_FENCE`        | Preset-dependent    | Code fence language            |
-| `LLM_MODEL`            | `qwen2.5-coder:14b` | Ollama model                   |
-| `LLM_TEMPERATURE`      | `0.1`               | Sampling temperature           |
-| `LLM_TIMEOUT`          | `120`               | HTTP timeout in seconds        |
-| `LLM_ANALYSIS_NUM_CTX` | (none)              | Overrides `LLM_NUM_CTX` if set |
+| Key                    | Default             | Description                                                                            |
+| ---------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `PRESET`               | `""`                | Named preset                                                                          |
+| `INCLUDE_EXT_REGEX`    | Preset-dependent    | File extension include pattern                                                        |
+| `EXCLUDE_DIRS_REGEX`   | Preset-dependent    | Directory exclude pattern                                                             |
+| `EXTRA_EXCLUDE_REGEX`  | `""`                | Additional exclude pattern                                                           |
+| `CODEBASE_DESC`        | Preset-dependent    | Codebase description                                                                  |
+| `DEFAULT_FENCE`        | Preset-dependent    | Code fence language                                                                   |
+| `LLM_MODEL`            | `qwen3-coder-30b`   | Model id. vLLM served-name on the default backend (`qwen3-coder:30b` tag on ollama).   |
+| `LLM_TEMPERATURE`      | `0.1`               | Sampling temperature                                                                 |
+| `LLM_TIMEOUT`          | `120`               | HTTP timeout in seconds                                                              |
+| `LLM_ANALYSIS_NUM_CTX` | (none)              | Ollama backend only: overrides `LLM_NUM_CTX`. Ignored on vllm (context fixed per alias). |
 
 ## Exit Codes
 

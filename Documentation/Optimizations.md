@@ -1,6 +1,6 @@
 # Architecture Analysis Toolkit -- Optimizations
 
-Strategies for managing the context window of a local LLM when analyzing codebases. The Analysis pipeline currently runs at `LLM_ANALYSIS_NUM_CTX=49152` (per-request `num_ctx` for `qwen3-coder:30b` via the native Ollama `/api/chat` endpoint), but most optimizations below still matter at any window size — they were tuned when the working window was closer to 8-12K.
+Strategies for managing the context window of a local LLM when analyzing codebases. On the default `vllm` backend (the LLMConfig `/v1` gateway, served-name `qwen3-coder-30b`), the context window is fixed per alias at serve time, so `LLM_ANALYSIS_NUM_CTX`/`num_ctx` are ignored. On the `ollama` backend the Analysis pipeline runs at `LLM_ANALYSIS_NUM_CTX=49152` (per-request `num_ctx` for tag `qwen3-coder:30b` via the native Ollama `/api/chat` endpoint). Either way, most optimizations below still matter at any window size — they were tuned when the working window was closer to 8-12K.
 
 ---
 
@@ -33,8 +33,8 @@ Strategies for managing the context window of a local LLM when analyzing codebas
 ### 9. Preset Regex Overrides
 **Prevents wasted LLM calls on irrelevant files.** `INCLUDE_EXT_REGEX` and `EXCLUDE_DIRS_REGEX` in `Common/.env` override the built-in preset defaults, letting you add languages the preset doesn't cover (e.g. `.cs` for a C# subsection) or exclude build-output / third-party dirs (`bin`, `obj`, `Steamworks.NET`, etc.) without editing `llm_common.ps1`. Both `archgen_local.ps1` and `archpass2_local.ps1` honor these via `Cfg 'INCLUDE_EXT_REGEX'` / `Cfg 'EXCLUDE_DIRS_REGEX'`.
 
-### 10. Per-Request `num_ctx` via native Ollama `/api/chat`
-**Analysis runs at 49152 tokens without a custom Modelfile.** `Invoke-LocalLLM` in `Common/llm_common.ps1` detects `LLM_NUM_CTX > 0` and routes through Ollama's native `/api/chat` endpoint with `options.num_ctx`. Analysis scripts promote `LLM_ANALYSIS_NUM_CTX` into `LLM_NUM_CTX` after loading config, so every Analysis call gets the larger window without changing callsites. One model tag (`qwen3-coder:30b`) covers every pipeline.
+### 10. Per-Request `num_ctx` via native Ollama `/api/chat` (ollama backend only)
+**On the ollama backend, Analysis runs at 49152 tokens without a custom Modelfile.** When `LLM_BACKEND=ollama`, `Invoke-LocalLLM` in `Common/llm_common.ps1` detects `LLM_NUM_CTX > 0` and routes through Ollama's native `/api/chat` endpoint with `options.num_ctx`. Analysis scripts promote `LLM_ANALYSIS_NUM_CTX` into `LLM_NUM_CTX` after loading config, so every Analysis call gets the larger window without changing callsites. On the default `vllm` backend this knob is inert: requests use the gateway's `/v1` endpoint and context is fixed per alias at serve time. One coder model covers every pipeline (`qwen3-coder-30b` served-name on vllm, tag `qwen3-coder:30b` on ollama).
 
 ---
 

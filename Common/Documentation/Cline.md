@@ -59,28 +59,28 @@ Given a bug report ("value X is wrong on screen" / "module Y silently returns em
 
 ## Using with Cline (VS Code extension)
 
-Cline treats its chat as the context window and the repo as its workspace, so the workflow hinges on three Cline-native mechanisms: **@-mentions**, **Plan Mode**, and **`.clinerules`**. None of that works unless the workspace is opened correctly -- do the setup section first.
+Cline treats its chat as the context window and the repo as its workspace, so the workflow hinges on three Cline-native mechanisms: **@-mentions**, **Plan Mode**, and **`CLAUDE.md`** (Cline loads `CLAUDE.md` as standing project rules). None of that works unless the workspace is opened correctly -- do the setup section first.
 
 ### Setup: open the repo root in VS Code
 
-Cline treats the folder you open with **File -> Open Folder** as the workspace root. `.clinerules`, `architecture/`, `bug_reports/`, `test_gaps/`, and `pyproject.toml` all live at the repo root -- so open the repo root, not `src/` or any subfolder.
+Cline treats the folder you open with **File -> Open Folder** as the workspace root. `CLAUDE.md`, `architecture/`, `bug_reports/`, `test_gaps/`, and `pyproject.toml` all live at the repo root -- so open the repo root, not `src/` or any subfolder.
 
 1. **File -> Open Folder...** (or `Ctrl+K Ctrl+O`)
 2. Select the target project's repo root (e.g. `C:\Coding\WorkFolder\nmonLocalLLM`)
 3. "Do you trust the authors?" -> Yes (needed for `.venv` activation and extensions)
-4. Confirm the Explorer sidebar shows `.clinerules` and `architecture/` at the top level
+4. Confirm the Explorer sidebar shows `CLAUDE.md` and `architecture/` at the top level
 
 **Pick the Python interpreter.** `Ctrl+Shift+P` -> **Python: Select Interpreter** -> `.\.venv\Scripts\python.exe`. Cline runs tests and mypy via the integrated terminal, which auto-activates `.venv`, so editor feedback and Cline feedback stay consistent.
 
-**Verify `.clinerules` is active.** Start a new Cline task and ask:
+**Verify `CLAUDE.md` is active.** Start a new Cline task and ask:
 
 ```
-What rules are loaded from .clinerules for this workspace?
+What rules are loaded from CLAUDE.md for this workspace?
 ```
 
 Cline should echo rules back (e.g. the src-layout import rule, Textual event-loop rule). If it replies that no rules are loaded, you opened the wrong folder.
 
-**Companion extensions to install once.** These reinforce what `.clinerules` declares, so the editor flags violations before Cline commits them:
+**Companion extensions to install once.** These reinforce what `CLAUDE.md` declares, so the editor flags violations before Cline commits them:
 
 | Extension                            | Why                                                |
 |--------------------------------------|----------------------------------------------------|
@@ -93,11 +93,11 @@ Cline should echo rules back (e.g. the src-layout import rule, Textual event-loo
 ### Sanity checklist before starting a debug task
 
 - [ ] VS Code title bar shows the correct repo root
-- [ ] Explorer shows `.clinerules` at the top level
+- [ ] Explorer shows `CLAUDE.md` at the top level
 - [ ] `architecture/` folder exists (pipeline artifacts have been generated)
 - [ ] Python interpreter (bottom-left status bar) points at the repo's `.venv`
 - [ ] Cline panel loads without "no workspace" warnings
-- [ ] Cline echoes back a rule from `.clinerules` when asked
+- [ ] Cline echoes back a rule from `CLAUDE.md` when asked
 
 ### 1. @-mention the summary files at task start
 
@@ -116,9 +116,9 @@ Then describe the symptom. These pin to the task context so Cline doesn't have t
 
 The Plan/Act toggle is at the bottom of the Cline chat panel. Plan Mode reads only -- it'll consult INTERFACES/DATA_FLOW, propose a root cause, and wait for your OK. Switch to Act Mode after you agree on the fix. This stops Cline from editing source before it's actually understood the contract.
 
-### 3. Automate the ritual with `.clinerules`
+### 3. Automate the ritual with `CLAUDE.md`
 
-Drop a `.clinerules` file (or `.clinerules/debug.md`) at the repo root with standing guidance -- Cline loads it automatically on every task:
+Put standing guidance in `CLAUDE.md` at the repo root -- Cline loads it automatically on every task:
 
 ```
 # Debug-task rules

@@ -35,31 +35,50 @@ folder.
 
 - Python 3.10+
 - Aider installed and on your PATH: `pip install aider-chat`
-- Ollama installed and running: https://ollama.com/download
-- A Qwen 2.5 Coder model pulled locally (see [Model selection](#model-selection) for which one)
+- A local LLM backend reachable. By default this is vLLM via the LLMConfig
+  OpenAI `/v1` gateway (`http://192.168.1.40:11430/v1`), which auto-loads the
+  requested served-name model on first request. The `ollama` backend
+  (`LLM_BACKEND=ollama`) is selectable; with it you need an Ollama server running
+  (https://ollama.com/download) and the coder model tag pulled locally.
+- A coder model available to the backend (default `qwen3-coder-30b`; see
+  [Model selection](#model-selection)).
 
-## Remote Ollama server
+## Backend and endpoint
 
-`run_aider.py` automatically reads `LLM_HOST` and `LLM_PORT` from
-`LocalLLMAnalysis/.env` and sets `OLLAMA_API_BASE` for you. If your `.env`
-contains:
+`run_aider.py` reads `LLM_BACKEND`, `LLM_HOST`, and `LLM_PORT` from
+`Common/.env` (via `config.resolve_backend` / `config.resolve_endpoint`) and
+configures aider's litellm provider for you. The default model string follows the
+backend: `openai/<LLM_AIDER_MODEL>` on the `vllm` backend, or
+`ollama_chat/<LLM_AIDER_MODEL>` on the `ollama` backend.
+
+**vllm backend (default).** litellm's `openai/` provider talks to the LLMConfig
+gateway. The script sets `OPENAI_API_BASE=http://192.168.1.40:11430/v1` (plus a
+dummy `OPENAI_API_KEY`, since the gateway is LAN-only) and prints
+`[vllm] OPENAI_API_BASE=...`. No model flag is needed — it defaults to
+`openai/qwen3-coder-30b`:
+
+```powershell
+python .\LocalLLMCoding\run_aider.py
+```
+
+**ollama backend.** With `.env` containing:
 
 ```
+LLM_BACKEND=ollama
 LLM_HOST=192.168.1.40
 LLM_PORT=11434
 ```
 
-The script will print `Ollama API base: http://192.168.1.40:11434` on startup.
-No manual environment variable needed.
-
-You can also override this with `--ollama-url` or by setting `OLLAMA_API_BASE`
-directly:
+the script sets `OLLAMA_API_BASE=http://192.168.1.40:11434`, prints
+`[ollama] OLLAMA_API_BASE=http://192.168.1.40:11434`, and defaults the model to
+`ollama_chat/qwen3-coder:30b`. You can override the endpoint with `--ollama-url`
+or by setting `OLLAMA_API_BASE` directly:
 
 ```powershell
-# Override via flag
+# Override via flag (ollama backend)
 python .\LocalLLMCoding\run_aider.py --ollama-url http://192.168.1.40:11434
 
-# Override via environment variable
+# Override via environment variable (ollama backend)
 $env:OLLAMA_API_BASE = "http://192.168.1.40:11434"
 python .\LocalLLMCoding\run_aider.py
 ```
@@ -67,23 +86,33 @@ python .\LocalLLMCoding\run_aider.py
 ## Quick start
 
 ```powershell
-python .\LocalLLMCoding\run_aider.py --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py
 ```
 
 To use a different prompts folder:
 
 ```powershell
-python .\LocalLLMCoding\run_aider.py --prompts-dir LocalLLMCodePrompts_V2 --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py --prompts-dir LocalLLMCodePrompts_V2
 ```
 
-This runs all steps in order. Each step calls:
+This runs all steps in order. On the default vllm backend each step calls:
 ```
-aider --message "<prompt>" --yes --model ollama/qwen2.5-coder:32b-12k <files>
+aider --message "<prompt>" --yes --model openai/qwen3-coder-30b <files>
 ```
-Aider creates or edits the files, then exits. The script moves on to the next
-step.
+(or `--model ollama_chat/qwen3-coder:30b` on the ollama backend). Aider creates or
+edits the files, then exits. The script moves on to the next step.
 
 ## Model selection
+
+On the default **vllm backend** there is no GPU tuning to do here: the LLMConfig
+gateway auto-loads the served-name coder model (`qwen3-coder-30b`) on first
+request and serves it at a fixed per-alias context (65536), managing GPU
+placement itself. Per-request `num_ctx` and custom Modelfiles do not apply. Just
+run `python .\LocalLLMCoding\run_aider.py` and let the gateway load the model.
+
+The rest of this section is GPU-fit guidance for the **ollama backend**
+(`LLM_BACKEND=ollama`), where you choose a model tag and context window that fit
+your card.
 
 Aider's workload here is **whole-file edits on small Python files**. The nmon
 modules are 50–200 lines and the prompts in `aidercommands.md` are detailed
@@ -211,7 +240,7 @@ If a step fails the script stops and prints a resume command:
 Run the suggested command to pick up where it left off:
 
 ```bash
-python .\LocalLLMCoding\run_aider.py --from-step 8 --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py --from-step 8
 ```
 
 ## Re-running a single step
@@ -219,7 +248,7 @@ python .\LocalLLMCoding\run_aider.py --from-step 8 --model ollama/qwen2.5-coder:
 To rerun just one step without affecting the others:
 
 ```bash
-python .\LocalLLMCoding\run_aider.py --only-step 12 --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py --only-step 12
 ```
 
 Useful when a generated file has a bug and you want aider to rewrite it.
@@ -241,7 +270,7 @@ Use `--prompts-dir` to point at a different set of prompts. This is useful for
 iterative development — each iteration can have its own folder:
 
 ```powershell
-python .\LocalLLMCoding\run_aider.py --prompts-dir LocalLLMCodePrompts_V2 --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py --prompts-dir LocalLLMCodePrompts_V2
 ```
 
 The first positional argument overrides the markdown filename within the prompts
@@ -249,7 +278,7 @@ directory (default: `aidercommands.md`):
 
 ```powershell
 # Read my_commands.md from the default prompts folder
-python .\LocalLLMCoding\run_aider.py my_commands.md --model ollama/qwen2.5-coder:32b-12k
+python .\LocalLLMCoding\run_aider.py my_commands.md
 ```
 
 ## Completed folder tracking
@@ -280,8 +309,9 @@ Use `--force` to skip the confirmation.
 | `--prompts-dir`   | Prompts folder (default: `LocalLLMCodePrompts`)                    |
 | `--from-step N`   | Skip steps before N and start at N                                 |
 | `--only-step N`   | Run exactly one step                                               |
-| `--model MODEL`   | Aider model string, e.g. `ollama/qwen2.5-coder:32b-12k`           |
-| `--ollama-url`    | Override Ollama API base URL                                       |
+| `--model MODEL`   | Aider model string. Default: `openai/<LLM_AIDER_MODEL>` on vllm,   |
+|                   | `ollama_chat/<LLM_AIDER_MODEL>` on ollama (from `Common/.env`).    |
+| `--ollama-url`    | Override Ollama API base URL (ollama backend only)                 |
 | `--force`         | Skip confirmation for already-completed folders                    |
 | `--dry-run`       | Preview steps without calling aider                                |
 
@@ -303,7 +333,15 @@ writes the files, and exits automatically.
 
 ## Troubleshooting
 
-**Ollama not responding** — Make sure the Ollama service is running:
+**vllm backend: gateway not reachable** — On the default backend, aider talks to
+the LLMConfig gateway at `http://192.168.1.40:11430/v1`. Confirm the host is up
+and the `/v1` endpoint responds; the gateway auto-loads `qwen3-coder-30b` on the
+first request, so the first call may pause while the model loads. The
+`num_ctx` / Modelfile / `ollama ps` items below apply to the **ollama backend
+only** — on vllm the context is fixed per alias and the gateway manages the GPU.
+
+**Ollama not responding (ollama backend)** — Make sure the Ollama service is
+running:
 ```bash
 ollama serve
 ```
@@ -336,9 +374,9 @@ applications first.
 **Aider not found** — Run `pip install aider-chat` and ensure your shell can
 find it (`aider --version` should print a version number).
 
-**Ollama server not reachable** — If the server is on another machine, make
-sure `OLLAMA_API_BASE` is set (see [Remote Ollama server](#remote-ollama-server)
-above). `aider --version` should print a version; if `aider` can't connect,
+**Ollama server not reachable (ollama backend)** — If the server is on another
+machine, make sure `OLLAMA_API_BASE` is set (see
+[Backend and endpoint](#backend-and-endpoint) above). `aider --version` should print a version; if `aider` can't connect,
 aider itself will print the URL it tried and error out.
 
 **A generated file has import errors** — Run `--only-step N` to regenerate it.

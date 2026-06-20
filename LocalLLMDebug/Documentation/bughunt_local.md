@@ -2,14 +2,14 @@
 
 ## Purpose
 
-`bughunt_local.ps1` is a single-pass bug hunting script that runs an LLM-powered analysis on every source file in a codebase. Unlike the iterative variant, this script does not attempt to fix bugs -- it only reports them. Each file is sent to a local LLM (via Ollama) with a structured prompt that asks the model to identify real bugs (crashes, data loss, logic errors, security issues) and classify them by severity (HIGH, MEDIUM, LOW). The output is a collection of per-file Markdown bug reports plus a summary document.
+`bughunt_local.ps1` is a single-pass bug hunting script that runs an LLM-powered analysis on every source file in a codebase. Unlike the iterative variant, this script does not attempt to fix bugs -- it only reports them. Each file is sent to the local LLM (vLLM via the LLMConfig gateway by default; selectable to the `ollama` backend via `LLM_BACKEND`) with a structured prompt that asks the model to identify real bugs (crashes, data loss, logic errors, security issues) and classify them by severity (HIGH, MEDIUM, LOW). The output is a collection of per-file Markdown bug reports plus a summary document.
 
 The script uses SHA1-based caching so that only changed files are re-analysed on subsequent runs. If an `xref_index.md` file exists from a prior Analysis pipeline run, it is injected into every prompt to give the LLM cross-file context for spotting integration bugs that a single-file view would miss.
 
 ## Prerequisites
 
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
-- **Ollama** running locally with a code-capable model loaded
+- **A local LLM backend** reachable with a code-capable model (vLLM `/v1` gateway by default; `LLM_BACKEND=ollama` for native Ollama)
 - **`llm_common.ps1`** -- shared module at `Common/llm_common.ps1`
 - **`.env` file** -- at `Common/.env` (or custom path via `-EnvFile`)
 - **Prompt file:** `LocalLLMDebug/bughunt_prompt.txt` (required)
@@ -83,8 +83,8 @@ The legacy `Arch_Debug_Pipeline.ps1` has been retired; it still exists in the `l
 | `CODEBASE_DESC`                         | from preset         | Human-readable codebase description for the LLM system prompt.                                               |
 | `DEFAULT_FENCE`                         | from preset         | Code fence language identifier (e.g. `python`).                                                              |
 | `MAX_FILE_LINES`                        | `800`               | Files longer than this are truncated before sending to the LLM.                                              |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Ollama API endpoint.                                                                                         |
-| `LLM_MODEL`                             | `qwen2.5-coder:14b` | Model name to use for analysis.                                                                              |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.   |
+| `LLM_MODEL`                             | `qwen3-coder-30b`   | Model id for analysis. vLLM served-name on the default backend (`qwen3-coder:30b` tag on the ollama backend).|
 | `LLM_TEMPERATURE`                       | `0.1`               | LLM sampling temperature.                                                                                    |
 | `LLM_TIMEOUT`                           | `120`               | Per-request timeout in seconds.                                                                              |
 | `BUGHUNT_MAX_TOKENS`                    | `900`               | Max output tokens per analysis call. Set higher than architecture docs because bug reports need more detail. |

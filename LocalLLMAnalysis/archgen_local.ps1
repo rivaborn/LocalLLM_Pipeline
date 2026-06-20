@@ -1,7 +1,8 @@
 # ============================================================
 # archgen_local.ps1 -- Per-File Architecture Doc Generator (Local LLM)
 #
-# Generates one .md doc per source file using a local Ollama LLM.
+# Generates one .md doc per source file using the local LLM backend
+# (vLLM via the LLMConfig gateway by default; Ollama if LLM_BACKEND=ollama).
 # Synchronous single-threaded processing (GPU handles one request at a time).
 #
 # Requires: llm_common.ps1 in the same directory.

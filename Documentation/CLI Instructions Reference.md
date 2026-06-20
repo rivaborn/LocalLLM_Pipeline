@@ -67,7 +67,7 @@ Per-file architecture docs. Synchronous single-threaded.
 
 ### Performance
 
-Throughput depends on model: historically ~0.11 files/sec with `qwen2.5-coder:14b` on RTX 3090. The current default `qwen3-coder:30b` at `LLM_ANALYSIS_NUM_CTX=49152` is slower per call but produces richer output.
+Throughput depends on model: historically ~0.11 files/sec with `qwen2.5-coder:14b` on RTX 3090. The current default coder model (`qwen3-coder-30b` served-name on the default vllm backend, `qwen3-coder:30b` tag on ollama) is slower per call but produces richer output; on the ollama backend it runs at `LLM_ANALYSIS_NUM_CTX=49152`, while on vllm the alias context is fixed at serve time.
 
 ---
 
@@ -216,11 +216,12 @@ If the output file already exists, generation is skipped -- delete it to force r
 
 Dot-sourced by all `*_local.ps1` scripts. **Do not run directly.**
 
-| Function              | Description                                              |
-|-----------------------|----------------------------------------------------------|
-| `Invoke-LocalLLM`    | Calls Ollama `/v1/chat/completions` with retry (3x)     |
-| `Get-LLMEndpoint`    | Builds URL from `LLM_HOST` + `LLM_PORT`                 |
-| `Read-EnvFile`       | Parses `.env` key=value files                            |
+| Function              | Description                                                              |
+|-----------------------|-------------------------------------------------------------------------|
+| `Invoke-LocalLLM`    | Backend-aware call with retry (3x): default vllm hits the LLMConfig `/v1` gateway; ollama uses native `/api/chat` when `LLM_NUM_CTX > 0` |
+| `Get-LLMBackend`     | Reads `LLM_BACKEND` -- `vllm` (default) or `ollama`                     |
+| `Get-LLMEndpoint`    | Builds the backend base URL from `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` (vllm -> gateway port 11430; ollama -> `LLM_PORT`) |
+| `Read-EnvFile`       | Parses `.env` key=value files                                           |
 | `Cfg`                | Reads config key with default fallback                   |
 | `Get-SHA1`           | SHA1 hash of a file                                      |
 | `Get-Preset`         | Engine preset definitions                                |
@@ -242,13 +243,14 @@ The `.env` file lives in `LocalLLMAnalysis/` alongside the scripts (not at the r
 
 | Variable                | Default                         | Description                                                                                   |
 |-------------------------|---------------------------------|-----------------------------------------------------------------------------------------------|
-| `LLM_ENDPOINT`          | (derived from HOST+PORT)        | Full Ollama URL. When set, wins over `LLM_HOST`+`LLM_PORT`.                                   |
-| `LLM_HOST`              | `192.168.1.40`                 | Ollama server IP/hostname (fallback)                                                          |
-| `LLM_PORT`              | `11434`                         | Ollama server port                                                                            |
-| `LLM_DEFAULT_MODEL`     | `qwen3-coder:30b`               | Universal fallback. Every role-specific key (`LLM_MODEL`, `LLM_AIDER_MODEL`, `LLM_PLANNING_MODEL`) chains to this when blank/unset. |
+| `LLM_BACKEND`           | `vllm`                          | `vllm` -> LLMConfig OpenAI `/v1` gateway (`:11430`, auto-loads the model); `ollama` -> native `/api/chat`. |
+| `LLM_ENDPOINT`          | (derived from HOST+PORT)        | Full backend base URL. When set, wins over `LLM_HOST`+`LLM_PORT`.                             |
+| `LLM_HOST`              | `192.168.1.40`                 | Backend host (fallback). vllm -> `:11430`; ollama -> `:LLM_PORT`.                             |
+| `LLM_PORT`              | `11434`                         | Ollama server port (ollama backend only)                                                     |
+| `LLM_DEFAULT_MODEL`     | `qwen3-coder-30b`               | Universal fallback. Every role-specific key (`LLM_MODEL`, `LLM_AIDER_MODEL`, `LLM_PLANNING_MODEL`) chains to this when blank/unset. Served-name (`-`) on vllm; tag (`:`) on ollama. |
 | `LLM_MODEL`             | blank (→ `LLM_DEFAULT_MODEL`)   | Analysis + Debug scripts. Resolved via `cfg.resolve_model` / `Get-LLMModel`.                  |
-| `LLM_NUM_CTX`           | `32768`                         | Per-request context window. When > 0, routes via native `/api/chat` with `options.num_ctx`.   |
-| `LLM_ANALYSIS_NUM_CTX`  | `49152`                         | Analysis-specific window. Promoted into `LLM_NUM_CTX` by Analysis scripts on startup.         |
+| `LLM_NUM_CTX`           | `32768`                         | Per-request context window, **ollama backend only**. When > 0, routes via native `/api/chat` with `options.num_ctx`. Ignored on vllm (context fixed per alias at serve time). |
+| `LLM_ANALYSIS_NUM_CTX`  | `49152`                         | Analysis-specific window, **ollama backend only**. Promoted into `LLM_NUM_CTX` by Analysis scripts on startup. Inert on vllm. |
 | `LLM_TEMPERATURE`       | `0.1`                           | Sampling temperature                                                                          |
 | `LLM_MAX_TOKENS`        | `800`                           | Max output tokens                                                                             |
 | `LLM_TIMEOUT`           | `300`                           | Request timeout (seconds)                                                                     |

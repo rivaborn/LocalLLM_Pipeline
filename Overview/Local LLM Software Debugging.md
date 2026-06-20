@@ -1,6 +1,6 @@
 # Local LLM Software Debugging Pipeline
 
-The `LocalLLMDebug/` directory contains a multi-tool debugging pipeline that uses a local Ollama LLM to analyse a codebase from several angles: finding bugs, tracing data flow, auditing test coverage, mapping interface contracts, and iteratively fixing issues. Each tool produces a focused report. Used together they give a complete picture of where a codebase is broken and why.
+The `LocalLLMDebug/` directory contains a multi-tool debugging pipeline that uses a local LLM to analyse a codebase from several angles: finding bugs, tracing data flow, auditing test coverage, mapping interface contracts, and iteratively fixing issues. Requests go to the local backend selected by `LLM_BACKEND` -- by default vLLM behind the LLMConfig OpenAI `/v1` gateway, with native Ollama selectable. Each tool produces a focused report. Used together they give a complete picture of where a codebase is broken and why.
 
 All scripts run from the repository root and read `LocalLLMDebug/.env` for LLM server configuration.
 
@@ -214,7 +214,8 @@ All configuration lives in `LocalLLMDebug/.env`. Key settings:
 
 | Setting               | Purpose                                                                |
 |-----------------------|------------------------------------------------------------------------|
-| `LLM_HOST` / `PORT`   | Ollama server address                                                  |
+| `LLM_BACKEND`         | `vllm` (default, LLMConfig `/v1` gateway `:11430`) or `ollama` (`:11434`) |
+| `LLM_HOST` / `PORT`   | Backend host/port (gateway `:11430`; Ollama `:11434`)                  |
 | `LLM_DEFAULT_MODEL`   | Universal fallback. Every role-specific key below falls back to it.    |
 | `LLM_MODEL`           | Debug + analysis model (leave blank to use `LLM_DEFAULT_MODEL`)        |
 | `LLM_TIMEOUT`         | Per-request timeout in seconds                                         |
@@ -223,19 +224,21 @@ All configuration lives in `LocalLLMDebug/.env`. Key settings:
 | `EXCLUDE_DIRS_REGEX`  | Override directories to exclude                                        |
 | `MAX_FILE_LINES`      | Source truncation limit (default 800)                                  |
 
-All debug/analysis PowerShell workers resolve their model via `Get-LLMModel -RoleKey 'LLM_MODEL'`, which chains `LLM_MODEL` → `LLM_DEFAULT_MODEL` → hardcoded fallback. Per-request `num_ctx` handles the high-context synthesis passes in `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and `testgap_local.ps1`, so no separate `LLM_MODEL_HIGH_CTX` is needed.
+All debug/analysis PowerShell workers resolve their model via `Get-LLMModel -RoleKey 'LLM_MODEL'`, which chains `LLM_MODEL` → `LLM_DEFAULT_MODEL` → hardcoded fallback. On the `ollama` backend, per-request `num_ctx` handles the high-context synthesis passes in `bughunt_iterative_local.ps1`, `interfaces_local.ps1`, and `testgap_local.ps1`, so no separate `LLM_MODEL_HIGH_CTX` is needed. On the default `vllm` backend `num_ctx` is ignored -- the served-name alias fixes its context window at serve time, so the alias must be served with a window large enough for those synthesis passes.
 
 ---
 
 ## Model Selection
 
-The default `num_ctx` for `qwen2.5-coder:32b` is 32768, which adds ~8 GB of KV cache -- enough to overflow a 24 GB GPU and force partial CPU offload (~4x slower, causing timeouts). Create reduced-context variants:
+The default debug/analysis model is the `LLM_DEFAULT_MODEL` served-name `qwen3-coder-30b` (vllm backend), reached through the LLMConfig gateway, which auto-loads it onto the GPU on first request. Context is fixed at serve time per alias, so VRAM tuning happens in the LLMConfig repo when the alias is defined rather than per request here.
 
-| Variant                  | KV cache | Total VRAM | Use for                              |
-|--------------------------|----------|------------|--------------------------------------|
-| `qwen2.5-coder:32b-8k`  | ~2 GB    | ~23 GB     | Analysis-only scripts                |
-| `qwen2.5-coder:32b-12k` | ~3 GB    | ~24 GB     | Fix calls and synthesis passes       |
-| `qwen2.5-coder:14b`     | default  | ~9 GB      | Smaller GPUs, no custom variant needed |
+On the `ollama` backend you instead tune `num_ctx` yourself, and KV-cache sizing matters. There, the default `num_ctx` for a 30B-class coder tag (e.g. `qwen3-coder:30b`) adds several GB of KV cache -- enough to overflow a 24 GB GPU and force partial CPU offload (~4x slower, causing timeouts). Create reduced-context variants:
+
+| Variant (ollama backend)   | KV cache | Total VRAM | Use for                                |
+|----------------------------|----------|------------|----------------------------------------|
+| `qwen3-coder:30b` (8k)     | ~2 GB    | ~23 GB     | Analysis-only scripts                  |
+| `qwen3-coder:30b` (12k)    | ~3 GB    | ~24 GB     | Fix calls and synthesis passes         |
+| smaller 14B-class coder    | default  | ~9 GB      | Smaller GPUs, no custom variant needed |
 
 ---
 

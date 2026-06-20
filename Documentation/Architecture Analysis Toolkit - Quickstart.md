@@ -1,6 +1,6 @@
 # Architecture Analysis Toolkit -- Quickstart
 
-Generate architecture documentation for a codebase using a local Ollama LLM + optional clangd LSP.
+Generate architecture documentation for a codebase using a local LLM (vLLM via the LLMConfig gateway by default; Ollama selectable) + optional clangd LSP.
 
 **Layout.** The toolkit lives at `C:\Coding\LocalLLM_Pipeline\` (or wherever you cloned it) as a **sibling of your target project**, e.g. `C:\Coding\nmon\`. Invoke scripts **from your target project's root** (`cd C:\Coding\nmon`); paths like `..\LocalLLM_Pipeline\LocalLLMAnalysis\<script>` reach the toolkit. Shared config at `..\LocalLLM_Pipeline\Common\.env` is used by the Analysis, Debug, and Coding pipelines.
 
@@ -11,8 +11,16 @@ Generate architecture documentation for a codebase using a local Ollama LLM + op
 ### 1. Configure `LocalLLM_Pipeline/Common/.env`
 
 ```env
-LLM_ENDPOINT=http://192.168.1.40:11434
-LLM_MODEL=qwen3-coder:30b
+# Backend: vllm (default) -> LLMConfig OpenAI /v1 gateway (auto-loads the model);
+#          ollama          -> native /api/chat.
+LLM_BACKEND=vllm
+LLM_HOST=192.168.1.40
+# vllm uses the gateway port 11430; LLM_PORT (11434) applies to ollama only.
+LLM_PORT=11434
+# Served-name (-) on vllm; on the ollama backend use the tag qwen3-coder:30b.
+LLM_MODEL=qwen3-coder-30b
+# num_ctx applies to the ollama backend only; vllm fixes context per alias at
+# serve time (65536), ignoring these two keys.
 LLM_NUM_CTX=32768
 LLM_ANALYSIS_NUM_CTX=49152
 LLM_TEMPERATURE=0.1

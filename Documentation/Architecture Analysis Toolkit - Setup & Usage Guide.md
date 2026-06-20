@@ -1,6 +1,6 @@
 # Architecture Analysis Toolkit -- Setup & Usage Guide
 
-Automated architecture documentation for codebases of any language that has a preset (Python, C/C++, C#, Rust, etc.), using a local Ollama LLM server with optional clangd LSP.
+Automated architecture documentation for codebases of any language that has a preset (Python, C/C++, C#, Rust, etc.), using a local LLM backend (vLLM via the LLMConfig gateway by default; Ollama selectable) with optional clangd LSP.
 
 **Layout.** The toolkit lives at `C:\Coding\LocalLLM_Pipeline\` (or wherever you cloned it) as a **sibling of your target project**. Invoke scripts from your target project's root (e.g. `cd C:\Coding\nmon`) — toolkit paths are then `..\LocalLLM_Pipeline\LocalLLMAnalysis\<script>`. The shared `.env` lives at `..\LocalLLM_Pipeline\Common\.env`.
 
@@ -62,8 +62,8 @@ Automated architecture documentation for codebases of any language that has a pr
 ### Required
 
 - **PowerShell 5.1+** (Windows)
-- **Ollama** installed and running with a code model pulled (e.g., `ollama pull qwen3-coder:30b`)
-- Network access from workstation to Ollama server
+- **A local LLM backend** reachable. Default (`LLM_BACKEND=vllm`): the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.40:11430/v1`, which auto-loads the requested served-name model (`qwen3-coder-30b`) on first request. Alternatively (`LLM_BACKEND=ollama`): an Ollama server at `http://192.168.1.40:11434` with the code model tag pulled (e.g., `ollama pull qwen3-coder:30b`).
+- Network access from workstation to the backend host (`192.168.1.40`)
 
 ### Optional (for LSP extraction)
 
@@ -95,8 +95,16 @@ Add-Content .gitignore "`narchitecture/`ncompile_commands.json"
 Edit the shared `.env` at `LocalLLM_Pipeline/Common/.env`. Every pipeline (Analysis, Debug, Coding) reads from the same file.
 
 ```env
-LLM_ENDPOINT=http://192.168.1.40:11434
-LLM_MODEL=qwen3-coder:30b
+# Backend: vllm (default) -> LLMConfig OpenAI /v1 gateway (auto-loads the model);
+#          ollama          -> native /api/chat.
+LLM_BACKEND=vllm
+LLM_HOST=192.168.1.40
+# vllm uses the gateway port 11430; LLM_PORT (11434) applies to ollama only.
+LLM_PORT=11434
+# Served-name (-) on vllm; on the ollama backend use the tag qwen3-coder:30b.
+LLM_MODEL=qwen3-coder-30b
+# num_ctx applies to the ollama backend only; vllm fixes context per alias at
+# serve time (65536), ignoring these two keys.
 LLM_NUM_CTX=32768
 LLM_ANALYSIS_NUM_CTX=49152
 LLM_TEMPERATURE=0.1
@@ -229,7 +237,7 @@ Alternatively, `python ..\LocalLLM_Pipeline\LocalLLMAnalysis\Arch_Analysis_Pipel
 | `TIBERIANDAWN`     | ~307 at root + 82 in `WIN32LIB/`       |
 | `CnCTDRAMapEditor` | 257 C# files                           |
 
-Throughput depends on model and hardware: historically measured ~0.11 files/sec with `qwen2.5-coder:14b` on an RTX 3090 (~9s per file). `qwen3-coder:30b` is larger and slower per call but produces richer output at the higher `LLM_ANALYSIS_NUM_CTX=49152`.
+Throughput depends on model and hardware: historically measured ~0.11 files/sec with `qwen2.5-coder:14b` on an RTX 3090 (~9s per file). The current default coder model (`qwen3-coder-30b` served-name on vllm, `qwen3-coder:30b` tag on ollama) is larger and slower per call but produces richer output; on the ollama backend it runs at the higher `LLM_ANALYSIS_NUM_CTX=49152`, while on vllm the alias context is fixed at serve time.
 
 ---
 
@@ -266,12 +274,21 @@ All scripts are incremental. Interrupt with Ctrl+C and re-run to continue. SHA1 
 
 ## 11. Troubleshooting
 
-### Ollama server unreachable
+### Backend unreachable
+
+On the default vllm backend, check the LLMConfig gateway:
+
+```powershell
+curl http://192.168.1.40:11430/v1/models
+```
+
+On the ollama backend, check the Ollama server:
 
 ```powershell
 curl http://192.168.1.40:11434/api/tags
 ```
-Check `LLM_HOST` and `LLM_PORT` in `.env`.
+
+Check `LLM_BACKEND`, `LLM_HOST`, and `LLM_PORT` in `.env`. (`LLM_PORT` applies to the ollama backend only; vllm uses gateway port `11430`.)
 
 ### clangd not found
 
@@ -282,7 +299,8 @@ $env:PATH += ";C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Ll
 
 ### Empty or garbled LLM responses
 
-- Verify model is pulled: `ollama list` on the server
+- On vllm, confirm the served-name model is registered with the gateway (`curl http://192.168.1.40:11430/v1/models`); the first request auto-loads it onto the GPU and may pause while loading.
+- On the ollama backend, verify the model tag is pulled: `ollama list` on the server.
 - Increase `LLM_TIMEOUT` for large files
 - Reduce `MAX_FILE_LINES`
 

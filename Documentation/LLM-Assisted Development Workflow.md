@@ -181,14 +181,17 @@ failures.
 The final question was which local model to use. The answer depends on
 available VRAM:
 
-| Model                 | VRAM    | Role                                 |
-|-----------------------|---------|--------------------------------------|
-| `qwen3.5:27b`         | ~18 GB  | Current default for `run_aider.py`   |
-| `qwen3-coder:30b`     | ~20 GB  | Current default for analysis scripts |
-| `qwen2.5-coder:32b`   | ~20 GB  | Older but proven                     |
-| `qwen2.5-coder:14b`   | ~9 GB   | Good for most steps on 12 GB cards   |
-| `qwen2.5-coder:7b`    | ~5 GB   | Adequate; may struggle on TUI files  |
-| `deepseek-coder-v2:16b` | ~10 GB | Strong alternative                   |
+Model ids below are shown as vLLM **served-names** (`-`) for the default `vllm`
+backend; on the `ollama` backend use the equivalent Ollama **tag** (`:`).
+
+| Model (vllm served-name) | VRAM    | Role                                                        |
+|--------------------------|---------|------------------------------------------------------------|
+| `qwen3.5-27b`            | ~18 GB  | Current default planning model (coding stages 0 & 1)       |
+| `qwen3-coder-30b`        | ~20 GB  | Current default coder model (aider + analysis/debug)       |
+| `qwen2.5-coder:32b`      | ~20 GB  | Older but proven (ollama tag)                              |
+| `qwen2.5-coder:14b`      | ~9 GB   | Good for most steps on 12 GB cards (ollama tag)            |
+| `qwen2.5-coder:7b`       | ~5 GB   | Adequate; may struggle on TUI files (ollama tag)          |
+| `deepseek-coder-v2:16b`  | ~10 GB  | Strong alternative (ollama tag)                           |
 
 The general principle: for code generation in a structured step-by-step context,
 a dedicated coding model outperforms a general-purpose model of the same size.
@@ -208,7 +211,8 @@ The workflow originally used Claude for every stage of
 `Arch_Coding_Pipeline.ps1`. Later iterations added a `-Local` mode that keeps
 Claude for the two high-leverage one-shot stages (Codebase Summary, Prompt
 refinement) but routes the high-volume architectural decomposition and step
-generation to the same local Ollama server that `run_aider.py` uses:
+generation to the same local backend that `run_aider.py` uses (vLLM via the
+LLMConfig gateway by default, or an Ollama server when `LLM_BACKEND=ollama`):
 
 ```powershell
 ..\LocalLLM_Pipeline\LocalLLMCoding\Arch_Coding_Pipeline.ps1 -Local
@@ -219,8 +223,11 @@ With `-Local`:
 
 - Stage 0 (Codebase Summary) and Stage 1 (Improve Prompt) stay on Claude.
 - Stage 2a/2b (Architecture Plan) and Stage 3a/3b (Aider Commands) run against
-  the local LLM using `LLM_PLANNING_MODEL` / `LLM_PLANNING_NUM_CTX` from
-  `Common/.env`.
+  the local LLM using the planning/coder models from `Common/.env`.
+  `LLM_PLANNING_NUM_CTX` applies only on the `ollama` backend; on the default
+  `vllm` backend the context window is fixed per alias at serve time and that
+  knob is ignored (keep the output budget under the ceiling via
+  `LLM_PLANNING_MAX_TOKENS`).
 - Stage 2b writes each section to its own file under
   `Implemented Plans/Plans/Section N.md` -- the local model never edits a
   consolidated document, and a later section cannot corrupt an earlier one.

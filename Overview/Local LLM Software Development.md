@@ -1,12 +1,12 @@
 # Local LLM Software Development Pipeline
 
-The `LocalLLMCoding/` directory contains a two-stage pipeline for building complete Python applications. Claude Code acts as the architect (writing the plan), and a local LLM running on Ollama acts as the implementer (writing the code). The pipeline was developed while building **nmon**, a real-time Nvidia GPU monitor, but the approach is general-purpose.
+The `LocalLLMCoding/` directory contains a two-stage pipeline for building complete Python applications. Claude Code acts as the architect (writing the plan), and a local LLM acts as the implementer (writing the code). The local backend is selected by `LLM_BACKEND` in `Common/.env` -- by default vLLM behind the LLMConfig OpenAI `/v1` gateway, with native Ollama selectable. The pipeline was developed while building **nmon**, a real-time Nvidia GPU monitor, but the approach is general-purpose.
 
 ---
 
 ## Why Two Stages
 
-Planning and implementation have very different requirements. Planning needs broad reasoning, strong domain knowledge, and the ability to hold an entire system design in mind at once. Implementation needs focused, precise code generation within a tight context window. Using a cloud model (Claude) for planning and a local model (Qwen 2.5 Coder via Ollama) for code generation plays to each tool's strengths and avoids their weaknesses.
+Planning and implementation have very different requirements. Planning needs broad reasoning, strong domain knowledge, and the ability to hold an entire system design in mind at once. Implementation needs focused, precise code generation within a tight context window. Using a cloud model (Claude) for planning and a local coder model (`qwen3-coder-30b`, served by vLLM through the LLMConfig gateway) for code generation plays to each tool's strengths and avoids their weaknesses.
 
 ---
 
@@ -102,17 +102,20 @@ The script runs from the project root. It resolves the command file relative to 
 | `file`          | Markdown file to read (default: `aidercommands.md`)      |
 | `--from-step N` | Resume from step N after a failure                       |
 | `--only-step N` | Rerun a single step                                      |
-| `--model MODEL` | Override the model (e.g. `ollama/qwen2.5-coder:32b-12k`) |
+| `--model MODEL` | Override the aider model (default: `openai/qwen3-coder-30b` on vllm, `ollama_chat/qwen3-coder:30b` on ollama) |
 | `--dry-run`     | Preview steps without calling aider                      |
 
-### Remote Ollama Server
+### Local backend wiring
 
-If Ollama runs on a different machine, set the environment variable before running:
+`run_aider.py` reads `Common/.env` and wires aider to the backend automatically. With the default `LLM_BACKEND=vllm` it sets `OPENAI_API_BASE` to the LLMConfig `/v1` gateway and passes `--model openai/<LLM_AIDER_MODEL>`; the gateway auto-loads the served-name model on first request:
 
 ```powershell
-$env:OLLAMA_API_BASE = "http://192.168.1.40:11434"
-python .\LocalLLMCoding\run_aider.py --model ollama/qwen2.5-coder:32b-12k
+# default (vllm): no flags needed -- endpoint + model come from Common/.env
+python .\LocalLLMCoding\run_aider.py
+# -> OPENAI_API_BASE=http://192.168.1.40:11430/v1 , --model openai/qwen3-coder-30b
 ```
+
+On the `ollama` backend it sets `OLLAMA_API_BASE` to the native Ollama server (`:11434`) instead and passes `--model ollama_chat/<LLM_AIDER_MODEL>` (e.g. `ollama_chat/qwen3-coder:30b`).
 
 ---
 
@@ -134,16 +137,16 @@ Retrospective on the entire workflow. Documents the problems encountered at each
 
 ## Model Selection
 
-The local LLM needs to be a strong code generator that fits in VRAM with enough context window for single-file edits (~5000-6500 tokens per call).
+The local LLM needs to be a strong code generator that fits in VRAM with enough context window for single-file edits (~5000-6500 tokens per call). The default is the served-name `qwen3-coder-30b` (vllm backend); the gateway auto-loads it and its context is fixed at serve time, so VRAM tuning lives in the LLMConfig alias definition rather than here.
 
-| Model                       | VRAM    | Notes                                      |
-|-----------------------------|---------|--------------------------------------------|
-| `qwen2.5-coder:32b-12k`    | ~24 GB  | Best quality; recommended for 24 GB GPUs   |
-| `qwen2.5-coder:14b`        | ~9 GB   | Good for 12 GB GPUs; no custom variant needed |
-| `qwen2.5-coder:7b`         | ~5 GB   | Adequate; may struggle on complex files    |
-| `deepseek-coder-v2:16b`    | ~10 GB  | Strong alternative to qwen 14b             |
+| Model                                | VRAM    | Notes                                          |
+|--------------------------------------|---------|------------------------------------------------|
+| `qwen3-coder-30b` (vllm served-name) | ~24 GB  | Default; best quality; recommended for 24 GB GPUs |
+| `qwen3-coder:30b` (ollama tag)       | ~24 GB  | Same model on the `ollama` backend; tune `num_ctx` yourself |
+| smaller 14B-class coder              | ~9 GB   | Good for 12 GB GPUs                             |
+| smaller 7B-class coder               | ~5 GB   | Adequate; may struggle on complex files        |
 
-The default `qwen2.5-coder:32b` has a 32k context window that adds ~8 GB of KV cache, overflowing a 24 GB card. Creating a 12k-context variant (`qwen2.5-coder:32b-12k`) via `ollama create` keeps the same weights but fits fully on GPU.
+On the `ollama` backend a 30B-class tag at a large `num_ctx` adds several GB of KV cache and can overflow a 24 GB card; create a reduced-context variant via `ollama create` (same weights, smaller window) so it fits fully on GPU. On the default `vllm` backend this is handled at serve time per alias instead.
 
 ---
 

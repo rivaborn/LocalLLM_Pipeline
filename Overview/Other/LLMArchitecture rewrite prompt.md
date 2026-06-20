@@ -1,30 +1,32 @@
 # Local LLM Pipeline Rewrite Plan
 
+> **Historical note (current state).** This is the original plan from when the pipeline was first moved off the Claude CLI onto a local LLM. The toolkit now reaches the local LLM through the **LLMConfig OpenAI `/v1` gateway** (`http://192.168.1.40:11430/v1`, `LLM_BACKEND=vllm`, the default), which auto-loads served-name models (e.g. `qwen3-coder-30b`); native **Ollama** (`http://192.168.1.40:11434`, `LLM_BACKEND=ollama`) remains selectable. The plan below is preserved for its design reasoning; read concrete endpoints/model ids through that current lens.
+
 ## Goal
 
-Rewrite the archgen documentation pipeline to use a local Ollama server (`http://192.168.1.40:11434`) with `qwen2.5-coder:14b` instead of Claude CLI. The local LLM has significantly less context window (~8K-32K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
+Rewrite the archgen documentation pipeline to use a local LLM backend -- by default vLLM behind the LLMConfig gateway (`http://192.168.1.40:11430/v1`), with native Ollama (`http://192.168.1.40:11434`) selectable -- instead of the Claude CLI. The local LLM has significantly less context window (~8K-64K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
 
 ## Hardware & Model Constraints
 
 | Constraint     | Value                                                                      |
 |----------------|----------------------------------------------------------------------------|
 | GPU            | RTX 3090 (24 GB VRAM)                                                      |
-| Model          | `qwen2.5-coder:14b`                                                       |
-| Context window | ~32K tokens (vs Claude's 200K)                                             |
+| Model          | served-name `qwen3-coder-30b` (vllm, default); tag `qwen3-coder:30b` on ollama |
+| Context window | per-alias at serve time on vllm (pipeline aliases 65536); `num_ctx` on ollama (vs Claude's 200K) |
 | Throughput     | ~1 request at a time on GPU (no parallelism benefit beyond 1-2 jobs)       |
 | Capability     | Good at code understanding, weaker at long-form synthesis than Claude      |
-| API            | Ollama REST API (`/api/generate` or OpenAI-compatible `/v1/chat/completions`) |
-| Server         | `http://192.168.1.40:11434`                                               |
+| API            | OpenAI-compatible: LLMConfig `/v1/chat/completions` gateway (vllm) or Ollama `/api/chat` (ollama) |
+| Server         | gateway `http://192.168.1.40:11430` (vllm) / `http://192.168.1.40:11434` (ollama) |
 
 ## Key Design Decisions
 
 ### 1. Use OpenAI-compatible API (simplest integration)
 
-Ollama exposes `POST /v1/chat/completions` which accepts standard `messages` format. This is the cleanest approach:
+Both backends expose `POST /v1/chat/completions` accepting the standard `messages` format -- the LLMConfig gateway on the default vllm path, and Ollama directly. This is the cleanest approach (gateway shown; for the ollama backend swap the host to `:11434` and use a `:`-tag model id):
 
 ```powershell
 $body = @{
-    model    = "qwen2.5-coder:14b"
+    model    = "qwen3-coder-30b"
     messages = @(
         @{ role = "system"; content = $systemPrompt }
         @{ role = "user";   content = $userPrompt }
@@ -33,14 +35,14 @@ $body = @{
     temperature = 0.1
 } | ConvertTo-Json -Depth 5
 
-$resp = Invoke-RestMethod -Uri "http://192.168.1.40:11434/v1/chat/completions" `
+$resp = Invoke-RestMethod -Uri "http://192.168.1.40:11430/v1/chat/completions" `
     -Method Post -ContentType "application/json" -Body $body
 $output = $resp.choices[0].message.content
 ```
 
 ### 2. Reduce context sent per request
 
-With ~32K tokens vs 200K, we must be aggressive about cutting input:
+With a much smaller window than Claude's 200K (the pipeline's vLLM aliases serve at 65536; the ollama backend is `num_ctx`-bound), we must be aggressive about cutting input:
 
 | Current feature                         | Action for local LLM                                        |
 |-----------------------------------------|-------------------------------------------------------------|
@@ -103,12 +105,14 @@ Claude pipeline used `Start-Job` with 8 parallel workers hitting the cloud API. 
 ## New `.env` Variables
 
 ```env
-# Local LLM settings
-LLM_ENDPOINT=http://192.168.1.40:11434
-LLM_MODEL=qwen2.5-coder:14b
+# Local LLM settings (default vllm backend via the LLMConfig /v1 gateway)
+LLM_BACKEND=vllm
+LLM_HOST=192.168.1.40
+LLM_MODEL=qwen3-coder-30b
 LLM_TEMPERATURE=0.1
 LLM_MAX_TOKENS=800
 LLM_TIMEOUT=120
+# (ollama backend instead: LLM_BACKEND=ollama, LLM_PORT=11434, LLM_MODEL=qwen3-coder:30b)
 
 # Reduced limits for local LLM
 MAX_FILE_LINES=800
@@ -370,9 +374,9 @@ This repo is the Command & Conquer Remastered Collection source drop (EA/Westwoo
 ### Current .env for this codebase:
 
 ```env
+LLM_BACKEND=vllm
 LLM_HOST=192.168.1.40
-LLM_PORT=11434
-LLM_MODEL=devstral-small-2
+LLM_MODEL=qwen3-coder-30b
 LLM_TEMPERATURE=0.1
 LLM_MAX_TOKENS=800
 LLM_TIMEOUT=120
