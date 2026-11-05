@@ -81,7 +81,7 @@ python Common/ArchPipeline.py analysis
 | `LLM_TEMPERATURE`      | `0.1`                           | Sampling temperature                                                      |
 | `LLM_TIMEOUT`          | `120`                           | HTTP timeout in seconds                                                   |
 | `LLM_ANALYSIS_NUM_CTX` | (none)                          | Ollama backend only: overrides `LLM_NUM_CTX`. Ignored on vllm (context fixed per alias). |
-| `LLM_ENDPOINT`         | (from helper)                   | Backend base URL. Default vllm: `http://192.168.1.40:11430` gateway; ollama: `:11434`. |
+| `LLM_ENDPOINT`         | (from helper)                   | Backend base URL. Default vllm: `http://192.168.1.15:11430` gateway; ollama: `:11434`. |
 
 ## Exit Codes
 

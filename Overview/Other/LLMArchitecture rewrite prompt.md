@@ -1,10 +1,10 @@
 # Local LLM Pipeline Rewrite Plan
 
-> **Historical note (current state).** This is the original plan from when the pipeline was first moved off the Claude CLI onto a local LLM. The toolkit now reaches the local LLM through the **LLMConfig OpenAI `/v1` gateway** (`http://192.168.1.40:11430/v1`, `LLM_BACKEND=vllm`, the default), which auto-loads served-name models (e.g. `qwen3-coder-30b`); native **Ollama** (`http://192.168.1.40:11434`, `LLM_BACKEND=ollama`) remains selectable. The plan below is preserved for its design reasoning; read concrete endpoints/model ids through that current lens.
+> **Historical note (current state).** This is the original plan from when the pipeline was first moved off the Claude CLI onto a local LLM. The toolkit now reaches the local LLM through the **LLMConfig OpenAI `/v1` gateway** (`http://192.168.1.15:11430/v1`, `LLM_BACKEND=vllm`, the default), which auto-loads served-name models (e.g. `qwen3-coder-30b`); native **Ollama** (`http://192.168.1.40:11434`, `LLM_BACKEND=ollama`) remains selectable. The plan below is preserved for its design reasoning; read concrete endpoints/model ids through that current lens.
 
 ## Goal
 
-Rewrite the archgen documentation pipeline to use a local LLM backend -- by default vLLM behind the LLMConfig gateway (`http://192.168.1.40:11430/v1`), with native Ollama (`http://192.168.1.40:11434`) selectable -- instead of the Claude CLI. The local LLM has significantly less context window (~8K-64K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
+Rewrite the archgen documentation pipeline to use a local LLM backend -- by default vLLM behind the LLMConfig gateway (`http://192.168.1.15:11430/v1`), with native Ollama (`http://192.168.1.40:11434`) selectable -- instead of the Claude CLI. The local LLM has significantly less context window (~8K-64K tokens vs Claude's 200K) and lower capability, so every script must be redesigned to minimize per-request workload.
 
 ## Hardware & Model Constraints
 
@@ -16,7 +16,7 @@ Rewrite the archgen documentation pipeline to use a local LLM backend -- by defa
 | Throughput     | ~1 request at a time on GPU (no parallelism benefit beyond 1-2 jobs)       |
 | Capability     | Good at code understanding, weaker at long-form synthesis than Claude      |
 | API            | OpenAI-compatible: LLMConfig `/v1/chat/completions` gateway (vllm) or Ollama `/api/chat` (ollama) |
-| Server         | gateway `http://192.168.1.40:11430` (vllm) / `http://192.168.1.40:11434` (ollama) |
+| Server         | gateway `http://192.168.1.15:11430` (vllm) / `http://192.168.1.40:11434` (ollama) |
 
 ## Key Design Decisions
 
@@ -35,7 +35,7 @@ $body = @{
     temperature = 0.1
 } | ConvertTo-Json -Depth 5
 
-$resp = Invoke-RestMethod -Uri "http://192.168.1.40:11430/v1/chat/completions" `
+$resp = Invoke-RestMethod -Uri "http://192.168.1.15:11430/v1/chat/completions" `
     -Method Post -ContentType "application/json" -Body $body
 $output = $resp.choices[0].message.content
 ```

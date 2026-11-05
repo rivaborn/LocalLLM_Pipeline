@@ -20,7 +20,7 @@ LLM call, saving time and GPU resources.
 | PowerShell 5.1+ or pwsh 7+    | Script uses `Set-StrictMode -Version Latest`                                                       |
 | `llm_common.ps1`              | Shared module in `../Common/`; provides `Invoke-LocalLLM`, `Get-Preset`, `Cfg`, hash helpers, etc. |
 | `../Common/.env`              | Configuration file with LLM endpoint, model, preset, and project settings                          |
-| Local LLM backend reachable   | Default: vLLM via the LLMConfig `/v1` gateway (`http://192.168.1.40:11430`). `LLM_BACKEND=ollama` selects native Ollama (`:11434`). |
+| Local LLM backend reachable   | Default: vLLM via the LLMConfig `/v1` gateway (`http://192.168.1.15:11430`). `LLM_BACKEND=ollama` selects native Ollama (`:11434`). |
 | `archgen_local_prompt.txt`    | Prompt schema file in the same directory as the script                                             |
 | (Optional) `.serena_context/` | Compressed LSP symbol files from `serena_extract.ps1` for richer context                           |
 
@@ -92,7 +92,7 @@ which runs `archgen_local.ps1 -Preset generals` via PowerShell subprocess.
 | `LLM_MAX_TOKENS`       | `800`                    | Maximum output tokens                                                                  |
 | `LLM_TIMEOUT`          | `120`                    | HTTP request timeout in seconds                                                        |
 | `LLM_ANALYSIS_NUM_CTX` | (none)                   | Ollama backend only: overrides `LLM_NUM_CTX`. Ignored on vllm (context fixed per alias). |
-| `LLM_ENDPOINT`         | (from `Get-LLMEndpoint`) | Backend base URL. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.   |
+| `LLM_ENDPOINT`         | (from `Get-LLMEndpoint`) | Backend base URL. Default vllm gateway `http://192.168.1.15:11430`; ollama `:11434`.   |
 
 ## Exit Codes
 

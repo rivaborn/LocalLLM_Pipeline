@@ -180,7 +180,7 @@ from _pipeline.config import load_env, resolve_backend, resolve_endpoint
 
 env = load_env()
 backend = resolve_backend(env)                       # "vllm"
-endpoint = resolve_endpoint(env, backend=backend)    # "http://192.168.1.40:11430"
+endpoint = resolve_endpoint(env, backend=backend)    # "http://192.168.1.15:11430"
 
 # Ollama fallback:
 resolve_endpoint(env, backend="ollama")              # "http://192.168.1.40:11434"

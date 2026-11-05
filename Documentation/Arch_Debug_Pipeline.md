@@ -320,7 +320,7 @@ initial architecture, then bug fixes, then new features.
 
 - **Claude Code CLI** (`claude`) installed and available in PATH
 - **Local LLM backend** reachable for steps 1-4: by default the LLMConfig vLLM
-  gateway at `http://192.168.1.40:11430/v1`; or an Ollama server at
+  gateway at `http://192.168.1.15:11430/v1`; or an Ollama server at
   `http://192.168.1.40:11434` when `LLM_BACKEND=ollama`
 - **PowerShell 5.1+** (Windows PowerShell or PowerShell Core)
 - At least one Claude account configured (Claude1 or Claude2)

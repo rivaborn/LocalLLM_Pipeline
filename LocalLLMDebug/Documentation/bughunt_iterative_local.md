@@ -94,7 +94,7 @@ In addition to source files, the script discovers matching test files and runs a
 | `CODEBASE_DESC`                         | from preset           | Human-readable codebase description injected into LLM system prompts.                                               |
 | `DEFAULT_FENCE`                         | from preset           | Default code fence language for LLM prompts (e.g. `python`, `c`).                                                   |
 | `MAX_FILE_LINES`                        | `800`                 | Maximum lines to send to the LLM per file (longer files are truncated).                                             |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                     | Backend base URL, resolved by `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`. |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                     | Backend base URL, resolved by `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.15:11430`; ollama `:11434`. |
 | `LLM_MODEL`                             | blank (→ DEFAULT)     | Model id, resolved by `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` (12k fix window) applies on ollama only; vllm uses the per-alias context. |
 | `LLM_DEFAULT_MODEL`                     | `qwen3-coder-30b`     | Universal fallback when `LLM_MODEL` is blank/unset. vLLM served-name (`qwen3-coder:30b` tag on the ollama backend).  |
 | `LLM_TEMPERATURE`                       | `0.1`                 | LLM sampling temperature.                                                                                           |

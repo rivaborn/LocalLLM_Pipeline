@@ -36,7 +36,7 @@ folder.
 - Python 3.10+
 - Aider installed and on your PATH: `pip install aider-chat`
 - A local LLM backend reachable. By default this is vLLM via the LLMConfig
-  OpenAI `/v1` gateway (`http://192.168.1.40:11430/v1`), which auto-loads the
+  OpenAI `/v1` gateway (`http://192.168.1.15:11430/v1`), which auto-loads the
   requested served-name model on first request. The `ollama` backend
   (`LLM_BACKEND=ollama`) is selectable; with it you need an Ollama server running
   (https://ollama.com/download) and the coder model tag pulled locally.
@@ -52,7 +52,7 @@ backend: `openai/<LLM_AIDER_MODEL>` on the `vllm` backend, or
 `ollama_chat/<LLM_AIDER_MODEL>` on the `ollama` backend.
 
 **vllm backend (default).** litellm's `openai/` provider talks to the LLMConfig
-gateway. The script sets `OPENAI_API_BASE=http://192.168.1.40:11430/v1` (plus a
+gateway. The script sets `OPENAI_API_BASE=http://192.168.1.15:11430/v1` (plus a
 dummy `OPENAI_API_KEY`, since the gateway is LAN-only) and prints
 `[vllm] OPENAI_API_BASE=...`. No model flag is needed — it defaults to
 `openai/qwen3-coder-30b`:
@@ -334,7 +334,7 @@ writes the files, and exits automatically.
 ## Troubleshooting
 
 **vllm backend: gateway not reachable** — On the default backend, aider talks to
-the LLMConfig gateway at `http://192.168.1.40:11430/v1`. Confirm the host is up
+the LLMConfig gateway at `http://192.168.1.15:11430/v1`. Confirm the host is up
 and the `/v1` endpoint responds; the gateway auto-loads `qwen3-coder-30b` on the
 first request, so the first call may pause while the model loads. The
 `num_ctx` / Modelfile / `ollama ps` items below apply to the **ollama backend

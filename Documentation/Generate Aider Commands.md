@@ -41,7 +41,7 @@ The local model, endpoint, and per-request context window all live in
 
 ```ini
 LLM_BACKEND=vllm                          # vllm (default, LLMConfig /v1 gateway) or ollama
-LLM_ENDPOINT=http://192.168.1.40:11430    # vllm gateway; for ollama use :11434 (or LLM_HOST + LLM_PORT)
+LLM_ENDPOINT=http://192.168.1.15:11430    # vllm gateway; for ollama use :11434 (or LLM_HOST + LLM_PORT)
 LLM_PLANNING_MODEL=qwen3.5-27b            # vLLM served-name; planning stages 0/1 (ollama tag: qwen3.5:27b)
 LLM_PLANNING_NUM_CTX=24576                # ollama backend only; ignored on vllm (context fixed per alias)
 LLM_PLANNING_MAX_TOKENS=16384             # output budget; keep input + output under the vllm alias ceiling
@@ -219,7 +219,7 @@ The `.progress` file is automatically deleted when all stages complete successfu
 | `-NoUltrathink`   | `switch`   | `$false`             | Force extended thinking off for all Claude stages. |
 | `-Local`          | `switch`   | `$false`             | Route **every** stage to the local LLM (no Claude at all, including Stage 1). Mutually exclusive with `-AllClaude`. See [Engine routing modes](#engine-routing-modes). |
 | `-AllClaude`      | `switch`   | `$false`             | Route **every** stage to Claude (reverts to pre-default behaviour, useful when the local server is unreachable). Mutually exclusive with `-Local`. |
-| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the local backend endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.40:11430` (the vllm gateway; the ollama backend uses `:11434`). |
+| `-LocalEndpoint`  | `string`   | (from `.env`)        | Override the local backend endpoint URL for local stages. Precedence: this flag → `$env:LLM_ENDPOINT` → `Common/.env` value → default `http://192.168.1.15:11430` (the vllm gateway; the ollama backend uses `:11434`). |
 | `-LocalModel`     | `string`   | (from `.env`)        | Override the local planning model. Defaults to `LLM_PLANNING_MODEL` in `Common/.env`. |
 | `-SkipStage`      | `int[]`    | (none)               | Skip one or more stages. Accepts a list: `-SkipStage 1,2` skips stages 1 and 2. Stage 0 cannot be skipped (it runs automatically when prior plans exist). |
 | `-FromStage`      | `int`      | `1`                  | Start from a specific stage, skipping all earlier stages. Valid values: 1, 2, 3. Stage 0 always runs if applicable. |
@@ -407,7 +407,7 @@ Endpoint precedence (first match wins):
 2. `$env:LLM_ENDPOINT` in the shell
 3. `LLM_ENDPOINT` in `Common/.env`
 4. `LLM_HOST` + `LLM_PORT` in `Common/.env`
-5. Hardcoded default `http://192.168.1.40:11430` (vllm gateway; ollama backend uses `:11434`)
+5. Hardcoded default `http://192.168.1.15:11430` (vllm gateway; ollama backend uses `:11434`)
 
 Model precedence: `-LocalModel` flag → `LLM_PLANNING_MODEL` in `Common/.env`.
 
@@ -417,7 +417,7 @@ Shows the active mode plus resolved endpoint/model when the local LLM is used:
 
 ```
 Mode: default -- Stage 1 = Claude; Stages 0, 2a, 2b, 3a, 3b = local
-  Local endpoint: http://192.168.1.40:11430
+  Local endpoint: http://192.168.1.15:11430
   Local model:    qwen3.5-27b
 ```
 
@@ -590,7 +590,7 @@ python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py --local
 - At least one Claude account configured (Claude1 or Claude2 via `CLAUDE_CONFIG_DIR`)
 - An `InitialPrompt.md` file in the target directory describing the work to be done
 - **For `-Local` mode only:** the local backend reachable at the configured endpoint —
-  by default the vLLM LLMConfig `/v1` gateway (`http://192.168.1.40:11430`), which
+  by default the vLLM LLMConfig `/v1` gateway (`http://192.168.1.15:11430`), which
   auto-loads the requested served-name model (e.g. `qwen3.5-27b`) on first request; or,
   when `LLM_BACKEND=ollama`, an Ollama server with the planning model pulled
   (e.g. `ollama pull qwen3.5:27b`)

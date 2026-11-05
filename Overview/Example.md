@@ -47,7 +47,7 @@ cd C:\Coding\nmon
 python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py ..\nmonLocalLLM\LocalLLMCodePrompts\aidercommands.md
 ```
 
-The backend is auto-resolved from `Common\.env` (`LLM_BACKEND=vllm` by default); no flag needed. Aider's cwd is inherited from `run_aider.py`'s cwd, so paths like `src/nmon/models.py` in each step resolve to `C:\Coding\nmon\src\nmon\models.py`. By default (`LLM_BACKEND=vllm`) `run_aider.py` reads `Common\.env`, points aider at the LLMConfig `/v1` gateway via `OPENAI_API_BASE=http://192.168.1.40:11430/v1`, and builds `--model openai/qwen3-coder-30b` (the `LLM_AIDER_MODEL` served-name). On the `ollama` backend it instead sets `OLLAMA_API_BASE` and builds `--model ollama_chat/qwen3-coder:30b`.
+The backend is auto-resolved from `Common\.env` (`LLM_BACKEND=vllm` by default); no flag needed. Aider's cwd is inherited from `run_aider.py`'s cwd, so paths like `src/nmon/models.py` in each step resolve to `C:\Coding\nmon\src\nmon\models.py`. By default (`LLM_BACKEND=vllm`) `run_aider.py` reads `Common\.env`, points aider at the LLMConfig `/v1` gateway via `OPENAI_API_BASE=http://192.168.1.15:11430/v1`, and builds `--model openai/qwen3-coder-30b` (the `LLM_AIDER_MODEL` served-name). On the `ollama` backend it instead sets `OLLAMA_API_BASE` and builds `--model ollama_chat/qwen3-coder:30b`.
 
 Preview first:
 
@@ -101,7 +101,7 @@ Claude CLI: Claude1
 Claude model: per-stage defaults (Sonnet: 0,1,3b  Opus: 2a,2b,3a)
 Ultrathink: per-stage defaults (ON: 2a,2b,3a  OFF: 0,1,3b)
 Mode: default -- Stage 1 = Claude; Stages 0, 2a, 2b, 3a, 3b = local
-  Local endpoint: http://192.168.1.40:11430   (LLMConfig /v1 gateway; vllm backend)
+  Local endpoint: http://192.168.1.15:11430   (LLMConfig /v1 gateway; vllm backend)
   Planning model: qwen3.5-27b
 ```
 

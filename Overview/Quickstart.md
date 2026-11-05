@@ -47,7 +47,7 @@ One file drives every pipeline. Key knobs:
 | Key | Default | Used by |
 |---|---|---|
 | `LLM_BACKEND` | `vllm` | `vllm` → LLMConfig `/v1` gateway (`:11430`); `ollama` → native Ollama (`:11434`) |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.40:11430` (gateway) | All LLM calls. On `ollama`, the host uses `LLM_PORT` (default `11434`). |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | `192.168.1.15:11430` (gateway) | All LLM calls. On `ollama`, the host uses `LLM_PORT` (default `11434`). |
 | `LLM_DEFAULT_MODEL` | `qwen3-coder-30b` | Universal fallback — every role key below falls back to this when blank/unset |
 | `LLM_MODEL` | blank (→ DEFAULT) | Analysis + Debug |
 | `LLM_PLANNING_MODEL` | `qwen3.5-27b` | Coding planning stages 0/1 (when run locally) |
@@ -451,7 +451,7 @@ python ..\LocalLLM_Pipeline\LocalLLMCoding\run_aider.py [file] [options]
 
 The backend is auto-resolved from `Common/.env` (`LLM_BACKEND=vllm` by default); there is no `--local` flag. On `vllm` it sets `OPENAI_API_BASE=<gateway>/v1` + `--model openai/<LLM_AIDER_MODEL>`; on `ollama` it sets `OLLAMA_API_BASE` + `--model ollama_chat/<LLM_AIDER_MODEL>`. To force a backend (or endpoint/model), edit `Common/.env` rather than passing a flag.
 
-**Endpoint precedence** (first match wins): `OLLAMA_API_BASE` (ollama backend) → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.40:11430` (gateway; `:11434` on the ollama backend).
+**Endpoint precedence** (first match wins): `OLLAMA_API_BASE` (ollama backend) → `LLM_ENDPOINT` env var → `LLM_ENDPOINT` in `.env` → `LLM_HOST`+`LLM_PORT` → default `http://192.168.1.15:11430` (gateway; `:11434` on the ollama backend).
 
 **Typical runs:**
 ```powershell

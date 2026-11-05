@@ -36,7 +36,7 @@ must be running and reachable before any script is invoked.
 ```
 # Default (vllm): verify the LLMConfig gateway is up.
 # It auto-loads the requested served-name model (e.g. qwen3-coder-30b) on first request.
-curl http://192.168.1.40:11430/v1/models
+curl http://192.168.1.15:11430/v1/models
 
 # ollama backend: pull the model (first time only), then verify the server.
 ollama pull qwen3-coder:30b        # or qwen2.5-coder:14b on smaller GPUs

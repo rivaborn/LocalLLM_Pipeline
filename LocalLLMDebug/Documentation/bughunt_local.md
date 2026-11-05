@@ -83,7 +83,7 @@ The legacy `Arch_Debug_Pipeline.ps1` has been retired; it still exists in the `l
 | `CODEBASE_DESC`                         | from preset         | Human-readable codebase description for the LLM system prompt.                                               |
 | `DEFAULT_FENCE`                         | from preset         | Code fence language identifier (e.g. `python`).                                                              |
 | `MAX_FILE_LINES`                        | `800`               | Files longer than this are truncated before sending to the LLM.                                              |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.   |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.15:11430`; ollama `:11434`.   |
 | `LLM_MODEL`                             | `qwen3-coder-30b`   | Model id for analysis. vLLM served-name on the default backend (`qwen3-coder:30b` tag on the ollama backend).|
 | `LLM_TEMPERATURE`                       | `0.1`               | LLM sampling temperature.                                                                                    |
 | `LLM_TIMEOUT`                           | `120`               | Per-request timeout in seconds.                                                                              |

@@ -4,7 +4,7 @@
 
 Architecture documentation toolkit for codebases of any language with a preset (Python, C/C++, C#, Rust, etc.). Generates per-file and subsystem-level architecture docs using a local LLM backend, with optional LSP-powered semantic analysis via clangd.
 
-**LLM backend:** Selected by `LLM_BACKEND` in `LocalLLM_Pipeline/Common/.env` and shared with the Debug and Coding pipelines. Default `vllm` -> the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.40:11430/v1` (auto-loads the requested model on first request); `ollama` -> native Ollama at `http://192.168.1.40:11434`.
+**LLM backend:** Selected by `LLM_BACKEND` in `LocalLLM_Pipeline/Common/.env` and shared with the Debug and Coding pipelines. Default `vllm` -> the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.15:11430/v1` (auto-loads the requested model on first request); `ollama` -> native Ollama at `http://192.168.1.40:11434`.
 **Model:** the served-name `qwen3-coder-30b` on the default vllm backend (or the tag `qwen3-coder:30b` on the ollama backend), via `LLM_MODEL` -> `LLM_DEFAULT_MODEL`. On vllm the context is fixed per alias at serve time (65536); on the ollama backend it runs at per-request `num_ctx=49152` (configurable via `LLM_ANALYSIS_NUM_CTX`).
 
 ## Directory Layout

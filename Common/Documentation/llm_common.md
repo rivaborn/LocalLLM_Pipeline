@@ -65,7 +65,7 @@ Resolves the backend base URL (no trailing slash):
 **Example:**
 
 ```powershell
-Get-LLMEndpoint                    # -> "http://192.168.1.40:11430" (vllm default)
+Get-LLMEndpoint                    # -> "http://192.168.1.15:11430" (vllm default)
 Get-LLMEndpoint -Backend ollama    # -> "http://192.168.1.40:11434"
 ```
 

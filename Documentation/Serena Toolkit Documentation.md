@@ -38,7 +38,7 @@ Designed for consumer GPU hardware (24 GB+ VRAM) with coder-tuned models like th
 |------------------|---------------------------------------------------------------------------------------|
 | OS               | Windows 11                                                                            |
 | GPU              | RTX 3090 or better (24 GB VRAM)                                                       |
-| LLM Server       | vLLM via the LLMConfig `/v1` gateway (default, `http://192.168.1.40:11430`); or the ollama backend (`http://192.168.1.40:11434`). Selected by `LLM_BACKEND`; endpoint via `LLM_ENDPOINT` / `LLM_HOST`. |
+| LLM Server       | vLLM via the LLMConfig `/v1` gateway (default, `http://192.168.1.15:11430`); or the ollama backend (`http://192.168.1.40:11434`). Selected by `LLM_BACKEND`; endpoint via `LLM_ENDPOINT` / `LLM_HOST`. |
 | Model            | `qwen3-coder-30b` (vLLM served-name; configurable via `LLM_MODEL`). On the ollama backend use the tag `qwen3-coder:30b`. |
 | Context window   | Fixed per alias at serve time on the default vllm backend (`LLM_ANALYSIS_NUM_CTX`/`num_ctx` ignored). On the ollama backend, 49152 tokens per Analysis request (via `LLM_ANALYSIS_NUM_CTX`, promoted into `LLM_NUM_CTX` at script startup). |
 | Target codebase  | Any language with a preset (Python, C/C++, C#, Rust, etc.)                            |
@@ -206,7 +206,7 @@ For the C&C Remastered Collection source release, the script finds two `.vcxproj
 
 ```env
 LLM_BACKEND=vllm                          # vllm (default, LLMConfig /v1 gateway) or ollama
-LLM_ENDPOINT=http://192.168.1.40:11430    # vllm gateway; for ollama use :11434
+LLM_ENDPOINT=http://192.168.1.15:11430    # vllm gateway; for ollama use :11434
 LLM_MODEL=qwen3-coder-30b                 # vLLM served-name; on ollama use qwen3-coder:30b
 LLM_NUM_CTX=32768                         # ollama backend only; ignored on vllm
 LLM_ANALYSIS_NUM_CTX=49152               # ollama backend only; ignored on vllm

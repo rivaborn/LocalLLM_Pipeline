@@ -41,7 +41,7 @@ legacy/                       pre-ArchPipeline.py entry points (unmaintained)
 
 - **Python 3.10+**
 - **PowerShell** (the per-step workers are `.ps1` scripts)
-- **[LLMConfig](https://github.com/rivaborn/LLMConfig)** gateway reachable (default `http://192.168.1.40:11430`) serving the models you configure — or, with `LLM_BACKEND=ollama`, an **[Ollama](https://ollama.com)** server (`:11434`)
+- **[LLMConfig](https://github.com/rivaborn/LLMConfig)** gateway reachable (default `http://192.168.1.15:11430`) serving the models you configure — or, with `LLM_BACKEND=ollama`, an **[Ollama](https://ollama.com)** server (`:11434`)
 - **[Claude Code CLI](https://claude.com/claude-code)** (`claude` on PATH) for Claude-routed stages
 - **[aider](https://aider.chat)** for coding-mode Stage 4
 - Optional: a Python language-server / ctags toolchain for symbol resolution in analysis

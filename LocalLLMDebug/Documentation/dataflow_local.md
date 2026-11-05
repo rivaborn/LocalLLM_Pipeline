@@ -88,7 +88,7 @@ If the synthesis call fails, the script writes a fallback document containing al
 | `CODEBASE_DESC`                         | from preset         | Human-readable codebase description for LLM system prompts.                                            |
 | `DEFAULT_FENCE`                         | from preset         | Code fence language identifier.                                                                        |
 | `MAX_FILE_LINES`                        | `800`               | Files longer than this are truncated before sending to the LLM.                                        |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`. |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                   | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.15:11430`; ollama `:11434`. |
 | `LLM_MODEL`                             | `qwen3-coder-30b`   | Model id for extraction + synthesis. vLLM served-name on default (`qwen3-coder:30b` tag on ollama).    |
 | `LLM_TEMPERATURE`                       | `0.1`               | LLM sampling temperature.                                                                              |
 | `LLM_TIMEOUT`                           | `120`               | Base per-request timeout in seconds. The synthesis call uses `3x` this value.                          |

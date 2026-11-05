@@ -112,7 +112,7 @@ The script runs from the project root. It resolves the command file relative to 
 ```powershell
 # default (vllm): no flags needed -- endpoint + model come from Common/.env
 python .\LocalLLMCoding\run_aider.py
-# -> OPENAI_API_BASE=http://192.168.1.40:11430/v1 , --model openai/qwen3-coder-30b
+# -> OPENAI_API_BASE=http://192.168.1.15:11430/v1 , --model openai/qwen3-coder-30b
 ```
 
 On the `ollama` backend it sets `OLLAMA_API_BASE` to the native Ollama server (`:11434`) instead and passes `--model ollama_chat/<LLM_AIDER_MODEL>` (e.g. `ollama_chat/qwen3-coder:30b`).

@@ -62,7 +62,7 @@ Automated architecture documentation for codebases of any language that has a pr
 ### Required
 
 - **PowerShell 5.1+** (Windows)
-- **A local LLM backend** reachable. Default (`LLM_BACKEND=vllm`): the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.40:11430/v1`, which auto-loads the requested served-name model (`qwen3-coder-30b`) on first request. Alternatively (`LLM_BACKEND=ollama`): an Ollama server at `http://192.168.1.40:11434` with the code model tag pulled (e.g., `ollama pull qwen3-coder:30b`).
+- **A local LLM backend** reachable. Default (`LLM_BACKEND=vllm`): the LLMConfig OpenAI `/v1` gateway at `http://192.168.1.15:11430/v1`, which auto-loads the requested served-name model (`qwen3-coder-30b`) on first request. Alternatively (`LLM_BACKEND=ollama`): an Ollama server at `http://192.168.1.40:11434` with the code model tag pulled (e.g., `ollama pull qwen3-coder:30b`).
 - Network access from workstation to the backend host (`192.168.1.40`)
 
 ### Optional (for LSP extraction)
@@ -279,7 +279,7 @@ All scripts are incremental. Interrupt with Ctrl+C and re-run to continue. SHA1 
 On the default vllm backend, check the LLMConfig gateway:
 
 ```powershell
-curl http://192.168.1.40:11430/v1/models
+curl http://192.168.1.15:11430/v1/models
 ```
 
 On the ollama backend, check the Ollama server:
@@ -299,7 +299,7 @@ $env:PATH += ";C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Ll
 
 ### Empty or garbled LLM responses
 
-- On vllm, confirm the served-name model is registered with the gateway (`curl http://192.168.1.40:11430/v1/models`); the first request auto-loads it onto the GPU and may pause while loading.
+- On vllm, confirm the served-name model is registered with the gateway (`curl http://192.168.1.15:11430/v1/models`); the first request auto-loads it onto the GPU and may pause while loading.
 - On the ollama backend, verify the model tag is pulled: `ollama list` on the server.
 - Increase `LLM_TIMEOUT` for large files
 - Reduce `MAX_FILE_LINES`

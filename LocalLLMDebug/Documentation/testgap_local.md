@@ -103,7 +103,7 @@ If the synthesis call fails, the script writes a fallback document containing al
 | `CODEBASE_DESC`                         | from preset             | Human-readable codebase description for LLM system prompts.                                                             |
 | `DEFAULT_FENCE`                         | from preset             | Code fence language identifier.                                                                                         |
 | `MAX_FILE_LINES`                        | `800`                   | Files longer than this are truncated before sending to the LLM.                                                         |
-| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.40:11430`; ollama `:11434`.              |
+| `LLM_ENDPOINT` or `LLM_HOST`+`LLM_PORT` | —                       | Backend base URL via `Get-LLMEndpoint`. Default vllm gateway `http://192.168.1.15:11430`; ollama `:11434`.              |
 | `LLM_MODEL`                             | blank (→ DEFAULT)       | Model id, resolved via `Get-LLMModel -RoleKey 'LLM_MODEL'`. Per-request `num_ctx` (~10k synth window) applies on ollama only; vllm uses per-alias context. |
 | `LLM_DEFAULT_MODEL`                     | `qwen3-coder-30b`       | Universal fallback when `LLM_MODEL` is blank/unset. vLLM served-name (`qwen3-coder:30b` tag on the ollama backend).     |
 | `LLM_TEMPERATURE`                       | `0.1`                   | LLM sampling temperature.                                                                                               |
